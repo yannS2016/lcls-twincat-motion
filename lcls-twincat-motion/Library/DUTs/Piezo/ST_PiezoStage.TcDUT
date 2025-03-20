@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_PiezoStage" Id="{2770cf1c-ef25-4fd4-91d4-d400c52ff5fa}">
+    <Declaration><![CDATA[TYPE ST_PiezoStage EXTENDS ST_MotionStage :
+STRUCT
+    (* Global variables for the TPDO data from the drive. Each one is linked to the respective TPDO channel. *)
+    stPiezoStageStatusWord 	AT %I*: ST_PiezoStageStatusWord;
+    nModeOfOperationDisplay AT %I*: SINT;
+    nActualPosition 		AT %I*: DINT;
+    nErrorCode				AT %I*: SINT;
+    (* Global variables for the RPDO data to the drive. Each one is linked to the respective RPDO channel. *)
+    stPiezoStageControlWord AT %Q* :  ST_PiezoStageControlWord;
+    nTargetPosition 		AT %Q* : DINT;
+    nModeOfOperation 		AT %Q* : SINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
