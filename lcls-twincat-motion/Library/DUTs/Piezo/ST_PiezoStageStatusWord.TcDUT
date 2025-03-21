@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_PiezoStageStatusWord" Id="{bbf047c2-eb2d-4a95-97cb-c6470595d187}">
+    <Declaration><![CDATA[TYPE ST_PiezoStageStatusWord :
+STRUCT
+    ReadyToSwitchOn			: BIT; (* Bit 0 *)
+    SwitchedOn				: BIT; (* Bit 1 *)
+    OperationEnabled		: BIT; (* Bit 2 *)
+    Fault					: BIT; (* Bit 3 *)
+    VoltageEnabled			: BIT; (* Bit 4 *)
+    QuickStopActive			: BIT; (* Bit 5 *)
+    SwitchOnDisabled		: BIT; (* Bit 6 *)
+    WarningCondition		: BIT; (* Bit 7 *)
+    TrajectoryAborted		: BIT; (* Bit 8 *)
+    RemoteCANopenControl	: BIT; (* Bit 9 *)
+    TargetReached			: BIT; (* Bit 10 *)
+    InternalLimitActive		: BIT; (* Bit 11 *)
+    Bit12_OpModeSpecific	: BIT; (* Bit 12 *)
+    Bit13_OpModeSpecific	: BIT; (* Bit 13 *)
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

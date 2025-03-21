@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_PiezoStageCSP" Id="{d2b946d8-0cf7-42b6-9e42-6c1a835d954a}">
+    <Declaration><![CDATA[TYPE ST_PiezoStageCSP  EXTENDS ST_PiezoStage :
+STRUCT
+    (*CSP drive mode*)
+    nFollowingError 		AT %I*: DINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

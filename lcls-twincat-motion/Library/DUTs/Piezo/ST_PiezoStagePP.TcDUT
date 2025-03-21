@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_PiezoStagePP" Id="{f3138ec3-c7d2-4909-8437-b2c9f6ce683d}">
+    <Declaration><![CDATA[TYPE ST_PiezoStagePP EXTENDS ST_PiezoStage :
+STRUCT
+    (* Global variables for the RPDO data to the drive. Each one is linked to the respective RPDO channel. *)
+    nProfilVelocity 		AT %Q* : DINT;
+    nProfilAcceleration		AT %Q* : DINT;
+    nProfilDecceleration	AT %Q* : DINT;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

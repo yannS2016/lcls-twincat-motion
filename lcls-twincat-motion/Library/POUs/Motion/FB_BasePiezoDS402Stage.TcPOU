@@ -1,0 +1,218 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_BasePiezoDS402Stage" Id="{4ca148c3-9eaa-4270-86d4-cbd6edbb5d23}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_BasePiezoDS402Stage
+VAR_IN_OUT
+    stPiezoStage : ST_PiezoStage;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    eDriveStates: E_DriveStates;
+    tonModeChangeWait	: TON;
+    uDriveMode			: SINT := 6;
+    bInit				: BOOL;
+    bReady				: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Not Ready to switch on*)
+IF NOT stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
+    AND NOT stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+
+    eDriveStates := E_DriveStates.INIT;
+END_IF
+
+(*Ready to switch on*)
+IF  stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
+    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatusWord.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+
+    eDriveStates := E_DriveStates.SWITCH_ON_READY;
+END_IF
+
+(*Switch on*)
+
+IF  stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
+    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatusWord.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+
+    eDriveStates := E_DriveStates.SWITCH_ON;
+END_IF
+
+(*Operation enbaled*)
+IF    stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatusWord.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
+    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatusWord.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+
+    eDriveStates := E_DriveStates.OPERATION_ENABLED;
+END_IF
+
+(*Fault*)
+IF  NOT  stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
+    AND stPiezoStage.stPiezoStageStatusWord.Fault
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+
+    eDriveStates := E_DriveStates.FAULT;
+END_IF
+
+(*Fault reaction active*)
+IF    stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatusWord.OperationEnabled
+    AND stPiezoStage.stPiezoStageStatusWord.Fault
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+
+    eDriveStates := E_DriveStates.FAULT_ACTIVE;
+END_IF
+
+(*Quick Stop*)
+IF    stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatusWord.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
+    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoStageStatusWord.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+
+    eDriveStates := E_DriveStates.QUICK_STOP_ACTIVE;
+END_IF
+
+// Drive State Events and Operations
+CASE eDriveStates OF
+    E_DriveStates.INIT:
+        (*start in homing mode this to handle an issue with smaract stick slip drives *)
+        IF NOT bInit THEN
+             stPiezoStage.nModeOfOperation := 6;
+            tonModeChangeWait.IN := TRUE;
+            bInit := TRUE;
+        END_IF
+
+        IF tonModeChangeWait.Q THEN
+            IF stPiezoStage.nModeOfOperationDisplay <> stPiezoStage.nModeOfOperation THEN
+                // this is not a state change error but rather a driving mode error
+                // handle this in MODE ERROR state.
+                tonModeChangeWait.IN := FALSE;
+                eDriveStates := E_DriveStates.MODE_ERROR;
+            END_IF
+            // Continue through the drive state transition here
+            eDriveStates := E_DriveStates.WAIT;
+        END_IF
+
+    E_DriveStates.WAIT:
+        // Reset drive
+        IF stPiezoStage.bReset THEN
+            IF tonModeChangeWait.Q THEN
+                b
+            END_IF
+        ELSE
+
+        END_IF
+
+        IF bReady THEN
+            // intiate the drive state machine process: shutdown transition 2
+            stPiezoStage.stPiezoStageControlWord.SwitchOn := FALSE;
+            stPiezoStage.stPiezoStageControlWord.EnableVoltage := TRUE;
+            stPiezoStage.stPiezoStageControlWord.QuickStop := TRUE;
+            stPiezoStage.stPiezoStageControlWord.FaultReset := FALSE;
+        END_IF
+
+
+    E_DriveStates.SWITCH_ON_READY:
+        IF stPiezoStage.nModeOfOperationDisplay <> stPiezoStage.nModeOfOperation THEN
+            // this is not a state change error but rather a driving mode error
+            // handle this in MODE ERROR state.
+            eDriveStates := E_DriveStates.MODE_ERROR;
+        END_IF
+        // Trasisitin 3
+        stPiezoStage.stPiezoStageControlWord.SwitchOn := TRUE;
+        stPiezoStage.stPiezoStageControlWord.EnableVoltage := TRUE;
+        stPiezoStage.stPiezoStageControlWord.QuickStop := TRUE;
+        stPiezoStage.stPiezoStageControlWord.EnableOperation := FALSE;
+        stPiezoStage.stPiezoStageControlWord.FaultReset := FALSE;
+
+    E_DriveStates.SWITCH_ON:;
+        // Trasisitin 4
+        stPiezoStage.stPiezoStageControlWord.SwitchOn := TRUE;
+        stPiezoStage.stPiezoStageControlWord.EnableVoltage := TRUE;
+        stPiezoStage.stPiezoStageControlWord.QuickStop := TRUE;
+        stPiezoStage.stPiezoStageControlWord.EnableOperation := TRUE;
+        stPiezoStage.stPiezoStageControlWord.FaultReset := FALSE;
+    E_DriveStates.QUICK_STOP_ACTIVE:;
+
+    E_DriveStates.OPERATION_ENABLED:;
+    E_DriveStates.MODE_ERROR:;
+
+    E_DriveStates.FAULT_ACTIVE:
+        // propagate the fault here
+        stPiezoStage.nErrorId := stPiezoStage.nPiezoErrorCode;
+
+    E_DriveStates.FAULT:
+
+        IF stPiezoStage.bReset THEN
+            ResetFaults();
+            tonModeChangeWait.IN := TRUE;
+            eDriveStates := E_DriveStates.WAIT;
+        END_IF
+
+    ELSE
+    ;
+END_CASE
+tonModeChangeWait(PT:=T#1S);]]></ST>
+    </Implementation>
+    <Method Name="Halt" Id="{08af5023-c330-40c5-87c9-d36cfa0ac4b5}">
+      <Declaration><![CDATA[METHOD Halt : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
+IF NOT stPiezoStage.stPiezoStageControlWord.Halt THEN
+    stPiezoStage.stPiezoStageControlWord.Halt:=TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="QuickStop" Id="{89789b78-2c25-4a42-a1ab-69b6e462e39e}">
+      <Declaration><![CDATA[METHOD QuickStop : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
+IF NOT stPiezoStage.stPiezoStageControlWord.QuickStop THEN
+    stPiezoStage.stPiezoStageControlWord.QuickStop:=TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ResetFaults" Id="{d7b191f6-0650-4478-a273-b051ecbc8aa0}">
+      <Declaration><![CDATA[METHOD ResetFaults : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
+IF  stPiezoStage.stPiezoStageStatusWord.Fault AND NOT stPiezoStage.stPiezoStageControlWord.FaultReset THEN
+    stPiezoStage.stPiezoStageControlWord.FaultReset := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

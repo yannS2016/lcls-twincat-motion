@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_NCMotionStage" Id="{b66d51f3-ef40-4af4-a6c8-0da9aa527c2a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_NCMotionStage EXTENDS FB_BaseMotionStage
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="CalibrateEncoderValue" Id="{9b9aed7e-e6bb-4487-b4fd-8a86aa7c3cf0}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD CalibrateEncoderValue
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DriveVirtual" Id="{c716eeb1-e0de-4e6d-8f54-915a4945ea5c}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD DriveVirtual
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ExposeNCParams" Id="{7e9b86fb-9b06-4fb3-b22e-88cf58ff0498}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD ExposeNCParams
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Homing" Id="{b7dcd97f-bebf-424a-ad9e-c3f27769a66e}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD Homing
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="LogErrors" Id="{a3021d3d-9a5e-484a-8b92-120cf37c2697}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD LogErrors
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="LogMessage" Id="{f8247b3d-235f-48de-bb42-1fb526346d1f}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY LogMessage : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{83601d44-756a-4d0d-9793-c673d51acc75}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{d928898b-1d19-41af-8916-8780088f790c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+  </POU>
+</TcPlcObject>

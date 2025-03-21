@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <Itf Name="I_BaseMotionStage" Id="{9d77220c-57f1-4b48-a9ff-431bdfa81569}">
+    <Declaration><![CDATA[INTERFACE I_BaseMotionStage
+]]></Declaration>
+    <Method Name="CalibrateEncoderValue" Id="{eb078641-c453-45be-aaf5-1b7eee891909}">
+      <Declaration><![CDATA[METHOD CalibrateEncoderValue
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="DriveVirtual" Id="{c948913d-1fe0-49a4-a017-d0eddeea2ec5}">
+      <Declaration><![CDATA[METHOD DriveVirtual
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="ExposeNCParams" Id="{14c2064d-4177-4ca1-a486-0df861004639}">
+      <Declaration><![CDATA[METHOD ExposeNCParams
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Homing" Id="{51dac488-4eeb-4e68-ac46-f008cc53f888}">
+      <Declaration><![CDATA[METHOD Homing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="LogErrors" Id="{bf350395-4325-4d9e-8461-b7950ba3f1be}">
+      <Declaration><![CDATA[METHOD LogErrors
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Processing" Id="{b47f0e8c-91a2-42aa-96ef-aeaf8d3990f7}">
+      <Declaration><![CDATA[METHOD Processing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+  </Itf>
+</TcPlcObject>
