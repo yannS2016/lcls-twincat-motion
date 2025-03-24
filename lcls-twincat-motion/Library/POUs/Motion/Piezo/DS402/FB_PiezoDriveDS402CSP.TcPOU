@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_PiezoDriveDS402CSP" Id="{888e3a3f-5a56-4d26-ba78-fe3db55f3f31}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK PUBLIC FB_PiezoDriveDS402CSP EXTENDS FB_PiezoDriveDS402
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="Brake" Id="{9a0e88c2-6809-4fed-8bb3-199d998b109d}">
+      <Declaration><![CDATA[METHOD Brake : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Brake();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DS402StateMachine" Id="{73e43dc6-db71-4003-a925-6bc9d3079a38}">
+      <Declaration><![CDATA[METHOD DS402StateMachine
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.DS402StateMachine();
+
+IF SUPER^.DriveStateTransition = E_DriveStates.OPERATION_ENABLED THEN
+    IF SUPER^.stPiezoStage.bMoveCmd THEN
+        // call MoveAbsolute;
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_Init" Id="{600fe1d5-2de2-4cdf-af05-fefe1f75066a}">
+      <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
+The return value is not evaluated. For a specific influence, you can also declare the
+methods explicitly and provide additional code there with the standard initialization
+code. You can evaluate the return value.*)
+METHOD FB_Init : BOOL
+VAR_INPUT
+    (* TRUE: the retain variables are initialized (reset warm / reset cold)*)
+    bInitRetains	: BOOL;
+    (* TRUE: the instance will be copied to the copy code afterward (online change)   *)
+    bInCopyCode	: BOOL;
+    stStage : REFERENCE TO  ST_PiezoStage;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Halt" Id="{749072ab-c58d-463d-9819-0a9dfd276313}">
+      <Declaration><![CDATA[METHOD Halt : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Halt();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{c98a4912-edf5-4476-8b08-5289494f21e1}">
+      <Declaration><![CDATA[METHOD Home : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Home();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Interlock" Id="{1b42e465-3d2a-4756-9fdc-810195b4a90c}">
+      <Declaration><![CDATA[METHOD Interlock : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Interlock();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Logger" Id="{c96ef2ce-8290-44fd-b101-af264edbe5be}">
+      <Declaration><![CDATA[METHOD Logger : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Logger();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveAbsolute" Id="{237c4c50-f769-44ee-a6a5-87a4f79621ba}">
+      <Declaration><![CDATA[METHOD MoveAbsolute
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveVelocity" Id="{46faa047-3c68-4ca3-a258-bc1a2fc3e753}">
+      <Declaration><![CDATA[METHOD MoveVelocity : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Power" Id="{28ba770f-aace-4ec5-a43f-418b3d720d89}">
+      <Declaration><![CDATA[
+METHOD Power : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Power();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{a401ff7f-63d8-4f36-ba52-e017581177a8}">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Reset();]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

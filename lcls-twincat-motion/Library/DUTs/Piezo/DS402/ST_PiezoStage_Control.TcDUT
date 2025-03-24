@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <DUT Name="ST_PiezoStageControlWord" Id="{5b737ec9-7d73-4ac9-a669-18229d975699}">
-    <Declaration><![CDATA[TYPE ST_PiezoStageControlWord :
+  <DUT Name="ST_PiezoStage_Control" Id="{5b737ec9-7d73-4ac9-a669-18229d975699}">
+    <Declaration><![CDATA[TYPE ST_PiezoStage_Control :
 STRUCT
     SwitchOn              : BIT; (* Bit 0 *)
     EnableVoltage         : BIT; (* Bit 1 *)

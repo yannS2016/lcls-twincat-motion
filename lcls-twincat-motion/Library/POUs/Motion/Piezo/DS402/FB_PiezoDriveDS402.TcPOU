@@ -1,0 +1,276 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_PiezoDriveDS402" Id="{767dade8-900b-419e-8640-c738938dffde}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK PUBLIC ABSTRACT FB_PiezoDriveDS402 EXTENDS FB_PiezoDrive
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    eInternalDriveState 		: 	E_DriveStates;
+    bProfilPostion				:	BOOL;
+    bCyclicSynchronousPostion	: 	BOOL;
+    bMoveConfirmed				: 	BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Property Name="AbsMoveEnabled" Id="{a9e7c5e3-f201-4794-87c4-3a4b3de6d4de}">
+      <Declaration><![CDATA[PROPERTY AbsMoveEnabled : BOOL]]></Declaration>
+      <Get Name="Get" Id="{996e612a-6e5b-45c3-8a4f-8b38d6125f34}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[AbsMoveEnabled := bMoveConfirmed;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{42ad921f-9ab5-4504-a2c5-c5f8fa88f968}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bMoveConfirmed := AbsMoveEnabled;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="Brake" Id="{e5829bdb-4f85-41d9-84ca-59543bab5ffb}">
+      <Declaration><![CDATA[METHOD Brake : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Brake();]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="DriveStateTransition" Id="{d49512e2-8ed7-49a9-b597-af522d2c9beb}">
+      <Declaration><![CDATA[{attribute 'monitoring' := 'variable'}
+PROPERTY DriveStateTransition : E_DriveStates]]></Declaration>
+      <Get Name="Get" Id="{cbe48f03-a943-49e9-9a9b-d28b456dc170}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[DriveStateTransition := eInternalDriveState;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{3f90ff1d-67cd-4286-a280-25468d6b9853}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[eInternalDriveState := DriveStateTransition;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="DS402StateMachine" Id="{d963b9d7-d9e1-4a33-bb79-0f8a7e20b1de}">
+      <Declaration><![CDATA[METHOD DS402StateMachine
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Drive State Events and Operations
+IF NOT __ISVALIDREF(stPiezoStage) THEN
+    // we will return gracefully in the FAULT state
+    ErrorMessage := 'FAULT: Drive interface not initialized';
+    Error := TRUE;
+    ErrorID := 9999; // find an appropriate code
+    RETURN;
+END_IF
+
+(*Not Ready to switch on*)
+IF NOT stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND NOT stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+
+    DriveStateTransition := E_DriveStates.INIT;
+END_IF
+
+(*Ready to switch on*)
+IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+
+    DriveStateTransition := E_DriveStates.SWITCH_ON_READY;
+END_IF
+
+(*Switch on*)
+
+IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+
+    DriveStateTransition := E_DriveStates.SWITCH_ON;
+END_IF
+
+(*Operation enbaled*)
+IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+
+    DriveStateTransition := E_DriveStates.OPERATION_ENABLED;
+END_IF
+
+(*Fault*)
+IF  NOT  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND stPiezoStage.stPiezoStageStatus.Fault
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+
+    DriveStateTransition := E_DriveStates.FAULT;
+END_IF
+
+(*Fault reaction active*)
+IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND stPiezoStage.stPiezoStageStatus.Fault
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+
+    DriveStateTransition := E_DriveStates.FAULT_ACTIVE;
+END_IF
+
+(*Quick Stop*)
+IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+
+    DriveStateTransition := E_DriveStates.QUICK_STOP_ACTIVE;
+END_IF
+
+CASE DriveStateTransition OF
+
+    E_DriveStates.INIT:;
+    E_DriveStates.WAIT:;
+    E_DriveStates.SWITCH_ON_READY:;
+    E_DriveStates.QUICK_STOP_ACTIVE:;
+    E_DriveStates.OPERATION_ENABLED:;
+    // Homing -- common
+
+    IF SUPER^.stPiezoStage.bHomeCmd THEN
+        THIS^.Home();
+        IF SUPER^.Error THEN
+            DriveStateTransition := E_DriveStates.MODE_ERROR;
+        END_IF
+    END_IF
+    // CSP -- set CSP flag
+    // PP  -- set PP flag
+    E_DriveStates.FAULT:;
+    E_DriveStates.MODE_ERROR:;
+END_CASE
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_Init" Id="{8fccdb5f-b457-4637-ae44-ff5efe2142a7}">
+      <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
+The return value is not evaluated. For a specific influence, you can also declare the
+methods explicitly and provide additional code there with the standard initialization
+code. You can evaluate the return value.*)
+METHOD FB_Init : BOOL
+VAR_INPUT
+    (* TRUE: the retain variables are initialized (reset warm / reset cold)*)
+    bInitRetains	: BOOL;
+    (* TRUE: the instance will be copied to the copy code afterward (online change)   *)
+    bInCopyCode	: BOOL;
+    stStage : REFERENCE TO  ST_PiezoStage;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Halt" Id="{7f626c89-4c25-446a-aadf-2d7158be6cb2}">
+      <Declaration><![CDATA[METHOD Halt : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
+IF NOT stPiezoStage.stPiezoStageControl.Halt THEN
+    stPiezoStage.stPiezoStageControl.Halt:=TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{d33ee575-f547-404d-bc45-25b73c38be5a}">
+      <Declaration><![CDATA[METHOD Home : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Home();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Interlock" Id="{36207be0-7a17-466d-9c72-e0f495170f07}">
+      <Declaration><![CDATA[METHOD Interlock : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Interlock();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Logger" Id="{c74ad8cb-1745-4df8-b83c-c7761caffd8e}">
+      <Declaration><![CDATA[METHOD Logger : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Logger();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveAbsolute" Id="{8f7c0eeb-20cc-4e52-be08-683acc155eb8}">
+      <Declaration><![CDATA[METHOD PUBLIC MoveAbsolute
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF DriveStateTransition = E_DriveStates.OPERATION_ENABLED THEN
+    IF SUPER^.stPiezoStage.bMoveCmd THEN
+        // attempting to move an axis without homing first?
+        IF SUPER^.stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE AND NOT SUPER^.stPiezoStage.bHomed THEN
+            // one can just set bHome here even though no homing was done?
+            ErrorMessage := 'Axis homing mode set, but homing routine pending';
+        END_IF
+        AbsMoveEnabled := TRUE;
+    END_IF
+ELSE
+    // the drive state must be operational for any motion to happen
+    AbsMoveEnabled := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveVelocity" Id="{1b2e41e2-09a4-4d38-9d3b-52ed665fafd3}">
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveVelocity : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Power" Id="{634342db-4980-4103-96da-256cbacd69e1}">
+      <Declaration><![CDATA[METHOD Power : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{ca77c887-2b90-4375-866f-a9f6ff5b335c}">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
+IF  stPiezoStage.stPiezoStageStatus.Fault AND NOT stPiezoStage.stPiezoStageControl.FaultReset THEN
+    stPiezoStage.stPiezoStageControl.FaultReset := TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

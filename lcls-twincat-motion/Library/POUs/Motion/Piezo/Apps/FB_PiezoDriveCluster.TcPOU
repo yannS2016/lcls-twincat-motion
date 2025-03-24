@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_PiezoDriveCluster" Id="{9370bbfa-f598-4147-b1ed-2a819311e79e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK PUBLIC FB_PiezoDriveCluster
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    // will set the associated classes intances externally from this cluster
+    fbPiezoDriveDS402Pp : FB_PiezoDriveDS402PP(stStage := stInternalPiezoStagePp);
+    fbPiezoDriveDS402CSP : FB_PiezoDriveDS402CSP(stStage := stInternalPiezoStageCsp);
+    // add variable for associated class here
+    iPiezoDrive : I_PiezoDrive;
+    appInternalVar :	BOOL;
+    stInternalPiezoStagePp : REFERENCE TO ST_PiezoStage_PP;
+    stInternalPiezoStageCsp : REFERENCE TO ST_PiezoStage_CSP;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="FB_Init" Id="{d9e0eb23-9afd-4536-8af3-7852dfd2c0d2}">
+      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
+//The return value is not evaluated. For a specific influence, you can also declare the
+//methods explicitly and provide additional code there with the standard initialization
+//code. You can evaluate the return value.
+METHOD FB_Init: BOOL
+VAR_INPUT
+    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+    appVar :	BOOL;
+    stPiezoStagePp : REFERENCE TO ST_PiezoStage_PP;
+    stPiezoStageCsp : REFERENCE TO ST_PiezoStage_CSP;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	THIS^.appInternalVar := appVar;
+    fbPiezoDriveDS402Pp.FB_Init(bInitRetains := bInitRetains, bInCopyCode := bInCopyCode, stStage := stPiezoStagePp);
+    fbPiezoDriveDS402CSP.FB_Init(bInitRetains := bInitRetains, bInCopyCode := bInCopyCode, stStage:= stPiezoStageCsp);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_PiezoDriveNC" Id="{a5ab4d86-81e0-47bf-8391-7049ec373d4c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK PUBLIC FB_PiezoDriveNC EXTENDS FB_PiezoDrive
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="Brake" Id="{a23dd471-fc06-4b84-bbce-dca5a779d151}">
+      <Declaration><![CDATA[METHOD Brake : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_Init" Id="{ebbb81fe-12c1-483f-bc20-40ec1ecdcf09}">
+      <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
+The return value is not evaluated. For a specific influence, you can also declare the
+methods explicitly and provide additional code there with the standard initialization
+code. You can evaluate the return value.*)
+METHOD FB_Init : BOOL
+VAR_INPUT
+    (* TRUE: the retain variables are initialized (reset warm / reset cold)*)
+    bInitRetains	: BOOL;
+    (* TRUE: the instance will be copied to the copy code afterward (online change)   *)
+    bInCopyCode	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Halt" Id="{0f823143-5f15-43f3-944a-9090c1d33d70}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD Halt : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{637d2584-8e89-4521-8900-02bb8710587f}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD Home : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Interlock" Id="{6f055a87-c1f7-4988-a18a-6b1c9220e328}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD Interlock : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Logger" Id="{f9c2add2-c380-482d-93ab-6d4d86e49536}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD Logger : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveAbsolute" Id="{f756ee1e-3825-4cd8-b891-8d869366e53c}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD MoveAbsolute : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveVelocity" Id="{8f37121b-0b37-43ec-9e4b-419fea3ddbed}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD MoveVelocity : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Power" Id="{a1e2ff79-06c3-4746-94b0-9d7d52157ef7}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD Power : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{59c746f0-19f0-444f-b9d8-791b087de669}">
+      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
+METHOD Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

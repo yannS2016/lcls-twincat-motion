@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <Itf Name="I_PiezoDrive" Id="{49729736-8717-4a13-800f-a53162ccda84}">
+    <Declaration><![CDATA[INTERFACE I_PiezoDrive
+]]></Declaration>
+    <Method Name="Brake" Id="{e0529470-e1a2-408b-acaa-cacbe414aa6e}">
+      <Declaration><![CDATA[METHOD Brake : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Halt" Id="{1645d0ef-eb4b-4235-b6cc-4a214463d443}">
+      <Declaration><![CDATA[METHOD Halt : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Home" Id="{f7b9941e-fd39-45a3-99c7-fc867c3625ba}">
+      <Declaration><![CDATA[METHOD Home : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Interlock" Id="{b9614087-83f0-4675-8dad-b6765017e9ea}">
+      <Declaration><![CDATA[METHOD Interlock : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Logger" Id="{36d29a03-8107-42f2-b596-87523b11c29f}">
+      <Declaration><![CDATA[METHOD Logger : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="MoveAbsolute" Id="{c32a9e13-f332-4841-9fc3-9751e2083446}">
+      <Declaration><![CDATA[METHOD MoveAbsolute : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="MoveVelocity" Id="{bc7db01d-6c11-4d35-a626-79d63771cf0a}">
+      <Declaration><![CDATA[METHOD MoveVelocity : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Power" Id="{08548eb9-8f7d-4758-8069-c44e4c6df0ba}">
+      <Declaration><![CDATA[METHOD Power : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="Reset" Id="{43fc3192-2758-4d04-872e-08906cd5bf28}">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+  </Itf>
+</TcPlcObject>

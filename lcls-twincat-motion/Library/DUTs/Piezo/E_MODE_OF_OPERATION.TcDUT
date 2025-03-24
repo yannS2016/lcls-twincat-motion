@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="E_MODE_OF_OPERATION" Id="{6408c62a-847b-4029-9fed-2620404dcad3}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_MODE_OF_OPERATION :
+(
+    NONE		:= 0,
+    CALIBRATION := -1,
+    PROFILE_POSITION := 1,
+    HOMING := 6,
+    CYCLIC_SYNCHRONOUS_POSITION := 8
+) SINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

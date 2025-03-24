@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_SetAndActivateConfig" Id="{8d5a249c-2e29-458b-823b-6fdba433baa6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SetAndActivateConfig
+VAR_IN_OUT
+ stPiezoStage  : ST_PiezoStage;
+END_VAR
+
+VAR_INPUT
+     bExecute  : BOOL := FALSE;
+     nIndex     : WORD ; 		   (* CoE Object Index *)
+     nSubIndex  : BYTE ; 			   (* Subindex of CoE Object *)
+     nValue		: DINT;
+END_VAR
+
+VAR_OUTPUT
+     bBusy   : BOOL := FALSE;
+     bDone   : BOOL := FALSE;
+     bError  : BOOL := FALSE;
+     nErrorId  : UDINT := 0;
+END_VAR
+VAR
+ fbSdoWrite : FB_EcCoESdoWrite;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT fbSdoWrite.bBusy THEN
+    bExecute := FALSE;
+    IF NOT fbSdoWrite.bError THEN
+        (* write successful *)
+        bError := FALSE;
+        nErrorId := 0;
+    ELSE
+        (* write failed *)
+        bError := fbSdoWrite.bError;
+        nErrorId := fbSdoWrite.nErrId;
+
+    END_IF
+
+    fbSdoWrite(bExecute := FALSE);
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

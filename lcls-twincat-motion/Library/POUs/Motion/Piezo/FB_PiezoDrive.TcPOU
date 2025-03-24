@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_PiezoDrive" Id="{062edea9-cfc5-43cf-98da-5ad9b4d99528}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK PUBLIC ABSTRACT FB_PiezoDrive IMPLEMENTS I_PiezoDrive
+VAR_INPUT
+
+END_VAR
+VAR_OUTPUT
+
+END_VAR
+VAR
+    stPiezoStage 			:	REFERENCE TO ST_PiezoStage;
+    eModeOFOperation		: 	E_MODE_OF_OPERATION := E_MODE_OF_OPERATION.NONE;
+    nHomingSpeedSubIndex	: 	WORD := 16#6099;
+    nHomingAccSubIndex		: 	WORD := 16#609A;
+    nHomingOffsetSubIndex	: 	WORD := 16#607C;
+    bError  				: 	BOOL := FALSE;
+    nErrorId  				: 	UDINT := 0;
+    sLocalErrorMessage		:	STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="Brake" Id="{c6b36a48-c7b1-4cfe-936b-d492d651f479}">
+      <Declaration><![CDATA[METHOD PUBLIC Brake : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="Error" Id="{6f16c5a8-a341-41d8-bb67-663d3f8d4084}">
+      <Declaration><![CDATA[PROPERTY Error : BOOL]]></Declaration>
+      <Get Name="Get" Id="{b7c85154-eaf9-42ce-80df-d89782c46cda}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Error := bError;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{2447c241-763d-4843-985e-1e7b2b4157d6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bError := Error;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="ErrorID" Id="{a05ec7b2-e4fa-4c9a-9ffa-8d608185c857}">
+      <Declaration><![CDATA[PROPERTY ErrorID : UDINT]]></Declaration>
+      <Get Name="Get" Id="{5d902389-8aa3-41b0-82ce-2f29a350e020}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[ErrorID := nErrorID;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{8d492092-46f5-4d0a-b5a1-6972c25ffd11}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nErrorID := ErrorID;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="ErrorMessage" Id="{234fb137-8bc4-42b9-a4b9-3f1687c56fcc}">
+      <Declaration><![CDATA[PROPERTY ErrorMessage : STRING]]></Declaration>
+      <Get Name="Get" Id="{875ab620-c818-4cc8-91f8-7ebc15876b2a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[ErrorMessage := sLocalErrorMessage;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{3b380431-6fb8-4f07-bb22-d7ab556e09f5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sLocalErrorMessage := ErrorMessage;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="FB_Init" Id="{2fe42046-83dd-4d2e-8525-51e430d15d86}">
+      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
+//The return value is not evaluated. For a specific influence, you can also declare the
+//methods explicitly and provide additional code there with the standard initialization
+//code. You can evaluate the return value.
+METHOD FB_Init: BOOL
+VAR_INPUT
+    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+    stStage :  REFERENCE TO ST_PiezoStage;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.stPiezoStage REF= stStage;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Halt" Id="{3dd7f3b3-f32f-443b-9959-87442cc8fa69}">
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Halt : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{2fdfc142-a2a6-49f0-950a-d0e52b5408ca}">
+      <Declaration><![CDATA[METHOD PUBLIC Home : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// set Piezo drive in Homing Mode
+stPiezoStage.nModeOfOperation := E_MODE_OF_OPERATION.HOMING;
+
+IF stPiezoStage.nModeOfOperationDisplay = E_MODE_OF_OPERATION.HOMING THEN
+    // Homing paramters are configure as PDOs for ease of operations
+    // make sure homing speed are before proceeding
+    stPiezoStage.stPiezoStageControl.Bit4_OpModeSpecific := TRUE;
+
+    // successful ?
+    IF  stPiezoStage.stPiezoStageStatus.TargetReached
+        AND NOT stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
+        AND NOT stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
+        Error := FALSE;
+        ErrorID := 0; // find an appropriate code
+        ErrorMessage := 'Warning: Drive Homing Precedure interrupted or not started';
+        stPiezoStage.bDone := TRUE;
+        stPiezoStage.bHomed := FALSE;
+    END_IF
+
+    IF  NOT stPiezoStage.stPiezoStageStatus.TargetReached
+        AND stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
+        AND NOT stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
+        Error := FALSE;
+        ErrorID := 0; // find an appropriate code
+        ErrorMessage := 'Warning: Home attained but target not reached';
+        stPiezoStage.bDone := TRUE;
+        stPiezoStage.bHomed := FALSE;
+    END_IF
+
+    IF stPiezoStage.stPiezoStageStatus.TargetReached
+        AND stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
+        AND NOT stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
+        Error := FALSE;
+        ErrorID := 0; // find an appropriate code
+        ErrorMessage := 'Homing procedure is completed successfully';
+        stPiezoStage.stPiezoStageControl.Bit4_OpModeSpecific := FALSE;
+        stPiezoStage.bDone := TRUE;
+        stPiezoStage.bHomed := TRUE;
+        // set home position based on stMotionStage.fHomePosition offset
+        // this need to be written before homing start using sdo write if we dont use PDO for
+        // homing options.
+    END_IF
+
+    IF  NOT stPiezoStage.stPiezoStageStatus.TargetReached
+        AND NOT stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
+        AND stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
+        Error := TRUE;
+        ErrorID := stPiezoStage.nPiezoErrorCode; // find an appropriate code
+        ErrorMessage := 'Error: Homing error occured, velocity is not 0';
+        stPiezoStage.bDone := TRUE;
+        stPiezoStage.bHomed := FALSE;
+    END_IF
+
+    IF  stPiezoStage.stPiezoStageStatus.TargetReached
+        AND NOT stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
+        AND stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
+        Error := FALSE;
+        ErrorID := stPiezoStage.nPiezoErrorCode; // find an appropriate code
+        ErrorMessage := 'Error: Homing error occured, velocity 0';
+        stPiezoStage.bDone := TRUE;
+        stPiezoStage.bHomed := FALSE;
+    END_IF
+
+END_IF
+
+// Override homing status, dmov as appropriate
+stPiezoStage.stAxisStatus.bHomed := stPiezoStage.bHomed;
+// this need to be handle in the power method
+stPiezoStage.stAxisStatus.bExecute := stPiezoStage.bExecute;
+stPiezoStage.stAxisStatus.nCommand := 3; // If this is not 3, the IOC stops updating positions during homing
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Interlock" Id="{72f66b07-eac8-4f48-a977-69dc5fa659a2}">
+      <Declaration><![CDATA[METHOD PUBLIC Interlock : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Logger" Id="{7fb0d460-52d2-4ae2-accf-52e93bd858b3}">
+      <Declaration><![CDATA[METHOD PUBLIC Logger : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveAbsolute" Id="{67006bb1-1c73-49f6-ab52-7a06b1d0c294}">
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveAbsolute : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveVelocity" Id="{ad5fd96d-9e69-45a4-b2a0-21317b75940d}">
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveVelocity : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Power" Id="{e042f171-1fa4-41aa-931e-1ad0031d9e59}">
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Power : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="QuickStop" Id="{3433f4ca-0bf8-494d-bdbf-c805b64891fa}">
+      <Declaration><![CDATA[METHOD QuickStop : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
+IF NOT stPiezoStage.stPiezoStageControl.QuickStop THEN
+    stPiezoStage.stPiezoStageControl.QuickStop:=TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{872bc095-326f-40be-9faa-244cb7e5f547}">
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetHomingParams" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
+      <Declaration><![CDATA[METHOD SetHomingParams : BOOL
+VAR_INPUT
+    bExecute	:	BOOL := FALSE;
+    nIndex     	: 	WORD ; 		   (* CoE Object Index *)
+    nSubIndex  	: 	BYTE ; 			   (* Subindex of CoE Object *)
+    nValue		: 	DINT;
+    fbSdoWrite	: 	FB_EcCoESdoWrite;
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT fbSdoWrite.bBusy THEN
+    bExecute := FALSE;
+    IF NOT fbSdoWrite.bError THEN
+        (* write successful *)
+        Error := FALSE;
+        ErrorId := 0;
+    ELSE
+        (* write failed *)
+        Error := fbSdoWrite.bError;
+        ErrorId := fbSdoWrite.nErrId;
+
+    END_IF
+
+    fbSdoWrite(bExecute := FALSE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

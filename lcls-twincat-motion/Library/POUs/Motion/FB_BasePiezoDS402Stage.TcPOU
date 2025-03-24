@@ -8,90 +8,98 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
+
+    bExecute  : BOOL := FALSE;
     eDriveStates: E_DriveStates;
     tonModeChangeWait	: TON;
     uDriveMode			: SINT := 6;
     bInit				: BOOL;
-    bReady				: BOOL;
+    bReady				: BOOL := TRUE;
+    nDriveCmd		: SINT := E_MODE_OF_OPERATION.NONE;
+    nConfig			: SINT := 10;
+    eDriveCmdState: E_DRIVE_CMD_STATE;
+    fbSetAndActivateConfig	: FB_SetAndActivateConfig;
+    HomingSpeedSubIndex		: WORD := 16#6099;
+    HomingAccSubIndex		: WORD := 16#609A;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*Not Ready to switch on*)
-IF NOT stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchedOn
-    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
-    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
-    AND NOT stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+IF NOT stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND NOT stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
     eDriveStates := E_DriveStates.INIT;
 END_IF
 
 (*Ready to switch on*)
-IF  stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchedOn
-    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
-    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
-    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
-    AND stPiezoStage.stPiezoStageStatusWord.QuickStopActive
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
     eDriveStates := E_DriveStates.SWITCH_ON_READY;
 END_IF
 
 (*Switch on*)
 
-IF  stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
-    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
-    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
-    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
-    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
-    AND stPiezoStage.stPiezoStageStatusWord.QuickStopActive
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
     eDriveStates := E_DriveStates.SWITCH_ON;
 END_IF
 
 (*Operation enbaled*)
-IF    stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
-    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
-    AND stPiezoStage.stPiezoStageStatusWord.OperationEnabled
-    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
-    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
-    AND stPiezoStage.stPiezoStageStatusWord.QuickStopActive
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
     eDriveStates := E_DriveStates.OPERATION_ENABLED;
 END_IF
 
 (*Fault*)
-IF  NOT  stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchedOn
-    AND NOT stPiezoStage.stPiezoStageStatusWord.OperationEnabled
-    AND stPiezoStage.stPiezoStageStatusWord.Fault
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+IF  NOT  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND stPiezoStage.stPiezoStageStatus.Fault
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
     eDriveStates := E_DriveStates.FAULT;
 END_IF
 
 (*Fault reaction active*)
-IF    stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
-    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
-    AND stPiezoStage.stPiezoStageStatusWord.OperationEnabled
-    AND stPiezoStage.stPiezoStageStatusWord.Fault
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND stPiezoStage.stPiezoStageStatus.Fault
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
     eDriveStates := E_DriveStates.FAULT_ACTIVE;
 END_IF
 
 (*Quick Stop*)
-IF    stPiezoStage.stPiezoStageStatusWord.ReadyToSwitchOn
-    AND stPiezoStage.stPiezoStageStatusWord.SwitchedOn
-    AND stPiezoStage.stPiezoStageStatusWord.OperationEnabled
-    AND NOT stPiezoStage.stPiezoStageStatusWord.Fault
-    AND stPiezoStage.stPiezoStageStatusWord.VoltageEnabled
-    AND NOT stPiezoStage.stPiezoStageStatusWord.QuickStopActive
-    AND NOT stPiezoStage.stPiezoStageStatusWord.SwitchOnDisabled THEN
+IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
+    AND stPiezoStage.stPiezoStageStatus.SwitchedOn
+    AND stPiezoStage.stPiezoStageStatus.OperationEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.Fault
+    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoStageStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
     eDriveStates := E_DriveStates.QUICK_STOP_ACTIVE;
 END_IF
@@ -101,7 +109,9 @@ CASE eDriveStates OF
     E_DriveStates.INIT:
         (*start in homing mode this to handle an issue with smaract stick slip drives *)
         IF NOT bInit THEN
-             stPiezoStage.nModeOfOperation := 6;
+            stPiezoStage.nModeOfOperation := E_MODE_OF_OPERATION.NONE;
+            // clear control register
+            stPiezoStage.stPiezoStageControl := 16#0;
             tonModeChangeWait.IN := TRUE;
             bInit := TRUE;
         END_IF
@@ -114,25 +124,24 @@ CASE eDriveStates OF
                 eDriveStates := E_DriveStates.MODE_ERROR;
             END_IF
             // Continue through the drive state transition here
+
             eDriveStates := E_DriveStates.WAIT;
         END_IF
 
     E_DriveStates.WAIT:
-        // Reset drive
-        IF stPiezoStage.bReset THEN
+        IF NOT bReady THEN
             IF tonModeChangeWait.Q THEN
-                b
+                bReady := TRUE;
+                tonModeChangeWait := FALSE;
             END_IF
-        ELSE
-
         END_IF
 
         IF bReady THEN
             // intiate the drive state machine process: shutdown transition 2
-            stPiezoStage.stPiezoStageControlWord.SwitchOn := FALSE;
-            stPiezoStage.stPiezoStageControlWord.EnableVoltage := TRUE;
-            stPiezoStage.stPiezoStageControlWord.QuickStop := TRUE;
-            stPiezoStage.stPiezoStageControlWord.FaultReset := FALSE;
+            stPiezoStage.stPiezoStageControl.SwitchOn := FALSE;
+            stPiezoStage.stPiezoStageControl.EnableVoltage := TRUE;
+            stPiezoStage.stPiezoStageControl.QuickStop := TRUE;
+            stPiezoStage.stPiezoStageControl.FaultReset := FALSE;
         END_IF
 
 
@@ -143,22 +152,99 @@ CASE eDriveStates OF
             eDriveStates := E_DriveStates.MODE_ERROR;
         END_IF
         // Trasisitin 3
-        stPiezoStage.stPiezoStageControlWord.SwitchOn := TRUE;
-        stPiezoStage.stPiezoStageControlWord.EnableVoltage := TRUE;
-        stPiezoStage.stPiezoStageControlWord.QuickStop := TRUE;
-        stPiezoStage.stPiezoStageControlWord.EnableOperation := FALSE;
-        stPiezoStage.stPiezoStageControlWord.FaultReset := FALSE;
+        stPiezoStage.stPiezoStageControl.SwitchOn := TRUE;
+        stPiezoStage.stPiezoStageControl.EnableVoltage := TRUE;
+        stPiezoStage.stPiezoStageControl.QuickStop := TRUE;
+        stPiezoStage.stPiezoStageControl.EnableOperation := FALSE;
+        stPiezoStage.stPiezoStageControl.FaultReset := FALSE;
 
     E_DriveStates.SWITCH_ON:;
         // Trasisitin 4
-        stPiezoStage.stPiezoStageControlWord.SwitchOn := TRUE;
-        stPiezoStage.stPiezoStageControlWord.EnableVoltage := TRUE;
-        stPiezoStage.stPiezoStageControlWord.QuickStop := TRUE;
-        stPiezoStage.stPiezoStageControlWord.EnableOperation := TRUE;
-        stPiezoStage.stPiezoStageControlWord.FaultReset := FALSE;
+        stPiezoStage.stPiezoStageControl.SwitchOn := TRUE;
+        stPiezoStage.stPiezoStageControl.EnableVoltage := TRUE;
+        stPiezoStage.stPiezoStageControl.QuickStop := TRUE;
+        stPiezoStage.stPiezoStageControl.EnableOperation := TRUE;
+        stPiezoStage.stPiezoStageControl.FaultReset := FALSE;
     E_DriveStates.QUICK_STOP_ACTIVE:;
 
-    E_DriveStates.OPERATION_ENABLED:;
+    E_DriveStates.OPERATION_ENABLED:
+      // Prepare is drive mode parameters
+      CASE nDriveCmd OF
+          E_MODE_OF_OPERATION.NONE:;
+            CASE nConfig OF
+                10:
+                    // set user defined Homing speed and Acceleration
+                    // add scalling before writing
+                     fbSetAndActivateConfig(bExecute := bExecute,
+                                            stPiezoStage := stPiezoStage,
+                                            nIndex := HomingSpeedSubIndex,
+                                            nSubIndex:= 1,
+                                            nValue := stPiezoStage.nHomingSpeed);
+                    IF NOT fbSetAndActivateConfig.bError THEN
+                        nConfig := 20;
+                    END_IF
+                20:
+                     // add scalling before writing
+                     fbSetAndActivateConfig(bExecute := bExecute,
+                                            stPiezoStage := stPiezoStage,
+                                            nIndex := HomingSpeedSubIndex,
+                                            nSubIndex:= 2,
+                                            nValue := stPiezoStage.nHomingSpeed);
+                    IF NOT fbSetAndActivateConfig.bError  THEN
+                        nConfig := 30;
+                    END_IF
+                30:
+                     // add scalling before writing
+                    fbSetAndActivateConfig(bExecute := bExecute,
+                                            stPiezoStage := stPiezoStage,
+                                            nIndex := HomingAccSubIndex,
+                                            nSubIndex:= 1,
+                                            nValue := stPiezoStage.nHomingAcceleration);
+                    IF NOT fbSetAndActivateConfig.bError  THEN
+                        nConfig := 30;
+                    END_IF
+                99:
+                    eDriveStates := E_DriveStates.MODE_ERROR;
+
+            END_CASE
+
+            IF fbSetAndActivateConfig.bError  THEN
+                nConfig := 99;
+            ELSE
+                nDriveCmd := E_MODE_OF_OPERATION.HOMING;
+            END_IF
+
+        E_MODE_OF_OPERATION.PROFILE_POSITION:
+        stPiezoStage.
+        E_MODE_OF_OPERATION.HOMING:;
+
+        E_MODE_OF_OPERATION.CYCLIC_SYNCHRONOUS_POSITION:;
+
+      ELSE
+          ;
+      END_CASE
+
+
+
+
+
+
+
+
+
+
+
+            CASE eDriveCmdState OF
+                E_DRIVE_CMD_STATE.PREPARE_MOTION_PARAMS:
+                    stPiezoStage.nModeOfOperation := E_MODE_OF_OPERATION.PROFILE_POSITION;
+
+                E_DRIVE_CMD_STATE.INITIATE_MOTION:;
+
+                E_DRIVE_CMD_STATE.DRIVE_IN_MOTION:;
+                E_DRIVE_CMD_STATE.TARGET_REACHED:;
+
+            END_CASE
+        END_IF
     E_DriveStates.MODE_ERROR:;
 
     E_DriveStates.FAULT_ACTIVE:
@@ -170,6 +256,7 @@ CASE eDriveStates OF
         IF stPiezoStage.bReset THEN
             ResetFaults();
             tonModeChangeWait.IN := TRUE;
+            bReady := FALSE;
             eDriveStates := E_DriveStates.WAIT;
         END_IF
 
@@ -185,8 +272,8 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
-IF NOT stPiezoStage.stPiezoStageControlWord.Halt THEN
-    stPiezoStage.stPiezoStageControlWord.Halt:=TRUE;
+IF NOT stPiezoStage.stPiezoStageControl.Halt THEN
+    stPiezoStage.stPiezoStageControl.Halt:=TRUE;
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -197,8 +284,8 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
-IF NOT stPiezoStage.stPiezoStageControlWord.QuickStop THEN
-    stPiezoStage.stPiezoStageControlWord.QuickStop:=TRUE;
+IF NOT stPiezoStage.stPiezoStageControl.QuickStop THEN
+    stPiezoStage.stPiezoStageControl.QuickStop:=TRUE;
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -209,8 +296,8 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
-IF  stPiezoStage.stPiezoStageStatusWord.Fault AND NOT stPiezoStage.stPiezoStageControlWord.FaultReset THEN
-    stPiezoStage.stPiezoStageControlWord.FaultReset := TRUE;
+IF  stPiezoStage.stPiezoStageStatus.Fault AND NOT stPiezoStage.stPiezoStageControl.FaultReset THEN
+    stPiezoStage.stPiezoStageControl.FaultReset := TRUE;
 END_IF]]></ST>
       </Implementation>
     </Method>
