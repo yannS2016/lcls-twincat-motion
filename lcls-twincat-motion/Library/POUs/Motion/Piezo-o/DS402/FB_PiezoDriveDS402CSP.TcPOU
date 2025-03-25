@@ -25,29 +25,11 @@ END_VAR
       <Implementation>
         <ST><![CDATA[SUPER^.DS402StateMachine();
 
-CASE DriveStateTransition OF
-
-    E_DS402_DRIVE_STATE.INIT:;
-    E_DS402_DRIVE_STATE.WAIT:;
-    E_DS402_DRIVE_STATE.SWITCH_ON_READY:;
-    E_DS402_DRIVE_STATE.QUICK_STOP_ACTIVE:;
-    E_DS402_DRIVE_STATE.OPERATION_ENABLED:;
-    // Homing -- common
-    IF SUPER^.stPiezoStage.bHomeCmd THEN
-        THIS^.Home();
-        IF SUPER^.Error THEN
-            DriveStateTransition := E_DS402_DRIVE_STATE.MODE_ERROR;
-        END_IF
-    END_IF
-	
+IF SUPER^.DriveStateTransition = E_DriveStates.OPERATION_ENABLED THEN
     IF SUPER^.stPiezoStage.bMoveCmd THEN
         // call MoveAbsolute;
     END_IF
-    // CSP -- set CSP flag
-    E_DS402_DRIVE_STATE.FAULT:;
-    E_DS402_DRIVE_STATE.MODE_ERROR:;
-END_CASE
-]]></ST>
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="FB_Init" Id="{600fe1d5-2de2-4cdf-af05-fefe1f75066a}">
@@ -103,13 +85,6 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="MoveRelative" Id="{b53079a9-7fd1-49ab-81ed-1d38acd79883}">
-      <Declaration><![CDATA[METHOD MoveRelative : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="MoveVelocity" Id="{46faa047-3c68-4ca3-a258-bc1a2fc3e753}">
       <Declaration><![CDATA[METHOD MoveVelocity : BOOL
 ]]></Declaration>
@@ -125,13 +100,6 @@ METHOD Power : BOOL
         <ST><![CDATA[SUPER^.Power();]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ReadyToMove" Id="{b2ce2abe-9bf7-4e44-bdb7-becc6694c1de}">
-      <Declaration><![CDATA[METHOD ReadyToMove : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="Reset" Id="{a401ff7f-63d8-4f36-ba52-e017581177a8}">
       <Declaration><![CDATA[METHOD Reset : BOOL
 ]]></Declaration>
@@ -139,48 +107,5 @@ METHOD Power : BOOL
         <ST><![CDATA[SUPER^.Reset();]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDriveDS402CSP">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.Brake">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.DS402StateMachine">
-      <LineId Id="3" Count="23" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.Halt">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.Home">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.Interlock">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.Logger">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.MoveAbsolute">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.MoveRelative">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.MoveVelocity">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.Power">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.ReadyToMove">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402CSP.Reset">
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

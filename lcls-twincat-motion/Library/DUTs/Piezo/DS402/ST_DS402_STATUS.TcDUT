@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <DUT Name="ST_PiezoStage_Status" Id="{bbf047c2-eb2d-4a95-97cb-c6470595d187}">
-    <Declaration><![CDATA[TYPE ST_PiezoStage_Status :
+  <DUT Name="ST_DS402_STATUS" Id="{bbf047c2-eb2d-4a95-97cb-c6470595d187}">
+    <Declaration><![CDATA[TYPE ST_DS402_STATUS :
 STRUCT
     ReadyToSwitchOn			: BIT; (* Bit 0 *)
     SwitchedOn				: BIT; (* Bit 1 *)

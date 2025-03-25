@@ -34,13 +34,13 @@ END_VAR
 ]]></Declaration>
     </Method>
     <Method Name="MoveAbsolute" Id="{c32a9e13-f332-4841-9fc3-9751e2083446}">
-      <Declaration><![CDATA[METHOD MoveAbsolute
+      <Declaration><![CDATA[METHOD MoveAbsolute : BOOL
 VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
     <Method Name="MoveVelocity" Id="{bc7db01d-6c11-4d35-a626-79d63771cf0a}">
-      <Declaration><![CDATA[METHOD MoveVelocity
+      <Declaration><![CDATA[METHOD MoveVelocity : BOOL
 VAR_INPUT
 END_VAR
 ]]></Declaration>

@@ -10,8 +10,10 @@ VAR_OUTPUT
 END_VAR
 VAR
     stPiezoStage 			:	REFERENCE TO ST_PiezoStage;
-    eModeOFOperation		: 	E_DS402_OPERATION_MODE := E_DS402_OPERATION_MODE.NONE;
-
+    eModeOFOperation		: 	E_MODE_OF_OPERATION := E_MODE_OF_OPERATION.NONE;
+    nHomingSpeedSubIndex	: 	WORD := 16#6099;
+    nHomingAccSubIndex		: 	WORD := 16#609A;
+    nHomingOffsetSubIndex	: 	WORD := 16#607C;
     bError  				: 	BOOL := FALSE;
     nErrorId  				: 	UDINT := 0;
     sLocalErrorMessage		:	STRING;
@@ -91,14 +93,12 @@ END_VAR
 //code. You can evaluate the return value.
 METHOD FB_Init: BOOL
 VAR_INPUT
-    bInitRetains	: 	BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
-    bInCopyCode		: 	BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
-    stStage 		:	REFERENCE TO ST_PiezoStage;
-
+    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+    stStage :  REFERENCE TO ST_PiezoStage;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.stPiezoStage REF= stStage;
-]]></ST>
+        <ST><![CDATA[THIS^.stPiezoStage REF= stStage;]]></ST>
       </Implementation>
     </Method>
     <Method Name="Halt" Id="{3dd7f3b3-f32f-443b-9959-87442cc8fa69}">
@@ -108,23 +108,14 @@ END_VAR]]></Declaration>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="HardwareInterlocks" Id="{58388f21-ec0b-4aea-a9c5-04e3c9e853f6}">
-      <Declaration><![CDATA[METHOD HardwareInterlocks : BOOL
-VAR_INPUT
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="Home" Id="{2fdfc142-a2a6-49f0-950a-d0e52b5408ca}">
       <Declaration><![CDATA[METHOD PUBLIC Home : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// set Piezo drive in Homing Mode : call this line once: better use a state machine here
-stPiezoStage.nModeOfOperation := E_DS402_OPERATION_MODE.HOMING;
+        <ST><![CDATA[// set Piezo drive in Homing Mode
+stPiezoStage.nModeOfOperation := E_MODE_OF_OPERATION.HOMING;
 
-IF stPiezoStage.nModeOfOperationDisplay = E_DS402_OPERATION_MODE.HOMING THEN
+IF stPiezoStage.nModeOfOperationDisplay = E_MODE_OF_OPERATION.HOMING THEN
     // Homing paramters are configure as PDOs for ease of operations
     // make sure homing speed are before proceeding
     stPiezoStage.stPiezoStageControl.Bit4_OpModeSpecific := TRUE;
@@ -209,24 +200,15 @@ stPiezoStage.stAxisStatus.nCommand := 3; // If this is not 3, the IOC stops upda
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="MotionInterlocks" Id="{bdc514db-436a-4329-b92b-c90be1edaa2f}">
-      <Declaration><![CDATA[METHOD MotionInterlocks : BOOL
-VAR_INPUT
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="MoveAbsolute" Id="{67006bb1-1c73-49f6-ab52-7a06b1d0c294}">
-      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveAbsolute 
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveAbsolute : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveVelocity" Id="{ad5fd96d-9e69-45a4-b2a0-21317b75940d}">
-      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveVelocity
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveVelocity : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -249,15 +231,6 @@ END_VAR
 IF NOT stPiezoStage.stPiezoStageControl.QuickStop THEN
     stPiezoStage.stPiezoStageControl.QuickStop:=TRUE;
 END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="ReadyToMove" Id="{c3016d3d-1e60-4605-9646-79240093d703}">
-      <Declaration><![CDATA[METHOD ReadyToMove : BOOL
-VAR_INPUT
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="Reset" Id="{872bc095-326f-40be-9faa-244cb7e5f547}">
@@ -296,75 +269,5 @@ END_VAR
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDrive">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Brake">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Error.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Error.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.ErrorID.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.ErrorID.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.ErrorMessage.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.ErrorMessage.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.FB_Init">
-      <LineId Id="3" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Halt">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.HardwareInterlocks">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Home">
-      <LineId Id="3" Count="70" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Interlock">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Logger">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.MotionInterlocks">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.MoveAbsolute">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.MoveVelocity">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Power">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.QuickStop">
-      <LineId Id="3" Count="2" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.ReadyToMove">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.Reset">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDrive.SetHomingParams">
-      <LineId Id="3" Count="13" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

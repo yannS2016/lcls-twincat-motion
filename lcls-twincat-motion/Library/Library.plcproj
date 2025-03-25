@@ -28,7 +28,11 @@
     <Folder Include="DUTs" />
     <Folder Include="DUTs\Deprecated" />
     <Folder Include="DUTs\Piezo" />
+    <Folder Include="DUTs\Piezo\DS402" />
     <Folder Include="GVLs" />
+    <Folder Include="POUs\Motion\Piezo" />
+    <Folder Include="POUs\Motion\Piezo\Apps" />
+    <Folder Include="POUs\Motion\Piezo\DS402" />
     <Folder Include="POUs\Motion\PMPS" />
     <Folder Include="POUs\Motion\States\Examples" />
     <Folder Include="POUs\Motion\States\Helpers" />
@@ -106,25 +110,34 @@
     <Compile Include="DUTs\Deprecated\ENUM_StatePMPSStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\E_DriveStates.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402_CMD_STATE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\DS402\E_DS402_DRIVE_STATE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\DS402\E_DS402_OPERATION_MODE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\DS402\E_DS402_PP_MODE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\DS402\ST_DS402_CONTROL.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\DS402\ST_DS402_STATUS.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\E_MOVE_MODE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\ST_Logging.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\Piezo\ST_PiezoStage.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\ST_PiezoStageControlWord.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DUTs\Piezo\ST_PiezoStageCSP.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DUTs\Piezo\ST_PiezoStageOL.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DUTs\Piezo\ST_PiezoStagePP.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DUTs\Piezo\ST_PiezoStageStatusWord.TcDUT">
+    <Compile Include="DUTs\Piezo\U_Error_Message.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\ST_AxisParameterSetExposed.TcDUT">
@@ -292,6 +305,27 @@
     <Compile Include="POUs\Motion\Gantry\FB_GantryDiffVirtualLimitSwitch.TcPOU">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\Apps\FB_PiezoDriveCluster.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\DS402\FB_PiezoDriveDS402.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\DS402\FB_PiezoDriveDS402CSP.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\DS402\FB_PiezoDriveDS402PP.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\FB_PiezoDrive.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\FB_PiezoDriveNC.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\I_PiezoDrive.TcIO">
+      <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\PMPS\FB_EncErrorFFO.TcPOU">
       <SubType>Code</SubType>
@@ -714,8 +748,8 @@
   <ProjectExtensions>
     <PlcProjectOptions>
       <XmlArchive>
-  <Data>
-    <o xml:space="preserve" t="OptionKey">
+        <Data>
+          <o xml:space="preserve" t="OptionKey">
       <v n="Name">"&lt;ProjectRoot&gt;"</v>
       <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
         <v>{192FAD59-8248-4824-A8DE-9177C94C195A}</v>
@@ -782,14 +816,14 @@
       </d>
       <d n="Values" t="Hashtable" />
     </o>
-  </Data>
-  <TypeList>
-    <Type n="Boolean">System.Boolean</Type>
-    <Type n="Hashtable">System.Collections.Hashtable</Type>
-    <Type n="OptionKey">{54dd0eac-a6d8-46f2-8c27-2f43c7e49861}</Type>
-    <Type n="String">System.String</Type>
-  </TypeList>
-</XmlArchive>
+        </Data>
+        <TypeList>
+          <Type n="Boolean">System.Boolean</Type>
+          <Type n="Hashtable">System.Collections.Hashtable</Type>
+          <Type n="OptionKey">{54dd0eac-a6d8-46f2-8c27-2f43c7e49861}</Type>
+          <Type n="String">System.String</Type>
+        </TypeList>
+      </XmlArchive>
     </PlcProjectOptions>
   </ProjectExtensions>
   <!-- 

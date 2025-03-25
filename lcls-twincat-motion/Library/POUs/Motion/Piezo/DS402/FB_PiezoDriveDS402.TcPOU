@@ -7,34 +7,33 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-    eInternalDriveState 		: 	E_DriveStates;
+    eInternalDriveState 		: 	E_DS402_DRIVE_STATE;
+    eInternalDriveCmdState		: 	E_DS402_CMD_STATE;
     bProfilPostion				:	BOOL;
     bCyclicSynchronousPostion	: 	BOOL;
     bMoveConfirmed				: 	BOOL;
+	bHalted						:	BOOL;
+	// subindex for SDO parameters update: should we just add these to the PDO list?
+    nHomingSpeedSubIndex		: 	WORD := 16#6099;
+    nHomingAccSubIndex			: 	WORD := 16#609A;
+    nHomingOffsetSubIndex		: 	WORD := 16#607C;
+	
+	// Calibrated motion params : nanometer operation by default.
+	// user parameter are entered in mm
+	fdefaultScalingFactor		: REAL := 0.000001; //nm
+	
+	fCalibratedMaxVelocity 		: DINT;
+	fCalibratedMaxAcceleration 	: DINT;
+	fCalibratedVelocity 		: DINT;
+	fCalibratedAcceleration 	: DINT;
+	fCalibratedTargetPosition 	: DINT;
+	fIntermediate 				: REAL;
+	rtReset						: R_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
-    <Property Name="AbsMoveEnabled" Id="{a9e7c5e3-f201-4794-87c4-3a4b3de6d4de}">
-      <Declaration><![CDATA[PROPERTY AbsMoveEnabled : BOOL]]></Declaration>
-      <Get Name="Get" Id="{996e612a-6e5b-45c3-8a4f-8b38d6125f34}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[AbsMoveEnabled := bMoveConfirmed;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{42ad921f-9ab5-4504-a2c5-c5f8fa88f968}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bMoveConfirmed := AbsMoveEnabled;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Method Name="Brake" Id="{e5829bdb-4f85-41d9-84ca-59543bab5ffb}">
       <Declaration><![CDATA[METHOD Brake : BOOL
 ]]></Declaration>
@@ -42,9 +41,86 @@ END_VAR
         <ST><![CDATA[SUPER^.Brake();]]></ST>
       </Implementation>
     </Method>
+    <Property Name="CalibratedAcceleration" Id="{c9db77b1-cfd0-4d09-b550-344bf9246222}">
+      <Declaration><![CDATA[PROPERTY CalibratedAcceleration : DINT]]></Declaration>
+      <Get Name="Get" Id="{0de4f123-8d8a-4161-9634-33cbec6d4458}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedAcceleration := fCalibratedAcceleration;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="CalibratedMaxAcceleration" Id="{3c0a3332-3cbc-4bab-89e4-c4f12fcb17c6}">
+      <Declaration><![CDATA[PROPERTY CalibratedMaxAcceleration : DINT]]></Declaration>
+      <Get Name="Get" Id="{2bce7c96-ff01-4efa-aa37-c5c3266f5a5e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedMaxAcceleration:= fCalibratedMaxAcceleration;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="CalibratedMaxVelocity" Id="{6dc4e13f-94e3-4e5c-88a6-b12b64a1e91a}">
+      <Declaration><![CDATA[PROPERTY CalibratedMaxVelocity : DINT]]></Declaration>
+      <Get Name="Get" Id="{f99c53d5-5340-4fb2-aeed-beb7f587e2c8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedMaxVelocity:= fCalibratedMaxVelocity;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="CalibratedTargetPosition" Id="{81813abc-be79-4b01-bd0b-013ad1ba8c86}">
+      <Declaration><![CDATA[PROPERTY CalibratedTargetPosition : DINT]]></Declaration>
+      <Get Name="Get" Id="{b29f2fdd-a221-4a00-b566-55ff2dd3354a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedTargetPosition:= fCalibratedTargetPosition;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="CalibratedVelocity" Id="{54e27d08-db1c-4a56-8d6f-ee25264ddf78}">
+      <Declaration><![CDATA[PROPERTY CalibratedVelocity : DINT]]></Declaration>
+      <Get Name="Get" Id="{55f6b951-9e85-4976-9d4e-affbfb1a904d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedVelocity := fCalibratedVelocity;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="CalibrateMotionParams" Id="{ac17b7c4-a540-4db8-be71-88c2b2fc9fb9}">
+      <Declaration><![CDATA[METHOD CalibrateMotionParams
+VAR_INPUT
+END_VAR
+VAR
+
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[	// All drive paramters must be express in mm, mm/s, mm/s2
+	fCalibratedMaxVelocity :=  REAL_TO_DINT((SUPER^.stPiezoStage.fMaxVelocity / MAX(SUPER^.stPiezoStage.fscalingFactor, fdefaultScalingFactor)));
+ 	fCalibratedMaxAcceleration :=  LREAL_TO_DINT(SUPER^.stPiezoStage.fMaxAcceleration /  MAX(SUPER^.stPiezoStage.fscalingFactor, fdefaultScalingFactor));
+ 	// set soft limit on drive params to avoid bumping hard on the end stops
+ 	fCalibratedTargetPosition := LREAL_TO_DINT (SUPER^.stPiezoStage.fPosition / MAX(SUPER^.stPiezoStage.fscalingFactor, fdefaultScalingFactor));
+ 	fCalibratedVelocity := LIMIT(0, LREAL_TO_DINT (SUPER^.stPiezoStage.fVelocity / MAX(SUPER^.stPiezoStage.fscalingFactor, fdefaultScalingFactor)), fCalibratedMaxVelocity);
+	fCalibratedAcceleration := LIMIT(0, LREAL_TO_DINT (SUPER^.stPiezoStage.fAcceleration / MAX(SUPER^.stPiezoStage.fscalingFactor, fdefaultScalingFactor)), fCalibratedMaxAcceleration) ;
+
+	
+]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="DriveStateTransition" Id="{d49512e2-8ed7-49a9-b597-af522d2c9beb}">
       <Declaration><![CDATA[{attribute 'monitoring' := 'variable'}
-PROPERTY DriveStateTransition : E_DriveStates]]></Declaration>
+PROPERTY DriveStateTransition : E_DS402_DRIVE_STATE]]></Declaration>
       <Get Name="Get" Id="{cbe48f03-a943-49e9-9a9b-d28b456dc170}">
         <Declaration><![CDATA[VAR
 END_VAR
@@ -77,40 +153,37 @@ IF NOT __ISVALIDREF(stPiezoStage) THEN
     RETURN;
 END_IF
 
-(*Not Ready to switch on*)
+
+(*switch on disable*)
 IF NOT stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
     AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoStageStatus.Fault
-    AND NOT stPiezoStage.stPiezoStageStatus.VoltageEnabled
-    AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
+    AND  stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    DriveStateTransition := E_DriveStates.INIT;
+    DriveStateTransition := E_DS402_DRIVE_STATE.SWITCH_ON_DISABLED;
 END_IF
 
-(*Ready to switch on*)
+(*Ready to switch*)
 IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchedOn
     AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoStageStatus.Fault
-    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
     AND stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    DriveStateTransition := E_DriveStates.SWITCH_ON_READY;
+    DriveStateTransition := E_DS402_DRIVE_STATE.SWITCH_ON_READY;
 END_IF
 
 (*Switch on*)
-
 IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.SwitchedOn
     AND NOT stPiezoStage.stPiezoStageStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoStageStatus.Fault
-    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
     AND stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    DriveStateTransition := E_DriveStates.SWITCH_ON;
+    DriveStateTransition := E_DS402_DRIVE_STATE.SWITCH_ON;
 END_IF
 
 (*Operation enbaled*)
@@ -118,11 +191,10 @@ IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.SwitchedOn
     AND stPiezoStage.stPiezoStageStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoStageStatus.Fault
-    AND stPiezoStage.stPiezoStageStatus.VoltageEnabled
     AND stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    DriveStateTransition := E_DriveStates.OPERATION_ENABLED;
+    DriveStateTransition := E_DS402_DRIVE_STATE.OPERATION_ENABLED;
 END_IF
 
 (*Fault*)
@@ -132,7 +204,7 @@ IF  NOT  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.Fault
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    DriveStateTransition := E_DriveStates.FAULT;
+    DriveStateTransition := E_DS402_DRIVE_STATE.FAULT;
 END_IF
 
 (*Fault reaction active*)
@@ -142,7 +214,7 @@ IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.Fault
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    DriveStateTransition := E_DriveStates.FAULT_ACTIVE;
+    DriveStateTransition := E_DS402_DRIVE_STATE.FAULT_ACTIVE;
 END_IF
 
 (*Quick Stop*)
@@ -154,30 +226,8 @@ IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    DriveStateTransition := E_DriveStates.QUICK_STOP_ACTIVE;
-END_IF
-
-CASE DriveStateTransition OF
-
-    E_DriveStates.INIT:;
-    E_DriveStates.WAIT:;
-    E_DriveStates.SWITCH_ON_READY:;
-    E_DriveStates.QUICK_STOP_ACTIVE:;
-    E_DriveStates.OPERATION_ENABLED:;
-    // Homing -- common
-
-    IF SUPER^.stPiezoStage.bHomeCmd THEN
-        THIS^.Home();
-        IF SUPER^.Error THEN
-            DriveStateTransition := E_DriveStates.MODE_ERROR;
-        END_IF
-    END_IF
-    // CSP -- set CSP flag
-    // PP  -- set PP flag
-    E_DriveStates.FAULT:;
-    E_DriveStates.MODE_ERROR:;
-END_CASE
-]]></ST>
+    DriveStateTransition := E_DS402_DRIVE_STATE.QUICK_STOP_ACTIVE;
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="FB_Init" Id="{8fccdb5f-b457-4637-ae44-ff5efe2142a7}">
@@ -195,17 +245,18 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[THIS^.Reset();]]></ST>
       </Implementation>
     </Method>
     <Method Name="Halt" Id="{7f626c89-4c25-446a-aadf-2d7158be6cb2}">
       <Declaration><![CDATA[METHOD Halt : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
-IF NOT stPiezoStage.stPiezoStageControl.Halt THEN
-    stPiezoStage.stPiezoStageControl.Halt:=TRUE;
-END_IF]]></ST>
+        <ST><![CDATA[// Halt the move by setting bit 8 of the Control Word.
+SUPER^.stPiezoStage.nPiezoStageControl.8 := SUPER^.stPiezoStage.bHalt;
+
+
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="Home" Id="{d33ee575-f547-404d-bc45-25b73c38be5a}">
@@ -233,23 +284,39 @@ END_IF]]></ST>
       <Declaration><![CDATA[METHOD PUBLIC MoveAbsolute
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF DriveStateTransition = E_DriveStates.OPERATION_ENABLED THEN
-    IF SUPER^.stPiezoStage.bMoveCmd THEN
-        // attempting to move an axis without homing first?
-        IF SUPER^.stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE AND NOT SUPER^.stPiezoStage.bHomed THEN
-            // one can just set bHome here even though no homing was done?
-            ErrorMessage := 'Axis homing mode set, but homing routine pending';
-        END_IF
-        AbsMoveEnabled := TRUE;
-    END_IF
-ELSE
-    // the drive state must be operational for any motion to happen
-    AbsMoveEnabled := FALSE;
-END_IF]]></ST>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="MoveReady" Id="{a9e7c5e3-f201-4794-87c4-3a4b3de6d4de}">
+      <Declaration><![CDATA[PROPERTY MoveReady : BOOL]]></Declaration>
+      <Get Name="Get" Id="{996e612a-6e5b-45c3-8a4f-8b38d6125f34}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MoveReady := bMoveConfirmed;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{42ad921f-9ab5-4504-a2c5-c5f8fa88f968}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bMoveConfirmed := MoveReady;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="MoveRelative" Id="{274dd405-a068-4680-bb9e-fe5025f2f908}">
+      <Declaration><![CDATA[METHOD MoveRelative
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveVelocity" Id="{1b2e41e2-09a4-4d38-9d3b-52ed665fafd3}">
-      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveVelocity : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveVelocity
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -262,15 +329,129 @@ END_IF]]></ST>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Method Name="ReadyToMove" Id="{e8ac081b-f2ab-4fce-bd8c-66cc66e75529}">
+      <Declaration><![CDATA[METHOD ReadyToMove : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF SUPER^.stPiezoStage.bMoveCmd THEN
+        // attempting to move an axis without homing first?
+	IF SUPER^.stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE AND NOT SUPER^.stPiezoStage.bHomed THEN
+            // one can just set bHome here even though no homing was done?
+            ErrorMessage := 'Axis homing mode set, but homing routine pending';
+	END_IF
+	MoveReady := TRUE;
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="Reset" Id="{ca77c887-2b90-4375-866f-a9f6ff5b335c}">
       <Declaration><![CDATA[METHOD Reset : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
-IF  stPiezoStage.stPiezoStageStatus.Fault AND NOT stPiezoStage.stPiezoStageControl.FaultReset THEN
-    stPiezoStage.stPiezoStageControl.FaultReset := TRUE;
-END_IF]]></ST>
+rtReset(CLK:=SUPER^.stPiezoStage.bReset);
+IF rtReset.Q THEN
+		SUPER^.stPiezoStage.nPiezoStageControl := 16#80;
+END_IF
+]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_PiezoDriveDS402">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.Brake">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.CalibratedAcceleration.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.CalibratedMaxAcceleration.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.CalibratedMaxVelocity.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.CalibratedTargetPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.CalibratedVelocity.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.CalibrateMotionParams">
+      <LineId Id="3" Count="8" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.DriveStateTransition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.DriveStateTransition.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.DS402StateMachine">
+      <LineId Id="3" Count="7" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="101" Count="4" />
+      <LineId Id="107" Count="4" />
+      <LineId Id="23" Count="4" />
+      <LineId Id="113" Count="0" />
+      <LineId Id="30" Count="5" />
+      <LineId Id="37" Count="3" />
+      <LineId Id="42" Count="10" />
+      <LineId Id="54" Count="35" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.Halt">
+      <LineId Id="3" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="4" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.Home">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.Interlock">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.Logger">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.MoveAbsolute">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.MoveReady.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.MoveReady.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.MoveRelative">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.MoveVelocity">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.Power">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.ReadyToMove">
+      <LineId Id="3" Count="9" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402.Reset">
+      <LineId Id="3" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

@@ -100,38 +100,5 @@ METHOD Reset : BOOL
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDriveNC">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Brake">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Halt">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Home">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Interlock">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Logger">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.MoveAbsolute">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.MoveVelocity">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Power">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Reset">
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

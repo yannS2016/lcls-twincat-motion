@@ -8,12 +8,13 @@ VAR_OUTPUT
 END_VAR
 VAR
     // will set the associated classes intances externally from this cluster
-    fbPiezoDriveDS402Pp : FB_PiezoDriveDS402PP(stStage := stInternalPiezoStage);
+    fbPiezoDriveDS402Pp : FB_PiezoDriveDS402PP(stStage := stInternalPiezoStagePp);
+    fbPiezoDriveDS402CSP : FB_PiezoDriveDS402CSP(stStage := stInternalPiezoStageCsp);
     // add variable for associated class here
     iPiezoDrive : I_PiezoDrive;
     appInternalVar :	BOOL;
-    stInternalPiezoStage: REFERENCE TO ST_PiezoStage;
-
+    stInternalPiezoStagePp : REFERENCE TO ST_PiezoStage_PP;
+    stInternalPiezoStageCsp : REFERENCE TO ST_PiezoStage_CSP;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -38,12 +39,5 @@ END_VAR]]></Declaration>
     fbPiezoDriveDS402CSP.FB_Init(bInitRetains := bInitRetains, bInCopyCode := bInCopyCode, stStage:= stPiezoStageCsp);]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDriveCluster">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveCluster.FB_Init">
-      <LineId Id="3" Count="1" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

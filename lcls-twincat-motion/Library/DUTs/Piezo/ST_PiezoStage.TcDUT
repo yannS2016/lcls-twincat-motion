@@ -4,33 +4,42 @@
     <Declaration><![CDATA[TYPE ST_PiezoStage EXTENDS ST_MotionStage :
 STRUCT
     (* Global variables for the TPDO data from the drive. Each one is linked to the respective TPDO channel. *)
-    stPiezoStageStatus 		AT %I*	: ST_PiezoStage_Status;
-    nModeOfOperationDisplay AT %I*	: SINT;
-    nActualPosition 		AT %I*	: DINT;
-    nPiezoErrorCode			AT %I*	: UDINT;
+    stPiezoStageStatus 		AT %I*	: 	ST_DS402_STATUS;
+    nModeOfOperationDisplay AT %I*	: 	SINT;
+    nActualPosition 		AT %I*	: 	DINT;
+    nPiezoErrorCode			AT %I*	: 	UINT;
     (*CSP drive mode*)
-    nFollowingError 		AT %I*	: DINT;
+    nFollowingError 		AT %I*	: 	DINT;
 
     (* Global variables for the RPDO data to the drive. Each one is linked to the respective RPDO channel. *)
-    stPiezoStageControl 	AT %Q*	:  ST_PiezoStage_Control;
-    nTargetPosition 		AT %Q* 	: DINT;
-    nModeOfOperation 		AT %Q* 	: SINT;
+    stPiezoStageControl 	AT %Q*	:  ST_DS402_Control;
+	nPiezoStageControl		AT %Q*	:	UINT;		
+    nTargetPosition 		AT %Q* 	: 	DINT;
+    nModeOfOperation 		AT %Q* 	: 	SINT;
     (* Global variables for the RPDO data to the drive. Each one is linked to the respective RPDO channel. *)
-    nProfilVelocity 		AT %Q* 	: DINT;
-    nProfilAcceleration		AT %Q* 	: DINT;
-    nProfilDecceleration	AT %Q* 	: DINT;
-    nVelocityActualValue	AT %Q* 	: DINT;
+    nProfilVelocity 		AT %Q* 	: 	DINT;
+    nProfilAcceleration		AT %Q* 	: 	DINT;
+    nProfilDecceleration	AT %Q* 	: 	DINT;
+    nVelocityActualValue	AT %Q* 	: 	DINT;
     (* Global variables for the TPDO data from the drive. Each one is linked to the respective TPDO channel. *)
-    nScantargetPosition		AT %Q*	: DINT;
-    uScantargetVelocity		AT %Q*	: ULINT;
+    nScantargetPosition		AT %Q*	: 	DINT;
+    uScantargetVelocity		AT %Q*	: 	ULINT;
+	
+    // expose these to epics
+    nHomingSpeed					: 	DINT;
+    nHomingAcceleration				:	DINT;
+    fscalingFactor					: 	REAL;
+    fMaxVelocity					: 	REAL := 10.0; // um/s
+    fMaxAcceleration 				: 	REAL := 100.0; // um/s2
+	
+	// expose these to epics
+    eMoveMode						: 	E_MOVE_MODE := E_MOVE_MODE.ABSOLUTE;
+	ePPMode							: 	E_DS402_PP_MODE := E_DS402_PP_MODE.DISCRETE;
+	bHalt							: 	BOOL;
+    // For setting drives parameter via SDOs
+    sNetId    						: 	T_AmsNetId;         (* NetId of EtherCAT Master *)
+    nSlaveAddr      				: 	UINT;               (* Port Number of EtherCAT Slave *)
 
-    nHomingSpeed					: DINT;
-    nHomingAcceleration				: DINT;
-    fscalingFactor					: REAL;
-    fMaxVelocity					: LREAL := 10.0; // mm/s
-    fMaxAcceleration 				: LREAL := 100.0; // mm/s2
-    sNetId    						: T_AmsNetId;               (* NetId of EtherCAT Master *)
-    nSlaveAddr      				: UINT;               (* Port Number of EtherCAT Slave *)
 END_STRUCT
 END_TYPE
 ]]></Declaration>

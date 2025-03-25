@@ -10,14 +10,14 @@ END_VAR
 VAR
 
     bExecute  : BOOL := FALSE;
-    eDriveStates: E_DriveStates;
+    eDriveStates: E_DS402_DRIVE_STATE;
     tonModeChangeWait	: TON;
     uDriveMode			: SINT := 6;
     bInit				: BOOL;
     bReady				: BOOL := TRUE;
-    nDriveCmd		: SINT := E_MODE_OF_OPERATION.NONE;
+    nDriveCmd		: SINT := E_DS402_OPERATION_MODE.NONE;
     nConfig			: SINT := 10;
-    eDriveCmdState: E_DRIVE_CMD_STATE;
+    eDriveCmdState: E_DS402_CMD_STATE;
     fbSetAndActivateConfig	: FB_SetAndActivateConfig;
     HomingSpeedSubIndex		: WORD := 16#6099;
     HomingAccSubIndex		: WORD := 16#609A;
@@ -32,7 +32,7 @@ IF NOT stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoStageStatus.VoltageEnabled
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    eDriveStates := E_DriveStates.INIT;
+    eDriveStates := E_DS402_DRIVE_STATE.INIT;
 END_IF
 
 (*Ready to switch on*)
@@ -44,7 +44,7 @@ IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    eDriveStates := E_DriveStates.SWITCH_ON_READY;
+    eDriveStates := E_DS402_DRIVE_STATE.SWITCH_ON_READY;
 END_IF
 
 (*Switch on*)
@@ -57,7 +57,7 @@ IF  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    eDriveStates := E_DriveStates.SWITCH_ON;
+    eDriveStates := E_DS402_DRIVE_STATE.SWITCH_ON;
 END_IF
 
 (*Operation enbaled*)
@@ -69,7 +69,7 @@ IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    eDriveStates := E_DriveStates.OPERATION_ENABLED;
+    eDriveStates := E_DS402_DRIVE_STATE.OPERATION_ENABLED;
 END_IF
 
 (*Fault*)
@@ -79,7 +79,7 @@ IF  NOT  stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.Fault
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    eDriveStates := E_DriveStates.FAULT;
+    eDriveStates := E_DS402_DRIVE_STATE.FAULT;
 END_IF
 
 (*Fault reaction active*)
@@ -89,7 +89,7 @@ IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoStageStatus.Fault
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    eDriveStates := E_DriveStates.FAULT_ACTIVE;
+    eDriveStates := E_DS402_DRIVE_STATE.FAULT_ACTIVE;
 END_IF
 
 (*Quick Stop*)
@@ -101,15 +101,15 @@ IF    stPiezoStage.stPiezoStageStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoStageStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoStageStatus.SwitchOnDisabled THEN
 
-    eDriveStates := E_DriveStates.QUICK_STOP_ACTIVE;
+    eDriveStates := E_DS402_DRIVE_STATE.QUICK_STOP_ACTIVE;
 END_IF
 
 // Drive State Events and Operations
 CASE eDriveStates OF
-    E_DriveStates.INIT:
+    E_DS402_DRIVE_STATE.INIT:
         (*start in homing mode this to handle an issue with smaract stick slip drives *)
         IF NOT bInit THEN
-            stPiezoStage.nModeOfOperation := E_MODE_OF_OPERATION.NONE;
+            stPiezoStage.nModeOfOperation := E_DS402_OPERATION_MODE.NONE;
             // clear control register
             stPiezoStage.stPiezoStageControl := 16#0;
             tonModeChangeWait.IN := TRUE;
@@ -121,14 +121,14 @@ CASE eDriveStates OF
                 // this is not a state change error but rather a driving mode error
                 // handle this in MODE ERROR state.
                 tonModeChangeWait.IN := FALSE;
-                eDriveStates := E_DriveStates.MODE_ERROR;
+                eDriveStates := E_DS402_DRIVE_STATE.MODE_ERROR;
             END_IF
             // Continue through the drive state transition here
 
-            eDriveStates := E_DriveStates.WAIT;
+            eDriveStates := E_DS402_DRIVE_STATE.WAIT;
         END_IF
 
-    E_DriveStates.WAIT:
+    E_DS402_DRIVE_STATE.WAIT:
         IF NOT bReady THEN
             IF tonModeChangeWait.Q THEN
                 bReady := TRUE;
@@ -145,11 +145,11 @@ CASE eDriveStates OF
         END_IF
 
 
-    E_DriveStates.SWITCH_ON_READY:
+    E_DS402_DRIVE_STATE.SWITCH_ON_READY:
         IF stPiezoStage.nModeOfOperationDisplay <> stPiezoStage.nModeOfOperation THEN
             // this is not a state change error but rather a driving mode error
             // handle this in MODE ERROR state.
-            eDriveStates := E_DriveStates.MODE_ERROR;
+            eDriveStates := E_DS402_DRIVE_STATE.MODE_ERROR;
         END_IF
         // Trasisitin 3
         stPiezoStage.stPiezoStageControl.SwitchOn := TRUE;
@@ -158,19 +158,19 @@ CASE eDriveStates OF
         stPiezoStage.stPiezoStageControl.EnableOperation := FALSE;
         stPiezoStage.stPiezoStageControl.FaultReset := FALSE;
 
-    E_DriveStates.SWITCH_ON:;
+    E_DS402_DRIVE_STATE.SWITCH_ON:;
         // Trasisitin 4
         stPiezoStage.stPiezoStageControl.SwitchOn := TRUE;
         stPiezoStage.stPiezoStageControl.EnableVoltage := TRUE;
         stPiezoStage.stPiezoStageControl.QuickStop := TRUE;
         stPiezoStage.stPiezoStageControl.EnableOperation := TRUE;
         stPiezoStage.stPiezoStageControl.FaultReset := FALSE;
-    E_DriveStates.QUICK_STOP_ACTIVE:;
+    E_DS402_DRIVE_STATE.QUICK_STOP_ACTIVE:;
 
-    E_DriveStates.OPERATION_ENABLED:
+    E_DS402_DRIVE_STATE.OPERATION_ENABLED:
       // Prepare is drive mode parameters
       CASE nDriveCmd OF
-          E_MODE_OF_OPERATION.NONE:;
+          E_DS402_OPERATION_MODE.NONE:;
             CASE nConfig OF
                 10:
                     // set user defined Homing speed and Acceleration
@@ -204,21 +204,21 @@ CASE eDriveStates OF
                         nConfig := 30;
                     END_IF
                 99:
-                    eDriveStates := E_DriveStates.MODE_ERROR;
+                    eDriveStates := E_DS402_DRIVE_STATE.MODE_ERROR;
 
             END_CASE
 
             IF fbSetAndActivateConfig.bError  THEN
                 nConfig := 99;
             ELSE
-                nDriveCmd := E_MODE_OF_OPERATION.HOMING;
+                nDriveCmd := E_DS402_OPERATION_MODE.HOMING;
             END_IF
 
-        E_MODE_OF_OPERATION.PROFILE_POSITION:
+        E_DS402_OPERATION_MODE.PROFILE_POSITION:
         stPiezoStage.
         E_MODE_OF_OPERATION.HOMING:;
 
-        E_MODE_OF_OPERATION.CYCLIC_SYNCHRONOUS_POSITION:;
+        E_DS402_OPERATION_MODE.CYCLIC_SYNCHRONOUS_POSITION:;
 
       ELSE
           ;
@@ -235,29 +235,29 @@ CASE eDriveStates OF
 
 
             CASE eDriveCmdState OF
-                E_DRIVE_CMD_STATE.PREPARE_MOTION_PARAMS:
-                    stPiezoStage.nModeOfOperation := E_MODE_OF_OPERATION.PROFILE_POSITION;
+                E_DS402_CMD_STATE.PREPARE_MOTION_PARAMS:
+                    stPiezoStage.nModeOfOperation := E_DS402_OPERATION_MODE.PROFILE_POSITION;
 
-                E_DRIVE_CMD_STATE.INITIATE_MOTION:;
+                E_DS402_CMD_STATE.INITIATE_MOTION:;
 
-                E_DRIVE_CMD_STATE.DRIVE_IN_MOTION:;
-                E_DRIVE_CMD_STATE.TARGET_REACHED:;
+                E_DS402_CMD_STATE.DRIVE_IN_MOTION:;
+                E_DS402_CMD_STATE.TARGET_REACHED:;
 
             END_CASE
         END_IF
-    E_DriveStates.MODE_ERROR:;
+    E_DS402_DRIVE_STATE.MODE_ERROR:;
 
-    E_DriveStates.FAULT_ACTIVE:
+    E_DS402_DRIVE_STATE.FAULT_ACTIVE:
         // propagate the fault here
         stPiezoStage.nErrorId := stPiezoStage.nPiezoErrorCode;
 
-    E_DriveStates.FAULT:
+    E_DS402_DRIVE_STATE.FAULT:
 
         IF stPiezoStage.bReset THEN
             ResetFaults();
             tonModeChangeWait.IN := TRUE;
             bReady := FALSE;
-            eDriveStates := E_DriveStates.WAIT;
+            eDriveStates := E_DS402_DRIVE_STATE.WAIT;
         END_IF
 
     ELSE
@@ -301,5 +301,21 @@ IF  stPiezoStage.stPiezoStageStatus.Fault AND NOT stPiezoStage.stPiezoStageContr
 END_IF]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_BasePiezoDS402Stage">
+      <LineId Id="3" Count="238" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BasePiezoDS402Stage.Halt">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BasePiezoDS402Stage.QuickStop">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_BasePiezoDS402Stage.ResetFaults">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

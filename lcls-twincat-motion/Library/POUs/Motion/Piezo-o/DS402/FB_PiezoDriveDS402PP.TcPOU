@@ -1,0 +1,151 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_PiezoDriveDS402PP" Id="{6e47a4a9-16e3-49c8-8786-19fbbc700413}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PiezoDriveDS402PP EXTENDS FB_PiezoDriveDS402
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    eDriveCmdState: E_DRIVE_CMD_STATE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="Brake" Id="{22a77937-1757-472e-8a24-02f41806a6fb}">
+      <Declaration><![CDATA[METHOD Brake : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Brake();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DS402StateMachine" Id="{adad349e-6f22-41f6-bf4b-2c2ba773c644}">
+      <Declaration><![CDATA[METHOD DS402StateMachine
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.DS402StateMachine();
+
+IF SUPER^.DriveStateTransition = E_DriveStates.OPERATION_ENABLED THEN
+    IF SUPER^.stPiezoStage.bMoveCmd THEN
+        // call MoveAbsolute;
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_Init" Id="{ea3b8a11-1b80-40a7-b145-7a2a5e25ca70}">
+      <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
+The return value is not evaluated. For a specific influence, you can also declare the
+methods explicitly and provide additional code there with the standard initialization
+code. You can evaluate the return value.*)
+METHOD FB_Init : BOOL
+VAR_INPUT
+    (* TRUE: the retain variables are initialized (reset warm / reset cold)*)
+    bInitRetains	: BOOL;
+    (* TRUE: the instance will be copied to the copy code afterward (online change)   *)
+    bInCopyCode	: BOOL;
+    stStage : REFERENCE TO ST_PiezoStage;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Halt" Id="{a3eb5c8c-6142-41f2-a5f0-329f2aa7b09f}">
+      <Declaration><![CDATA[METHOD Halt : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Halt();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{b3172138-e5cb-4d78-92a5-25024c9364c9}">
+      <Declaration><![CDATA[METHOD Home : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Home();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Interlock" Id="{ace40c54-e822-492e-bd82-afe1a2bf1748}">
+      <Declaration><![CDATA[METHOD Interlock : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Interlock();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Logger" Id="{f160a88a-3c4d-4691-a405-183a03bb632e}">
+      <Declaration><![CDATA[METHOD Logger : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Logger();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveAbsolute" Id="{1452777d-f00c-4295-b378-678683e81128}">
+      <Declaration><![CDATA[METHOD MoveAbsolute
+
+VAR
+    checkVelocity : LREAL := 0.0;
+    checkAcceleration : LREAL := 0.0;
+
+
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.MoveAbsolute();
+
+IF SUPER^.AbsMoveEnabled THEN
+
+    CASE eDriveCmdState OF
+        E_DRIVE_CMD_STATE.PREPARE_MOTION_PARAMS:
+        // Activate soft limit to avoid bumping hard on the end stops
+        fMaxVelocity :=
+        SUPER^.stPiezoStage.nTargetPosition := LREAL_TO_DINT (SUPER^.stPiezoStage.fPosition / MAX(SUPER^.stPiezoStage.fscalingFactor, 0.000000001));
+
+        SUPER^.stPiezoStage.nProfilVelocity := LIMIT(1, LREAL_TO_DINT (SUPER^.stPiezoStage.fVelocity * MAX(SUPER^.stPiezoStage.fscalingFactor, 0.000000001), 1000);
+        SUPER^.stPiezoStage.nProfilAcceleration := LREAL_TO_DINT (SUPER^.stPiezoStage.fAcceleration * MAX(SUPER^.stPiezoStage.fscalingFactor, 0.000000001));
+        SUPER^.stPiezoStage.nProfilDecceleration := LREAL_TO_DINT (SUPER^.stPiezoStage.fAcceleration * MAX(SUPER^.stPiezoStage.fscalingFactor, 0.000000001));
+        // this need to be handle in the power method and interlock to comfirm the move cmd
+        // stPiezoStage.stAxisStatus.bExecute := stPiezoStage.bExecute;
+        // stPiezoStage.stAxisStatus.nCommand := 10;
+
+        stPiezoStage.nModeOfOperation := E_MODE_OF_OPERATION.PROFILE_POSITION;
+
+        E_DRIVE_CMD_STATE.INITIATE_MOTION:;
+
+        E_DRIVE_CMD_STATE.DRIVE_IN_MOTION:;
+        E_DRIVE_CMD_STATE.TARGET_REACHED:
+            // Prepare next move
+            SUPER^.AbsMoveEnabled := FALSE;
+
+    END_CASE
+END_IF
+
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveVelocity" Id="{654fd94f-9d98-4616-85f0-4b450356f9ca}">
+      <Declaration><![CDATA[METHOD MoveVelocity : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Power" Id="{dd93fa86-0fa6-4325-a503-186f139a39d1}">
+      <Declaration><![CDATA[METHOD Power : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Power();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{0df62ddd-bca4-4bda-b598-c8f2f20db140}">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Reset();]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>
