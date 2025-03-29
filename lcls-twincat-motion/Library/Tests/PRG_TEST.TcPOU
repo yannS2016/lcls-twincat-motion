@@ -34,9 +34,5 @@ END_VAR
 
 ]]></ST>
     </Implementation>
-    <LineIds Name="PRG_TEST">
-      <LineId Id="3" Count="2" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

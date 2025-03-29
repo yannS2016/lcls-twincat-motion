@@ -56,7 +56,7 @@ METHOD Home : BOOL
       <Declaration><![CDATA[METHOD Interlock : BOOL
 
 VAR
-	fbMotionHome: INT;
+    fbMotionHome: INT;
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[// call top interlocks checker
@@ -175,53 +175,5 @@ METHOD Reset : BOOL
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDriveNC">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Brake">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Halt">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Home">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Interlock">
-      <LineId Id="48" Count="0" />
-      <LineId Id="47" Count="0" />
-      <LineId Id="49" Count="0" />
-      <LineId Id="6" Count="0" />
-      <LineId Id="4" Count="0" />
-      <LineId Id="7" Count="0" />
-      <LineId Id="10" Count="6" />
-      <LineId Id="5" Count="0" />
-      <LineId Id="19" Count="6" />
-      <LineId Id="18" Count="0" />
-      <LineId Id="31" Count="2" />
-      <LineId Id="35" Count="11" />
-      <LineId Id="51" Count="33" />
-      <LineId Id="50" Count="0" />
-      <LineId Id="34" Count="0" />
-      <LineId Id="26" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Logger">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.MoveAbsolute">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.MoveVelocity">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Power">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveNC.Reset">
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

@@ -1,12 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <DUT Name="E_EGU" Id="{2b79b46c-17fb-44ec-a844-3194a4ea453a}">
+  <DUT Name="E_DS402EGU" Id="{2b79b46c-17fb-44ec-a844-3194a4ea453a}">
     <Declaration><![CDATA[{attribute 'qualified_only'}
 {attribute 'strict'}
 {attribute 'to_string'}
-TYPE E_EGU :
+TYPE E_DS402EGU :
 (
-	enum_member := 0
+    MM := 0,
+    UM := 1,
+    NM := 2
 );
 END_TYPE
 ]]></Declaration>

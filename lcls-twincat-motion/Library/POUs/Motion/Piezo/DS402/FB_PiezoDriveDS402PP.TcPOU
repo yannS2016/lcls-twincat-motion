@@ -7,7 +7,7 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-    eMotionState		: 	E_MotionState;
+    eMotionState		: 	E_DS402MotionState;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -45,66 +45,66 @@ END_VAR
       <Implementation>
         <ST><![CDATA[THIS^.CalibratedMotionParams();
 CASE eMotionState OF
-	E_MotionState.PREPARE_MOTION_PARAMS:
-		// Activate soft limit to avoid bumping hard on the end stops
-		SUPER^.stPiezoStage.nTargetPosition := THIS^.CalibratedTargetPosition;
-		SUPER^.stPiezoStage.nProfilVelocity := THIS^.CalibratedVelocity;
-		SUPER^.stPiezoStage.nProfilAcceleration := THIS^.CalibratedAcceleration;
-		SUPER^.stPiezoStage.nProfilDecceleration := THIS^.CalibratedAcceleration;
-		SUPER^.bMoveDone := FALSE;
-		SUPER^.MoveBusy := FALSE;
-		SUPER^.InTargetPosition := FALSE;
+    E_DS402MotionState.PREPARE_MOTION_PARAMS:
+        // Activate soft limit to avoid bumping hard on the end stops
+        SUPER^.stPiezoStage.nTargetPosition := THIS^.CalibratedTargetPosition;
+        SUPER^.stPiezoStage.nProfilVelocity := THIS^.CalibratedVelocity;
+        SUPER^.stPiezoStage.nProfilAcceleration := THIS^.CalibratedAcceleration;
+        SUPER^.stPiezoStage.nProfilDecceleration := THIS^.CalibratedAcceleration;
+        SUPER^.bMoveDone := FALSE;
+        SUPER^.MoveBusy := FALSE;
+        SUPER^.InTargetPosition := FALSE;
 
-		SUPER^.stPiezoStage.nModeOfOperation := E_DS402_OPERATION_MODE.PROFILE_POSITION;
-		eMotionState := E_MotionState.INITIATE_MOTION;
+        SUPER^.stPiezoStage.nModeOfOperation := E_DS402OperationMode.PROFILE_POSITION;
+        eMotionState := E_DS402MotionState.INITIATE_MOTION;
 
-	E_MotionState.INITIATE_MOTION:;
-		IF SUPER^.stPiezoStage.nModeOfOperationDisplay = E_DS402_OPERATION_MODE.PROFILE_POSITION THEN
+    E_DS402MotionState.INITIATE_MOTION:;
+        IF SUPER^.stPiezoStage.nModeOfOperationDisplay = E_DS402OperationMode.PROFILE_POSITION THEN
 
-			// No running Job : only true for discrete motion
-			IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-				// drive dependent, it seems PI drive only support absolute motion.
-				IF SUPER^.stPiezoStage.eMoveMode = E_MOVE_MODE.ABSOLUTE THEN
-					// Absolute move
-					THIS^.MoveAbsolute();
-				ELSE
-					// Relative move
-					//THIS^.MoveRelative();
-				END_IF
-			ELSE
-				//Now: we have the set point acknowledgement from the drive
-				eMotionState := E_MotionState.DRIVE_IN_MOTION;
-			END_IF
-		ELSE
-			// Exit this state machine gracefully.
-			eMotionState := E_MotionState.DONE;
-		END_IF
+            // No running Job : only true for discrete motion
+            IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+                // drive dependent, it seems PI drive only support absolute motion.
+                IF SUPER^.stPiezoStage.eMoveMode = E_DS402MoveMode.ABSOLUTE THEN
+                    // Absolute move
+                    THIS^.MoveAbsolute();
+                ELSE
+                    // Relative move
+                    //THIS^.MoveRelative();
+                END_IF
+            ELSE
+                //Now: we have the set point acknowledgement from the drive
+                eMotionState := E_DS402MotionState.DRIVE_IN_MOTION;
+            END_IF
+        ELSE
+            // Exit this state machine gracefully.
+            eMotionState := E_DS402MotionState.DONE;
+        END_IF
 
-	E_MotionState.DRIVE_IN_MOTION:;
-	
-		IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-			// prepare for next setpoint
-			SUPER^.stPiezoStage.nPiezoDriveControl.4 := FALSE;
-			SUPER^.MoveBusy := TRUE;
-			eMotionState := E_MotionState.TARGET_REACHED;
-		END_IF
+    E_DS402MotionState.DRIVE_IN_MOTION:;
 
-	E_MotionState.TARGET_REACHED:
-		IF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached THEN
-			// Halted? 
-			IF NOT stPiezoStage.nPiezoDriveControl.8 THEN
-				THIS^.InTargetPosition := TRUE;
-			ELSE
-				THIS^.InTargetPosition := FALSE;
-			END_IF
-			// exit this state machine gracefully
-			eMotionState := E_MotionState.DONE;
-		END_IF
+        IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+            // prepare for next setpoint
+            SUPER^.stPiezoStage.nPiezoDriveControl.4 := FALSE;
+            SUPER^.MoveBusy := TRUE;
+            eMotionState := E_DS402MotionState.TARGET_REACHED;
+        END_IF
 
-	E_MotionState.DONE:;
-		SUPER^.bMoveDone := TRUE;
-		SUPER^.MoveBusy := FALSE;
-		eAxisState :=  MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+    E_DS402MotionState.TARGET_REACHED:
+        IF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached THEN
+            // Halted?
+            IF NOT stPiezoStage.nPiezoDriveControl.8 THEN
+                THIS^.InTargetPosition := TRUE;
+            ELSE
+                THIS^.InTargetPosition := FALSE;
+            END_IF
+            // exit this state machine gracefully
+            eMotionState := E_DS402MotionState.DONE;
+        END_IF
+
+    E_DS402MotionState.DONE:;
+        SUPER^.bMoveDone := TRUE;
+        SUPER^.MoveBusy := FALSE;
+        eAxisState :=  MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 END_CASE
 
 SUPER^.stPiezoStage.fPosDiff := SUPER^.stPiezoStage.fPosition - SUPER^.CalibratedActPos;
@@ -155,89 +155,89 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[CASE eAxisState OF
-	
-MC_AxisStates.MC_AXISSTATE_UNDEFINED:; 
-   
+
+MC_AxisStates.MC_AXISSTATE_UNDEFINED:;
+
 MC_AxisStates.MC_AXISSTATE_DISABLED:;
-	 // Drive back to Operation Enabled state?
-	IF SUPER^.bOperational THEN
-		// wait for move requests
-		eAxisState :=  MC_AxisStates.MC_AXISSTATE_STANDSTILL;	 
-	END_IF
-	
+     // Drive back to Operation Enabled state?
+    IF SUPER^.bOperational THEN
+        // wait for move requests
+        eAxisState :=  MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+    END_IF
+
     THIS^.bMoveBusy := FALSE;
     THIS^.bMoveDone := FALSE;
-	InTargetPosition := FALSE;
-	
-MC_AxisStates.MC_AXISSTATE_STANDSTILL: 
-	IF SUPER^.bExecHome THEN
-		eAxisState :=  MC_AxisStates.MC_AXISSTATE_HOMING; 
-	END_IF
-	  
-	IF SUPER^.bExecMove THEN
-		// we supporting only discrete motion for now
-		SUPER^.stPiezoStage.nPiezoDriveControl.5 := FALSE;
-		eAxisState :=  MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
-		// enter move discrete or continous here:
-		eMotionState := E_MotionState.PREPARE_MOTION_PARAMS;
-	END_IF
+    InTargetPosition := FALSE;
 
-	// stopping
-	IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
-		eAxisState :=  MC_AxisStates.MC_AXISSTATE_STOPPING;
-	END_IF
+MC_AxisStates.MC_AXISSTATE_STANDSTILL:
+    IF SUPER^.bExecHome THEN
+        eAxisState :=  MC_AxisStates.MC_AXISSTATE_HOMING;
+    END_IF
+
+    IF SUPER^.bExecMove THEN
+        // we supporting only discrete motion for now
+        SUPER^.stPiezoStage.nPiezoDriveControl.5 := FALSE;
+        eAxisState :=  MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
+        // enter move discrete or continous here:
+        eMotionState := E_DS402MotionState.PREPARE_MOTION_PARAMS;
+    END_IF
+
+    // stopping
+    IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
+        eAxisState :=  MC_AxisStates.MC_AXISSTATE_STOPPING;
+    END_IF
 
 MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
-	THIS^.Reset();
-	// Error Cleared?
-	IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-		eAxisState :=  MC_AxisStates.MC_AXISSTATE_UNDEFINED;
-	END_IF 
+    THIS^.Reset();
+    // Error Cleared?
+    IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+        eAxisState :=  MC_AxisStates.MC_AXISSTATE_UNDEFINED;
+    END_IF
 
     THIS^.bMoveBusy := FALSE;
     THIS^.bMoveDone := FALSE;
-	THIS^.InTargetPosition := FALSE;
+    THIS^.InTargetPosition := FALSE;
     SUPER^.stPiezoStage.bEnable := FALSE;
-	//SUPER^.bExecute := FALSE;
-MC_AxisStates.MC_AXISSTATE_STOPPING:; 
-	eAxisState 	:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
-	
+    //SUPER^.bExecute := FALSE;
+MC_AxisStates.MC_AXISSTATE_STOPPING:;
+    eAxisState 	:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+
 MC_AxisStates.MC_AXISSTATE_HOMING:
-	THIS^.Home();
-	
+    THIS^.Home();
+
 MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
-	// bit 5: change set immediately set
-	//SUPER^.stPiezoStage.nPiezoDriveControl.5 := 0;
-	ContinuousMotion := FALSE;
-	DiscreteMotion	:= TRUE;
-	THIS^.DiscreteMove();
-	
+    // bit 5: change set immediately set
+    //SUPER^.stPiezoStage.nPiezoDriveControl.5 := 0;
+    ContinuousMotion := FALSE;
+    DiscreteMotion	:= TRUE;
+    THIS^.DiscreteMove();
+
 END_CASE
 
 // error bit set ?
 IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-	eAxisState :=  MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
+    eAxisState :=  MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
 END_IF
 
 // if the drive transition away from operational state then put the motion state mchine is disabled mode
 IF NOT SUPER^.bOperational THEN
-	eAxisState :=  MC_AxisStates.MC_AXISSTATE_DISABLED;
+    eAxisState :=  MC_AxisStates.MC_AXISSTATE_DISABLED;
 END_IF
 
 // Check the limits and cancel execution if appropriate. Without this block we have infinite error spam
 // it seems this limit are software limits.. need to be checked
 IF THIS^.bMoveBusy THEN
-	// Positive or Negative direction
-	IF  fCalibratedStoppedPos > CalibratedActPos THEN
-		THIS^.PositiveDirection := TRUE;
-		THIS^.NegativeDirection := FALSE;
-	ELSE
-		THIS^.PositiveDirection := FALSE;
-		THIS^.NegativeDirection := TRUE;	
-	END_IF
+    // Positive or Negative direction
+    IF  fCalibratedStoppedPos > CalibratedActPos THEN
+        THIS^.PositiveDirection := TRUE;
+        THIS^.NegativeDirection := FALSE;
+    ELSE
+        THIS^.PositiveDirection := FALSE;
+        THIS^.NegativeDirection := TRUE;
+    END_IF
 ELSE
-	// store idle Position
-	fCalibratedStoppedPos := CalibratedActPos;
+    // store idle Position
+    fCalibratedStoppedPos := CalibratedActPos;
 END_IF
 
 bFwdHit := THIS^.PositiveDirection AND NOT SUPER^.stPiezoStage.bAllForwardEnable;
@@ -264,8 +264,8 @@ IF SUPER^.ftExec.Q OR SUPER^.rtTarget.Q OR SUPER^.rtHomed.Q THEN
         END_IF
     END_IF
 ELSE
-	//
-	SUPER^.stPiezoStage.bBusy := SUPER^.HomingBusy OR THIS^.MoveBusy;
+    //
+    SUPER^.stPiezoStage.bBusy := SUPER^.HomingBusy OR THIS^.MoveBusy;
 END_IF
 
 
@@ -344,17 +344,17 @@ END_VAR
         <ST><![CDATA[// Check the limits and cancel execution if appropriate. Without this block we have infinite error spam
 // it seems this limit are software limits.. need to be checked
 IF THIS^.MoveBusy THEN
-	// Positive or Negative direction
-	IF  fCalibratedStoppedPos > CalibratedActPos THEN
-		THIS^.PositiveDirection := TRUE;
-		THIS^.NegativeDirection := FALSE;
-	ELSE
-		THIS^.PositiveDirection := FALSE;
-		THIS^.NegativeDirection := TRUE;	
-	END_IF
+    // Positive or Negative direction
+    IF  fCalibratedStoppedPos > CalibratedActPos THEN
+        THIS^.PositiveDirection := TRUE;
+        THIS^.NegativeDirection := FALSE;
+    ELSE
+        THIS^.PositiveDirection := FALSE;
+        THIS^.NegativeDirection := TRUE;
+    END_IF
 ELSE
-	// store idle Position
-	fCalibratedStoppedPos := CalibratedActPos;
+    // store idle Position
+    fCalibratedStoppedPos := CalibratedActPos;
 END_IF
 
 bFwdHit := THIS^.PositiveDirection AND NOT SUPER^.stPiezoStage.bAllForwardEnable;
@@ -405,88 +405,5 @@ END_IF
 SUPER^.SyncEpicsStatus();]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDriveDS402PP">
-      <LineId Id="6" Count="0" />
-      <LineId Id="12" Count="0" />
-      <LineId Id="2" Count="0" />
-      <LineId Id="10" Count="0" />
-      <LineId Id="14" Count="0" />
-      <LineId Id="9" Count="0" />
-      <LineId Id="8" Count="0" />
-      <LineId Id="5" Count="0" />
-      <LineId Id="3" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.Brake">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.ContinousMove">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.DiscreteMove">
-      <LineId Id="198" Count="0" />
-      <LineId Id="131" Count="2" />
-      <LineId Id="135" Count="62" />
-      <LineId Id="130" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.DS402StateMachine">
-      <LineId Id="156" Count="0" />
-      <LineId Id="161" Count="0" />
-      <LineId Id="157" Count="0" />
-      <LineId Id="160" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.Halt">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.HandleMoveRequest">
-      <LineId Id="299" Count="68" />
-      <LineId Id="427" Count="0" />
-      <LineId Id="370" Count="21" />
-      <LineId Id="419" Count="0" />
-      <LineId Id="393" Count="15" />
-      <LineId Id="431" Count="0" />
-      <LineId Id="433" Count="0" />
-      <LineId Id="432" Count="0" />
-      <LineId Id="409" Count="0" />
-      <LineId Id="428" Count="0" />
-      <LineId Id="430" Count="0" />
-      <LineId Id="425" Count="0" />
-      <LineId Id="420" Count="0" />
-      <LineId Id="422" Count="2" />
-      <LineId Id="411" Count="6" />
-      <LineId Id="194" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.Home">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.Interlock">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.Logger">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.MoveAbsolute">
-      <LineId Id="7" Count="0" />
-      <LineId Id="9" Count="0" />
-      <LineId Id="8" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.MoveRelative">
-      <LineId Id="3" Count="1" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.MoveVelocity">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.PostMoveInterlocks">
-      <LineId Id="1" Count="46" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.Power">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveDS402PP.ReadStatus">
-      <LineId Id="1" Count="1" />
-    </LineIds>
   </POU>
 </TcPlcObject>

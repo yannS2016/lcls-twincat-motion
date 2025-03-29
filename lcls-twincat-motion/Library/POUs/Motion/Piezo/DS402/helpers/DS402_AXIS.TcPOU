@@ -6,13 +6,13 @@ VAR_INPUT
 
 END_VAR
 VAR_OUTPUT
-	stAxisStatus : ST_AxisStatus;
+    stAxisStatus : ST_AxisStatus;
 END_VAR
 VAR
-    eModeOFOperation		: 	E_DS402_OPERATION_MODE := E_DS402_OPERATION_MODE.NONE;
-	eHomingState			:	E_HOMING_STATE;
-	// use this for motion time axis states
-	mcAxisStates			:   MC_AxisStates;
+    eModeOFOperation		: 	E_DS402OperationMode := E_DS402OperationMode.NONE;
+    eHomingState			:	E_DS402Homing;
+    // use this for motion time axis states
+    mcAxisStates			:   MC_AxisStates;
     stPiezoAxis 			: 	REFERENCE TO  ST_PiezoStage;
 END_VAR
 ]]></Declaration>
@@ -26,8 +26,8 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF NOT __ISVALIDREF(stPiezoAxis ) THEN
-	// set an error flag
-	RETURN;
+    // set an error flag
+    RETURN;
 END_IF
 
 
@@ -53,17 +53,5 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <LineIds Name="DS402_AXIS">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="DS402_AXIS.ReadStatus">
-      <LineId Id="1" Count="6" />
-    </LineIds>
-    <LineIds Name="DS402_AXIS.stPiezoStageRef.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="DS402_AXIS.stPiezoStageRef.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

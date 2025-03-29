@@ -4,7 +4,7 @@
     <Declaration><![CDATA[TYPE ST_PiezoStage EXTENDS ST_MotionStage :
 STRUCT
     (* Global variables for the TPDO data from the drive. Each one is linked to the respective TPDO channel. *)
-    stPiezoDriveStatus 		AT %I*	: 	ST_DS402_STATUS;
+    stPiezoDriveStatus 		AT %I*	: 	ST_DS402DriveStatus;
     nModeOfOperationDisplay AT %I*	: 	SINT;
     nActualPosition 		AT %I*	: 	DINT;
     nPiezoErrorCode			AT %I*	: 	UINT;
@@ -12,7 +12,7 @@ STRUCT
     nFollowingError 		AT %I*	: 	DINT;
 
     (* Global variables for the RPDO data to the drive. Each one is linked to the respective RPDO channel. *)
-	nPiezoDriveControl		AT %Q*	:	UINT;		
+    nPiezoDriveControl		AT %Q*	:	UINT;
     nTargetPosition 		AT %Q* 	: 	DINT;
     nModeOfOperation 		AT %Q* 	: 	SINT;
     (* Global variables for the RPDO data to the drive. Each one is linked to the respective RPDO channel. *)
@@ -23,19 +23,22 @@ STRUCT
     (* Global variables for the TPDO data from the drive. Each one is linked to the respective TPDO channel. *)
     nScantargetPosition		AT %Q*	: 	DINT;
     uScantargetVelocity		AT %Q*	: 	ULINT;
-	
-    // expose these to epics
-    nHomingSpeed					: 	DINT;
-    nHomingAcceleration				:	DINT;
-    fscalingFactor					: 	REAL;
-    fMaxVelocity					: 	REAL := 10.0; // um/s
-    fMaxAcceleration 				: 	REAL := 100.0; // um/s2
-	
-	// expose these to epics
-    eMoveMode						: 	E_MOVE_MODE := E_MOVE_MODE.ABSOLUTE;
-	ePPMode							: 	E_DS402_PP_MODE := E_DS402_PP_MODE.DISCRETE;
-	bHalt							: 	BOOL;
-    // For setting drives parameter via SDOs
+
+    eEgu							:	E_DS402EGU 		:= E_DS402EGU.UM;
+    eMoveMode						: 	E_DS402MoveMode := E_DS402MoveMode.ABSOLUTE;
+    ePPMode							: 	E_DS402MotionMode := E_DS402MotionMode.DISCRETE;
+
+    // Default unit is um
+    fscalingFactor					: 	REAL :=	0.001;
+    fMaxVelocity					: 	REAL := 1000.0; // um/s
+    fMaxAcceleration 				: 	REAL := 10000.0; // um/s2
+    nHomingSpeed					: 	DINT :=	100;
+    nHomingAcceleration				:	DINT := 1000;
+
+    // halt/stop motion
+    bHalt							: 	BOOL;
+
+    // For setting drives parameter via SDOs ( not yet implemented)
     sNetId    						: 	T_AmsNetId;         (* NetId of EtherCAT Master *)
     nSlaveAddr      				: 	UINT;               (* Port Number of EtherCAT Slave *)
 

@@ -38,12 +38,5 @@ END_VAR]]></Declaration>
     fbPiezoDriveDS402CSP.FB_Init(bInitRetains := bInitRetains, bInCopyCode := bInCopyCode, stStage:= stPiezoStageCsp);]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDriveCluster">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveCluster.FB_Init">
-      <LineId Id="3" Count="1" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

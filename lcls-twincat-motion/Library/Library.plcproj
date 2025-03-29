@@ -111,37 +111,31 @@
     <Compile Include="DUTs\Deprecated\ENUM_StatePMPSStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\E_MotionState.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402EGU.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\E_DS402_DRIVE_STATE.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402MotionState.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\E_DS402_OPERATION_MODE.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402DriveState.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\E_DS402_PP_MODE.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402MoveMode.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\E_HOMING_STATE.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402OperationMode.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\ST_DS402_CONTROL.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402MotionMode.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\ST_DS402_STATUS.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402Homing.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\E_MOVE_MODE.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DUTs\Piezo\ST_Logging.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\ST_DS402DriveStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\Piezo\ST_PiezoStage.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DUTs\Piezo\U_Error_Message.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\ST_AxisParameterSetExposed.TcDUT">

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="E_DS402Homing" Id="{c3f61247-3325-4983-8c08-6b1ed54ae06d}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_DS402Homing :
+(
+    INIT_HOMING 			:= 0,
+    HOMING_IN_PROGRESS		:= 10,
+    HOMING_ATTAINED 		:= 20,
+    HOMING_POSITION_REACHED := 30,
+    HOMING_INTERRUPTED := 40,
+    HOMING_ERROR			:= -99
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

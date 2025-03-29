@@ -10,7 +10,7 @@ TYPE E_EpicsHomeCmd :
     HIGH_LIMIT := 2, // High limit switch
     HOME_VIA_LOW := 3, // Home switch via low switch
     HOME_VIA_HIGH := 4, // Home switch via high switch
-	AUTO_ZERO	:= 5,	// Piezo Drives Homing
+    AUTO_ZERO	:= 5,	// Piezo Drives Homing
     ABSOLUTE_SET := 15, // Set here to be fHomePosition
     NONE := -1 // Do not home, ever
 );
