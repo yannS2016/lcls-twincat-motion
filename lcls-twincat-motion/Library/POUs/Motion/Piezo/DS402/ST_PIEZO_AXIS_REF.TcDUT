@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_PIEZO_AXIS_REF" Id="{45df8925-8963-45e1-a409-9fa648718788}">
+    <Declaration><![CDATA[TYPE ST_PIEZO_AXIS_REF :
+STRUCT
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

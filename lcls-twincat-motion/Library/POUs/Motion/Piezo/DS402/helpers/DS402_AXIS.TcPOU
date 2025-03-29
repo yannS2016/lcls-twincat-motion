@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="DS402_AXIS" Id="{3a598b42-bac6-4032-8b4b-6a03bd2056c5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK INTERNAL DS402_AXIS
+VAR_INPUT
+
+END_VAR
+VAR_OUTPUT
+	stAxisStatus : ST_AxisStatus;
+END_VAR
+VAR
+    eModeOFOperation		: 	E_DS402_OPERATION_MODE := E_DS402_OPERATION_MODE.NONE;
+	eHomingState			:	E_HOMING_STATE;
+	// use this for motion time axis states
+	mcAxisStates			:   MC_AxisStates;
+    stPiezoAxis 			: 	REFERENCE TO  ST_PiezoStage;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="ReadStatus" Id="{26a8e682-b61c-4a6c-9633-517d6a8ce4d3}">
+      <Declaration><![CDATA[METHOD ReadStatus
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT __ISVALIDREF(stPiezoAxis ) THEN
+	// set an error flag
+	RETURN;
+END_IF
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="stPiezoStageRef" Id="{e383f540-c0a9-403a-83d7-f686dae5e73b}">
+      <Declaration><![CDATA[PROPERTY stPiezoStageRef : REFERENCE TO ST_PiezoStage]]></Declaration>
+      <Get Name="Get" Id="{7680a05c-d819-4478-be8f-68d9969cc170}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{d6d380d1-9fab-4bb3-a5d9-59d861fda169}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[stPiezoAxis := stPiezoStageRef;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <LineIds Name="DS402_AXIS">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="DS402_AXIS.ReadStatus">
+      <LineId Id="1" Count="6" />
+    </LineIds>
+    <LineIds Name="DS402_AXIS.stPiezoStageRef.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="DS402_AXIS.stPiezoStageRef.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

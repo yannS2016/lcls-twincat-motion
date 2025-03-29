@@ -11,10 +11,45 @@ END_VAR
 VAR
     stPiezoStage 			:	REFERENCE TO ST_PiezoStage;
     eModeOFOperation		: 	E_DS402_OPERATION_MODE := E_DS402_OPERATION_MODE.NONE;
+	eHomingState			:	E_HOMING_STATE;
+	// use this for motion time axis states
+	mcAxisStates			:   MC_AxisStates;
+	bHomingBusy				: 	BOOL;
+	bHomingDone				: 	BOOL;
 
+	bMoveInProgess			:	BOOL;
     bError  				: 	BOOL := FALSE;
     nErrorId  				: 	UDINT := 0;
     sLocalErrorMessage		:	STRING;
+
+	nCalibratedMaxVelocity 	: DINT;
+	nCalibratedMaxAcceleration	: DINT;
+	nCalibratedHomeVelocity 	: DINT;
+	nCalibratedHomeAcceleration	: DINT;
+	bInternalLimitActive		: BOOL;
+	// Calibrated motion params : nanometer operation by default.
+	fdefaultScalingFactor		: REAL := 0.000001; //nm
+
+    bExecute: BOOL;
+	// create a property for some of these
+    bExecMove: BOOL;
+    bExecHome: BOOL;
+    bFwdHit: BOOL;
+    bBwdHit: BOOL;
+    ftExec: F_TRIG;
+    rtExec: R_TRIG;
+    rtUserExec: R_TRIG;
+    rtTarget: R_TRIG;
+    rtHomed: R_TRIG;
+    bPosGoal: BOOL;
+    bNegGoal: BOOL;
+    bNewMoveReq: BOOL;
+    bPrepareDisable: BOOL;
+    bMoveCmd: BOOL;
+    rtMoveCmdShortcut: R_TRIG;
+    rtHomeCmdShortcut: R_TRIG;
+    rtEnableMode: R_TRIG;	
+
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -22,6 +57,123 @@ END_VAR
     </Implementation>
     <Method Name="Brake" Id="{c6b36a48-c7b1-4cfe-936b-d492d651f479}">
       <Declaration><![CDATA[METHOD PUBLIC Brake : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="CalibratedHomeAcceleration" Id="{c1c6c121-0b12-42af-974e-2797f2c4272d}">
+      <Declaration><![CDATA[PROPERTY CalibratedHomeAcceleration : DINT]]></Declaration>
+      <Get Name="Get" Id="{8d5efd04-0b17-46db-97b7-cc2c95fa3465}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedHomeAcceleration:= nCalibratedHomeVelocity;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="CalibratedHomeVelocity" Id="{c44daf34-c381-47a9-8593-74a52579bfbc}">
+      <Declaration><![CDATA[PROPERTY CalibratedHomeVelocity : DINT]]></Declaration>
+      <Get Name="Get" Id="{9eff9bf5-b655-4dd6-b1a5-19a4350b2a68}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedHomeVelocity := nCalibratedHomeVelocity;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="CalibratedMaxAcceleration" Id="{3c0a3332-3cbc-4bab-89e4-c4f12fcb17c6}">
+      <Declaration><![CDATA[PROPERTY CalibratedMaxAcceleration : DINT]]></Declaration>
+      <Get Name="Get" Id="{2bce7c96-ff01-4efa-aa37-c5c3266f5a5e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedMaxAcceleration:= nCalibratedMaxAcceleration;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="CalibratedMaxVelocity" Id="{6dc4e13f-94e3-4e5c-88a6-b12b64a1e91a}">
+      <Declaration><![CDATA[PROPERTY CalibratedMaxVelocity : DINT]]></Declaration>
+      <Get Name="Get" Id="{f99c53d5-5340-4fb2-aeed-beb7f587e2c8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CalibratedMaxVelocity:= nCalibratedMaxVelocity;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="CalibratedMotionParams" Id="{67fcb905-3933-48da-aebe-2bf2e7a7195e}">
+      <Declaration><![CDATA[METHOD CalibratedMotionParams
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// All drive paramters must be express in mm, mm/s, mm/s2
+nCalibratedMaxVelocity :=  REAL_TO_DINT((stPiezoStage.fMaxVelocity / MAX(stPiezoStage.fscalingFactor, DefaultScalingFactor)));
+nCalibratedMaxAcceleration :=  LREAL_TO_DINT(stPiezoStage.fMaxAcceleration /  MAX(stPiezoStage.fscalingFactor, DefaultScalingFactor));
+// Homing params
+ nCalibratedHomeVelocity  := LIMIT(0, LREAL_TO_DINT (stPiezoStage.fVelocity / MAX(stPiezoStage.fscalingFactor, DefaultScalingFactor)), nCalibratedMaxVelocity);
+ nCalibratedHomeAcceleration := LIMIT(0, LREAL_TO_DINT (stPiezoStage.fAcceleration / MAX(stPiezoStage.fscalingFactor, DefaultScalingFactor)), nCalibratedMaxAcceleration) ;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CalibrateEncValue" Id="{b3a7b314-e49d-4a2f-9c18-94fd8f33f576}">
+      <Declaration><![CDATA[METHOD CalibrateEncValue : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ConfigureDriveParams" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
+      <Declaration><![CDATA[METHOD ConfigureDriveParams : BOOL
+VAR_INPUT
+    bExecute	:	BOOL := FALSE;
+    nIndex     	: 	WORD ; 		   (* CoE Object Index *)
+    nSubIndex  	: 	BYTE ; 			   (* Subindex of CoE Object *)
+    nValue		: 	DINT;
+    fbSdoWrite	: 	FB_EcCoESdoWrite;
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT fbSdoWrite.bBusy THEN
+    bExecute := FALSE;
+    IF NOT fbSdoWrite.bError THEN
+        (* write successful *)
+        Error := FALSE;
+        ErrorCode := 0;
+    ELSE
+        (* write failed *)
+        Error := fbSdoWrite.bError;
+        ErrorCode := fbSdoWrite.nErrId;
+
+    END_IF
+
+    fbSdoWrite(bExecute := FALSE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="DefaultScalingFactor" Id="{a8e55d98-90b3-4d25-9d27-32631bdfce3a}">
+      <Declaration><![CDATA[PROPERTY DefaultScalingFactor : REAL]]></Declaration>
+      <Get Name="Get" Id="{41c98afd-6818-44f4-b67b-9b692b728b6b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[DefaultScalingFactor := fdefaultScalingFactor;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="EncSaveRestore" Id="{1cc8bf99-0b38-4eef-833a-ad133fa28032}">
+      <Declaration><![CDATA[METHOD EncSaveRestore : BOOL
+VAR_INPUT
+END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -46,14 +198,14 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="ErrorID" Id="{a05ec7b2-e4fa-4c9a-9ffa-8d608185c857}">
-      <Declaration><![CDATA[PROPERTY ErrorID : UDINT]]></Declaration>
+    <Property Name="ErrorCode" Id="{a05ec7b2-e4fa-4c9a-9ffa-8d608185c857}">
+      <Declaration><![CDATA[PROPERTY ErrorCode : UDINT]]></Declaration>
       <Get Name="Get" Id="{5d902389-8aa3-41b0-82ce-2f29a350e020}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[ErrorID := nErrorID;]]></ST>
+          <ST><![CDATA[ErrorCode := nErrorID;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{8d492092-46f5-4d0a-b5a1-6972c25ffd11}">
@@ -61,7 +213,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[nErrorID := ErrorID;]]></ST>
+          <ST><![CDATA[nErrorID := ErrorCode;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -105,7 +257,7 @@ END_VAR]]></Declaration>
       <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Halt : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[// set the halt option code]]></ST>
       </Implementation>
     </Method>
     <Method Name="HardwareInterlocks" Id="{58388f21-ec0b-4aea-a9c5-04e3c9e853f6}">
@@ -121,85 +273,213 @@ END_VAR
       <Declaration><![CDATA[METHOD PUBLIC Home : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// set Piezo drive in Homing Mode : call this line once: better use a state machine here
-stPiezoStage.nModeOfOperation := E_DS402_OPERATION_MODE.HOMING;
+        <ST><![CDATA[(* IMPORTANT: Homing options and parameters must be configured either via the COE online tab or via the service tool*)
+CASE eHomingState OF
+	E_HOMING_STATE.INIT_HOMING :;
+		// set Piezo drive in Homing Mode : call this line once: better use a state machine here
+		stPiezoStage.nModeOfOperation := E_DS402_OPERATION_MODE.HOMING;	
+		IF stPiezoStage.nModeOfOperationDisplay = E_DS402_OPERATION_MODE.HOMING THEN
+			// Homing paramters are configure as PDOs for ease of operations
+			// make sure homing speed are before proceeding
+			stPiezoStage.nPiezoDriveControl.4 := TRUE;
+			eHomingState := E_HOMING_STATE.HOMING_IN_PROGRESS;			
+		END_IF
+	E_HOMING_STATE.HOMING_IN_PROGRESS:;	
+		IF NOT stPiezoStage.stPiezoDriveStatus.TargetReached
+		   AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+				HomingBusy := TRUE;
+				HomeDone := FALSE;
 
-IF stPiezoStage.nModeOfOperationDisplay = E_DS402_OPERATION_MODE.HOMING THEN
-    // Homing paramters are configure as PDOs for ease of operations
-    // make sure homing speed are before proceeding
-    stPiezoStage.stPiezoStageControl.Bit4_OpModeSpecific := TRUE;
+		END_IF
+		
+		// homing error
+		IF stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+			eHomingState := E_HOMING_STATE.HOMING_ERROR;	
+		END_IF
+		// Interrupted
+		IF stPiezoStage.stPiezoDriveStatus.TargetReached THEN
+			eHomingState := E_HOMING_STATE.HOMING_INTERRUPTED;	
+		END_IF
+		
+		// Reached
+		IF stPiezoStage.stPiezoDriveStatus.TargetReached
+			AND stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific
+			AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+			eHomingState := E_HOMING_STATE.HOMING_ATTAINED;	
+		END_IF
+		
+	E_HOMING_STATE.HOMING_ATTAINED:;
+		HomingBusy := FALSE;
+		HomeDone := TRUE;
+		Error := FALSE;
+		ErrorCode := 0;
+		
+	E_HOMING_STATE.HOMING_INTERRUPTED :;
+		HomingBusy := FALSE;
+		HomeDone := FALSE;
+		stPiezoStage.bHomed := FALSE;
+		IF stPiezoStage.nPiezoDriveControl.8 THEN
+			ErrorMessage := 'Warning: Halt interrupted homing sequence';
+			Error := FALSE;
+			ErrorCode := 99; // keep this code for homing
+		END_IF
 
-    // successful ?
-    IF  stPiezoStage.stPiezoStageStatus.TargetReached
-        AND NOT stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
-        AND NOT stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
-        Error := FALSE;
-        ErrorID := 0; // find an appropriate code
-        ErrorMessage := 'Warning: Drive Homing Precedure interrupted or not started';
-        stPiezoStage.bDone := TRUE;
-        stPiezoStage.bHomed := FALSE;
-    END_IF
+	E_HOMING_STATE.HOMING_ERROR:;
+		HomingBusy := FALSE;
+		HomeDone := FALSE;
+		Error := TRUE;
+		ErrorCode := stPiezoStage.nPiezoErrorCode;
+		ErrorMessage := 'Error: Homing error occured';
+END_CASE
 
-    IF  NOT stPiezoStage.stPiezoStageStatus.TargetReached
-        AND stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
-        AND NOT stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
-        Error := FALSE;
-        ErrorID := 0; // find an appropriate code
-        ErrorMessage := 'Warning: Home attained but target not reached';
-        stPiezoStage.bDone := TRUE;
-        stPiezoStage.bHomed := FALSE;
-    END_IF
-
-    IF stPiezoStage.stPiezoStageStatus.TargetReached
-        AND stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
-        AND NOT stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
-        Error := FALSE;
-        ErrorID := 0; // find an appropriate code
-        ErrorMessage := 'Homing procedure is completed successfully';
-        stPiezoStage.stPiezoStageControl.Bit4_OpModeSpecific := FALSE;
-        stPiezoStage.bDone := TRUE;
-        stPiezoStage.bHomed := TRUE;
-        // set home position based on stMotionStage.fHomePosition offset
-        // this need to be written before homing start using sdo write if we dont use PDO for
-        // homing options.
-    END_IF
-
-    IF  NOT stPiezoStage.stPiezoStageStatus.TargetReached
-        AND NOT stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
-        AND stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
-        Error := TRUE;
-        ErrorID := stPiezoStage.nPiezoErrorCode; // find an appropriate code
-        ErrorMessage := 'Error: Homing error occured, velocity is not 0';
-        stPiezoStage.bDone := TRUE;
-        stPiezoStage.bHomed := FALSE;
-    END_IF
-
-    IF  stPiezoStage.stPiezoStageStatus.TargetReached
-        AND NOT stPiezoStage.stPiezoStageStatus.Bit12_OpModeSpecific
-        AND stPiezoStage.stPiezoStageStatus.Bit13_OpModeSpecific THEN
-        Error := FALSE;
-        ErrorID := stPiezoStage.nPiezoErrorCode; // find an appropriate code
-        ErrorMessage := 'Error: Homing error occured, velocity 0';
-        stPiezoStage.bDone := TRUE;
-        stPiezoStage.bHomed := FALSE;
-    END_IF
-
-END_IF
-
-// Override homing status, dmov as appropriate
-stPiezoStage.stAxisStatus.bHomed := stPiezoStage.bHomed;
-// this need to be handle in the power method
-stPiezoStage.stAxisStatus.bExecute := stPiezoStage.bExecute;
-stPiezoStage.stAxisStatus.nCommand := 3; // If this is not 3, the IOC stops updating positions during homing
-
-]]></ST>
+THIS^.stPiezoStage.stAxisStatus.nCommand := 3; // If this is not 3, the IOC stops updating positions during homing
+//SUPER^.stPiezoStage.bHomed := SUPER^.HomeDone;]]></ST>
       </Implementation>
     </Method>
+    <Property Name="HomeDone" Id="{ef80f79d-a7a5-4a2f-a11f-e37d59b9ba61}">
+      <Declaration><![CDATA[PROPERTY HomeDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{742e7703-4c8b-4cae-8b7c-4c09294b165f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[HomeDone := bHomingDone;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{a950124f-24af-4212-9907-e7e43ac15290}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bHomingDone := HomeDone;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="HomingBusy" Id="{68d84e73-fc8a-4bd0-8abf-2cf5ca63e71e}">
+      <Declaration><![CDATA[PROPERTY HomingBusy : BOOL]]></Declaration>
+      <Get Name="Get" Id="{90949a4e-2ed5-4330-97d4-73ce00b2d0c5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[HomingBusy := bHomingBusy;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{3062e440-988d-4ded-bb57-25ab087ce644}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bHomingBusy := HomingBusy;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="Interlock" Id="{72f66b07-eac8-4f48-a977-69dc5fa659a2}">
       <Declaration><![CDATA[METHOD PUBLIC Interlock : BOOL
-]]></Declaration>
+
+VAR
+	uStates	: UINT;
+END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[// Check for the plc shortcut commands
+// Used for testing or to circumvent motor record issues
+rtMoveCmdShortcut(CLK:=stPiezoStage.bMoveCmd);
+rtHomeCmdShortcut(CLK:=stPiezoStage.bHomeCmd);
+
+// Execute on rising edge
+IF rtMoveCmdShortcut.Q AND NOT stPiezoStage.bExecute THEN
+    stPiezoStage.bExecute := TRUE;
+    stPiezoStage.nCommand := E_EpicsMotorCmd.MOVE_ABSOLUTE;
+
+    // attempting to move an axis without homing first?
+    IF stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE AND NOT stPiezoStage.bHomed THEN
+        // one can just set bHome here even though no homing was done?
+        stPiezoStage.sErrorMessage := 'Warning: Axis homing mode set, but homing routine pending';
+    END_IF
+
+ELSIF rtHomeCmdShortcut.Q AND NOT stPiezoStage.bExecute THEN
+    stPiezoStage.bExecute := TRUE;
+    stPiezoStage.nCommand := E_EpicsMotorCmd.HOME;
+END_IF
+
+// Always reset, even if not rising edge, so command can be issued again
+IF stPiezoStage.bMoveCmd OR stPiezoStage.bHomeCmd THEN
+    stPiezoStage.bMoveCmd := FALSE;
+    stPiezoStage.bHomeCmd := FALSE;
+END_IF
+// Automatically fill the correct nCmdData for homing
+IF stPiezoStage.nCommand = E_EpicsMotorCmd.HOME THEN
+    stPiezoStage.nCmdData := stPiezoStage.nHomingMode;
+END_IF
+
+// Check if the command wants to cause a move
+bMoveCmd R= stPiezoStage.nCmdData = E_EpicsHomeCmd.ABSOLUTE_SET;
+bMoveCmd R= stPiezoStage.nCmdData = E_EpicsHomeCmd.NONE;
+bMoveCmd S= stPiezoStage.nCommand <> E_EpicsMotorCmd.HOME;
+
+// Handle main execs
+rtUserExec(CLK := stPiezoStage.bExecute);
+bNewMoveReq S= rtUserExec.Q AND bMoveCmd;
+bNewMoveReq R= NOT stPiezoStage.bExecute;
+bPrepareDisable R= bNewMoveReq;
+
+bPosGoal := stPiezoStage.stAxisStatus.fActPosition < stPiezoStage.fPosition;
+bNegGoal := stPiezoStage.stAxisStatus.fActPosition > stPiezoStage.fPosition;
+
+// Moves are automatically allowed if no safety hooks. Otherwise, some other code will set this.
+stPiezoStage.bSafetyReady S= stPiezoStage.bPowerSelf;
+// check all enabling interlocks
+SetEnables();
+// Transition to 'DURING_MOTION' drive mode
+rtEnableMode(CLK:=(stPiezoStage.nEnableMode = E_StageEnableMode.DURING_MOTION));
+// Handle auto-enable timing
+CASE stPiezoStage.nEnableMode OF
+    E_StageEnableMode.ALWAYS:
+        stPiezoStage.bEnable := TRUE;
+		
+    E_StageEnableMode.DURING_MOTION:
+        IF rtEnableMode.Q THEN
+            stPiezoStage.bEnable := FALSE;
+        END_IF
+		
+        IF bNewMoveReq THEN
+            IF stPiezoStage.nCommand = E_EpicsMotorCmd.HOME THEN
+                stPiezoStage.bEnable := stPiezoStage.bSafetyReady;
+
+            ELSIF bPosGoal THEN
+                IF stPiezoStage.bAllForwardEnable THEN
+                    stPiezoStage.bEnable S= stPiezoStage.bSafetyReady;
+				// we're trying not to overwrite the error condition from move and homing FB
+				// error logger needs to able this better
+                ELSIF NOT stPiezoStage.bError THEN
+                    // Not an error, just a warning
+                    stPiezoStage.sErrorMessage := 'Cannot move past positive limit.';
+                    stPiezoStage.bExecute := FALSE;
+					
+                END_IF
+				
+            ELSIF bNegGoal THEN
+                IF stPiezoStage.bAllBackwardEnable THEN
+                    stPiezoStage.bEnable S= stPiezoStage.bSafetyReady;
+				// we're trying not to overwrite the error condition from move and homing FB
+				// error logger needs to able this better
+                ELSIF NOT stPiezoStage.bError THEN
+                    // Not an error, just a warning
+                    stPiezoStage.sErrorMessage := 'Cannot move past negative limit.';
+                    stPiezoStage.bExecute := FALSE;
+					
+                END_IF
+            ELSE
+                // Super rare condition where we asked for a move to exactly the same floating point we're already at
+                stPiezoStage.bEnable S= stPiezoStage.bSafetyReady;
+            END_IF
+			// power is till enable? motion in progress or error occured
+            IF stPiezoStage.bEnable OR stPiezoStage.bError THEN
+                bNewMoveReq := FALSE;
+            END_IF
+        END_IF
+END_CASE
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{7fb0d460-52d2-4ae2-accf-52e93bd858b3}">
@@ -218,6 +498,15 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Method Name="MotionStageNCParams" Id="{d4d497ab-25de-4a2d-9f0c-7fd0abae8c76}">
+      <Declaration><![CDATA[METHOD MotionStageNCParams : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="MoveAbsolute" Id="{67006bb1-1c73-49f6-ab52-7a06b1d0c294}">
       <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveAbsolute 
 ]]></Declaration>
@@ -225,6 +514,25 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Property Name="MoveInProgress" Id="{6616bbb3-1d95-49af-abf3-d1f36727e269}">
+      <Declaration><![CDATA[PROPERTY MoveInProgress : BOOL]]></Declaration>
+      <Get Name="Get" Id="{0a5870b1-6716-4a60-a634-064cce8c50f6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{45684c76-9b99-488a-a71a-a46615dcc041}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="MoveVelocity" Id="{ad5fd96d-9e69-45a4-b2a0-21317b75940d}">
       <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MoveVelocity
 ]]></Declaration>
@@ -245,19 +553,10 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// Try to clear any faults if they are present by setting bit 7 of the Control Word.
-IF NOT stPiezoStage.stPiezoStageControl.QuickStop THEN
-    stPiezoStage.stPiezoStageControl.QuickStop:=TRUE;
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="ReadyToMove" Id="{c3016d3d-1e60-4605-9646-79240093d703}">
-      <Declaration><![CDATA[METHOD ReadyToMove : BOOL
-VAR_INPUT
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[// // Try to clear any faults if they are present by setting bit 7 of the Control Word.
+// IF NOT stPiezoStage.stPiezoStageControl.QuickStop THEN
+//     stPiezoStage.stPiezoStageControl.QuickStop:=TRUE;
+// END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="Reset" Id="{872bc095-326f-40be-9faa-244cb7e5f547}">
@@ -267,33 +566,26 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SetHomingParams" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
-      <Declaration><![CDATA[METHOD SetHomingParams : BOOL
+    <Method Name="SetEnables" Id="{8bb4d6f6-cdad-41b7-afa8-a970de274d07}">
+      <Declaration><![CDATA[METHOD SetEnables : BOOL
 VAR_INPUT
-    bExecute	:	BOOL := FALSE;
-    nIndex     	: 	WORD ; 		   (* CoE Object Index *)
-    nSubIndex  	: 	BYTE ; 			   (* Subindex of CoE Object *)
-    nValue		: 	DINT;
-    fbSdoWrite	: 	FB_EcCoESdoWrite;
 END_VAR
-
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF NOT fbSdoWrite.bBusy THEN
-    bExecute := FALSE;
-    IF NOT fbSdoWrite.bError THEN
-        (* write successful *)
-        Error := FALSE;
-        ErrorId := 0;
-    ELSE
-        (* write failed *)
-        Error := fbSdoWrite.bError;
-        ErrorId := fbSdoWrite.nErrId;
+        <ST><![CDATA[stPiezoStage.bAllForwardEnable := stPiezoStage.bLimitForwardEnable AND (stPiezoStage.bGantryForwardEnable OR NOT stPiezoStage.bGantryAxis) AND stPiezoStage.stEPSForwardEnable.bEPS_OK;
+stPiezoStage.bAllBackwardEnable := stPiezoStage.bLimitBackwardEnable AND (stPiezoStage.bGantryBackwardEnable OR NOT stPiezoStage.bGantryAxis) AND stPiezoStage.stEPSBackwardEnable.bEPS_OK;
 
-    END_IF
-
-    fbSdoWrite(bExecute := FALSE);
-END_IF]]></ST>
+stPiezoStage.bAllEnable := stPiezoStage.bEnable AND stPiezoStage.bHardwareEnable AND stPiezoStage.stEPSPowerEnable.bEPS_OK;
+stPiezoStage.bAllEnable R= NOT stPiezoStage.bUserEnable;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{55686adc-350f-4c3a-957a-0bcda1d209a7}">
+      <Declaration><![CDATA[METHOD StateMachine
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <LineIds Name="FB_PiezoDrive">
@@ -302,16 +594,46 @@ END_IF]]></ST>
     <LineIds Name="FB_PiezoDrive.Brake">
       <LineId Id="2" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PiezoDrive.CalibratedHomeAcceleration.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.CalibratedHomeVelocity.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.CalibratedMaxAcceleration.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.CalibratedMaxVelocity.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.CalibratedMotionParams">
+      <LineId Id="9" Count="2" />
+      <LineId Id="13" Count="2" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.CalibrateEncValue">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.ConfigureDriveParams">
+      <LineId Id="3" Count="13" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.DefaultScalingFactor.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.EncSaveRestore">
+      <LineId Id="1" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PiezoDrive.Error.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PiezoDrive.Error.Set">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PiezoDrive.ErrorID.Get">
+    <LineIds Name="FB_PiezoDrive.ErrorCode.Get">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PiezoDrive.ErrorID.Set">
+    <LineIds Name="FB_PiezoDrive.ErrorCode.Set">
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PiezoDrive.ErrorMessage.Get">
@@ -331,11 +653,101 @@ END_IF]]></ST>
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_PiezoDrive.Home">
-      <LineId Id="3" Count="70" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="98" Count="1" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="101" Count="1" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="127" Count="0" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="123" Count="2" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="132" Count="1" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="135" Count="1" />
+      <LineId Id="138" Count="2" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="144" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="130" Count="1" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="113" Count="2" />
+      <LineId Id="150" Count="1" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="120" Count="0" />
+      <LineId Id="159" Count="1" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="156" Count="0" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="157" Count="1" />
       <LineId Id="2" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PiezoDrive.HomeDone.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.HomeDone.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.HomingBusy.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.HomingBusy.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PiezoDrive.Interlock">
-      <LineId Id="2" Count="0" />
+      <LineId Id="145" Count="3" />
+      <LineId Id="179" Count="0" />
+      <LineId Id="149" Count="14" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="164" Count="4" />
+      <LineId Id="170" Count="3" />
+      <LineId Id="204" Count="0" />
+      <LineId Id="175" Count="3" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="93" Count="10" />
+      <LineId Id="206" Count="0" />
+      <LineId Id="104" Count="6" />
+      <LineId Id="183" Count="0" />
+      <LineId Id="111" Count="3" />
+      <LineId Id="184" Count="0" />
+      <LineId Id="115" Count="2" />
+      <LineId Id="185" Count="0" />
+      <LineId Id="118" Count="2" />
+      <LineId Id="187" Count="0" />
+      <LineId Id="207" Count="0" />
+      <LineId Id="121" Count="3" />
+      <LineId Id="188" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="189" Count="0" />
+      <LineId Id="126" Count="2" />
+      <LineId Id="209" Count="0" />
+      <LineId Id="208" Count="0" />
+      <LineId Id="129" Count="3" />
+      <LineId Id="190" Count="0" />
+      <LineId Id="133" Count="4" />
+      <LineId Id="191" Count="0" />
+      <LineId Id="138" Count="3" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="210" Count="0" />
     </LineIds>
     <LineIds Name="FB_PiezoDrive.Logger">
       <LineId Id="2" Count="0" />
@@ -343,8 +755,17 @@ END_IF]]></ST>
     <LineIds Name="FB_PiezoDrive.MotionInterlocks">
       <LineId Id="2" Count="0" />
     </LineIds>
+    <LineIds Name="FB_PiezoDrive.MotionStageNCParams">
+      <LineId Id="1" Count="0" />
+    </LineIds>
     <LineIds Name="FB_PiezoDrive.MoveAbsolute">
       <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.MoveInProgress.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.MoveInProgress.Set">
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_PiezoDrive.MoveVelocity">
       <LineId Id="2" Count="0" />
@@ -356,15 +777,14 @@ END_IF]]></ST>
       <LineId Id="3" Count="2" />
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PiezoDrive.ReadyToMove">
-      <LineId Id="2" Count="0" />
-    </LineIds>
     <LineIds Name="FB_PiezoDrive.Reset">
       <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="FB_PiezoDrive.SetHomingParams">
-      <LineId Id="3" Count="13" />
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_PiezoDrive.SetEnables">
+      <LineId Id="1" Count="4" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDrive.StateMachine">
+      <LineId Id="1" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>
