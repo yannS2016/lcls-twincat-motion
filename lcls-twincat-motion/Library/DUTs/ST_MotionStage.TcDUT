@@ -192,7 +192,7 @@ STRUCT
         field: DESC Message to identify the error state
         update: 100Hz notify
     '}
-    sErrorMessage: STRING;
+    sErrorMessage: STRING(850);
     // Internal hook for custom error messages
     sCustomErrorMessage: STRING;
     // MC_ReadParameterSet Output

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="U_ExposedLogMsg" Id="{1f914966-33b0-4f8d-ac58-7fae02ae6dc2}">
+    <Declaration><![CDATA[TYPE U_ExposedLogMsg :
+UNION
+    sExposedEpicsMessage	: STRING(810);
+    arrExposedBuffer 	: ARRAY[0..810] OF BYTE; (* Buffer memory used by FB_MemRingBuffer function block *)
+END_UNION
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

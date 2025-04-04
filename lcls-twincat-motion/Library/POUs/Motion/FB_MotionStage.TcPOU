@@ -16,6 +16,8 @@ VAR
     fbSaveRestore: FB_EncSaveRestore;
     fbLogError: FB_LogMotionError;
     fbBacklashCompensation: FB_MotionBacklashCompensation;
+    // Error/Warning Logging
+    fbMotionErrorLogger : FB_MotionErrorLogger;
     bExecute: BOOL;
     bExecMove: BOOL;
     bExecHome: BOOL;
@@ -42,6 +44,12 @@ END_VAR
     <Implementation>
       <ST><![CDATA[// Start with an accurate status
 stMotionStage.Axis.ReadStatus();
+// Init the logger with reference to stMotionstage
+// FB_init could be used here since stMotionStage is a passed by value in tis FB
+// Nonetheless this will not be the be case with OOP drived classes
+IF NOT fbMotionErrorLogger.bInit THEN
+    fbMotionErrorLogger.getRef(stMotionStage);
+END_IF
 
 // Check for the plc shortcut commands
 // Used for testing or to circumvent motor record issues
@@ -55,7 +63,10 @@ IF rtMoveCmdShortcut.Q AND NOT stMotionStage.bExecute THEN
     // attempting to move an axis without homing first?
     IF stMotionStage.nHomingMode <> E_EpicsHomeCmd.NONE AND NOT stMotionStage.bHomed THEN
         // one can just set bHome here even though no homing was done?
-        stMotionStage.sErrorMessage := 'Axis homing mode set, but homing routine pending';
+        stMotionStage.sCustomErrorMessage := 'Axis homing mode set, but homing routine pending';
+        stMotionStage.nErrorId := 99;
+        // Log this warning
+        fbMotionErrorLogger.AddMsg(stMotionStage.nErrorId, stMotionStage.sCustomErrorMessage);
     END_IF
 
 ELSIF rtHomeCmdShortcut.Q AND NOT stMotionStage.bExecute THEN
@@ -108,16 +119,22 @@ CASE stMotionStage.nEnableMode OF
                     stMotionStage.bEnable S= stMotionStage.bSafetyReady;
                 ELSIF NOT stMotionStage.bError THEN
                     // Not an error, just a warning
-                    stMotionStage.sErrorMessage := 'Cannot move past positive limit.';
+                    stMotionStage.sCustomErrorMessage := 'Cannot move past positive limit.';
                     stMotionStage.bExecute := FALSE;
+                    stMotionStage.nErrorId := 99;
+                    // Log this warning
+                    fbMotionErrorLogger.AddMsg(stMotionStage.nErrorId, stMotionStage.sCustomErrorMessage);
                 END_IF
             ELSIF bNegGoal THEN
                 IF stMotionStage.bAllBackwardEnable THEN
                     stMotionStage.bEnable S= stMotionStage.bSafetyReady;
                 ELSIF NOT stMotionStage.bError THEN
                     // Not an error, just a warning
-                    stMotionStage.sErrorMessage := 'Cannot move past negative limit.';
+                    stMotionStage.sCustomErrorMessage := 'Cannot move past negative limit.';
                     stMotionStage.bExecute := FALSE;
+                    stMotionStage.nErrorId := 99;
+                    // Log this warning
+                    fbMotionErrorLogger.AddMsg(stMotionStage.nErrorId, stMotionStage.sCustomErrorMessage);
                 END_IF
             ELSE
                 // Super rare condition where we asked for a move to exactly the same floating point we're already at
@@ -144,6 +161,7 @@ END_IF
 
 IF bExecute AND NOT stMotionStage.bError THEN
     // Reset local warnings if things are going well
+    stMotionStage.sCustomErrorMessage := '';
     stMotionStage.sErrorMessage := '';
 END_IF
 
@@ -160,6 +178,12 @@ bExecMove := bExecute AND NOT bExecHome;
 fbBacklashCompensation(stMotionStage:=stMotionStage,
     bHoming:=bExecHome,
     bMoving:=bExecMove );
+
+IF fbBacklashCompensation.bError THEN
+    stMotionStage.nErrorId := fbBacklashCompensation.nErrorID;
+    // Log this warning
+    fbMotionErrorLogger.AddMsg(stMotionStage.nErrorId, '');
+END_IF
 
 // Handle standard commands using ESS's FB
 fbDriveVirtual(En:=TRUE,
@@ -180,46 +204,63 @@ fbDriveVirtual(En:=TRUE,
     nMotionAxisID=>stMotionStage.nMotionAxisID,
     Axis:=stMotionStage.Axis);
 
+IF fbDriveVirtual.bError THEN
+    stMotionStage.nErrorId := fbDriveVirtual.nErrorID;
+    // Log this warning
+    fbMotionErrorLogger.AddMsg(stMotionStage.nErrorId, '');
+END_IF
+
 // Some custom home handling
 fbMotionHome(
     stMotionStage:=stMotionStage,
     bExecute:=bExecHome);
 
+IF fbMotionHome.bError THEN
+    stMotionStage.nErrorId := fbMotionHome.nErrorID;
+    // Log this warning
+    fbMotionErrorLogger.AddMsg(stMotionStage.nErrorId, '');
+END_IF
+
 // Update status again after the move starts or stops
 stMotionStage.Axis.ReadStatus();
 
 // Check for a new error
-IF NOT stMotionStage.bError THEN
-    stMotionStage.bError := fbDriveVirtual.bError;
-    stMotionStage.nErrorId := fbDriveVirtual.nErrorId;
-END_IF
-IF NOT stMotionStage.bError THEN
-    stMotionStage.bError := fbBacklashCompensation.bError;
-    stMotionStage.nErrorId := fbBacklashCompensation.nErrorId;
-END_IF
-IF NOT stMotionStage.bError THEN
-    stMotionStage.bError := fbMotionHome.bError;
-    stMotionStage.nErrorId := fbMotionHome.nErrorId;
-END_IF
+// IF NOT stMotionStage.bError THEN
+//     stMotionStage.bError := fbDriveVirtual.bError;
+//     stMotionStage.nErrorId := fbDriveVirtual.nErrorId;
+// END_IF
+// IF NOT stMotionStage.bError THEN
+//     stMotionStage.bError := fbBacklashCompensation.bError;
+//     stMotionStage.nErrorId := fbBacklashCompensation.nErrorId;
+// END_IF
+// IF NOT stMotionStage.bError THEN
+//     stMotionStage.bError := fbMotionHome.bError;
+//     stMotionStage.nErrorId := fbMotionHome.nErrorId;
+// END_IF
+
 IF NOT stMotionStage.bError AND stMotionStage.bExecute AND NOT stMotionStage.bUserEnable THEN
     stMotionStage.bError := TRUE;
     stMotionStage.nErrorId := 1;
     stMotionStage.sCustomErrorMessage := 'Move requested, but user enable is disabled!';
+    // Log this warning
+    fbMotionErrorLogger.AddMsg(stMotionStage.nErrorId, stMotionStage.sCustomErrorMessage);
 END_IF
 
-// Set the error message if we have one
-IF stMotionStage.bError THEN
-    // Hook if other code wants to inject a non-NC error
-    IF stMotionStage.sCustomErrorMessage <> '' THEN
-        stMotionStage.sErrorMessage := stMotionSTage.sCustomErrorMessage;
-    ELSE
-        stMotionStage.sErrorMessage := F_MotionErrorCodeLookup(nErrorId := stMotionStage.nErrorId);
-    END_IF
-END_IF
 
-fbLogError(
-    stMotionStage:=stMotionStage,
-    bEnable:=TRUE);
+
+// // Set the error message if we have one
+// IF stMotionStage.bError THEN
+//     // Hook if other code wants to inject a non-NC error
+//     IF stMotionStage.sCustomErrorMessage <> '' THEN
+//         stMotionStage.sErrorMessage := stMotionSTage.sCustomErrorMessage;
+//     ELSE
+//         stMotionStage.sErrorMessage := F_MotionErrorCodeLookup(nErrorId := stMotionStage.nErrorId);
+//     END_IF
+// END_IF
+//
+// fbLogError(
+//     stMotionStage:=stMotionStage,
+//     bEnable:=TRUE);
 
 // When we start, set the busy/done appropriately
 rtExec(CLK:=bExecute);
@@ -326,7 +367,11 @@ fbNCParams(
 // Save and restore as long as not an absolute encoder
 fbSaveRestore(
     stMotionStage:=stMotionStage,
-    bEnable:=stMotionStage.nHomingMode <> E_EpicsHomeCmd.NONE);]]></ST>
+    bEnable:=stMotionStage.nHomingMode <> E_EpicsHomeCmd.NONE);
+
+stMotionStage.bError := fbDriveVirtual.bError OR fbBacklashCompensation.bError OR fbMotionHome.bError;
+// update clients
+fbMotionErrorLogger.UpdateConnectedClients(TRUE, stMotionStage.bError);]]></ST>
     </Implementation>
   </POU>
 </TcPlcObject>
