@@ -4,11 +4,62 @@
     <Declaration><![CDATA[INTERFACE I_PiezoDrive
 ]]></Declaration>
     <Method Name="Brake" Id="{e0529470-e1a2-408b-acaa-cacbe414aa6e}">
-      <Declaration><![CDATA[METHOD Brake : BOOL
+      <Declaration><![CDATA[METHOD Brake
 VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
+    <Property Name="CalibratedActPos" Id="{02057f2c-b8f5-43b2-998d-dd4bf1625921}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY CalibratedActPos : REAL]]></Declaration>
+      <Get Name="Get" Id="{2e2e5a93-1600-45a1-8fd2-6ebb7d198240}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Method Name="EncSaveRestore" Id="{2714254e-be9f-442a-9ff0-fec0cfde8ef7}">
+      <Declaration><![CDATA[METHOD EncSaveRestore
+VAR_INPUT
+	 bEnable: BOOL;
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="EncValue" Id="{5a3e0ac7-04c3-493b-9cb6-07a60972201e}">
+      <Declaration><![CDATA[METHOD EncValue
+VAR_INPUT
+//    bEnable: BOOL;
+END_VAR
+]]></Declaration>
+    </Method>
+    <Property Name="Error" Id="{ecddf92f-389a-4b66-a847-9288fadbdd07}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY Error : BOOL]]></Declaration>
+      <Get Name="Get" Id="{3995c37e-c525-4213-a810-2df3fd6c72d0}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{787eda39-89c4-4a82-b023-e351d7cb86c7}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="ErrorCode" Id="{83ccf468-2f12-4981-a5ae-5955a7f86878}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY ErrorCode : UDINT]]></Declaration>
+      <Get Name="Get" Id="{83114e97-87ef-4199-9ca8-05ef0c812ee8}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{86d20c2b-16b5-44f9-b245-31a20d41dde9}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="ErrorMessage" Id="{5b6e842b-7143-43fe-83dd-a3d6fb4ab9ed}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY ErrorMessage : STRING]]></Declaration>
+      <Get Name="Get" Id="{1c19bdcc-bf5e-4bbf-af14-21e46885d40d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{fc52c698-0a25-4b7c-a6f2-167c5ce1faf7}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Method Name="Halt" Id="{1645d0ef-eb4b-4235-b6cc-4a214463d443}">
       <Declaration><![CDATA[METHOD Halt : BOOL
 VAR_INPUT
@@ -21,6 +72,26 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
+    <Property Name="HomeDone" Id="{200cd3be-65e8-40a3-9d86-5f57e4e0faf5}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HomeDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{b1028f7c-ce5a-4deb-bc48-6a75b8249228}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{8c6b0f72-0c3a-491e-8005-de763463ac1c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="HomingBusy" Id="{ccf273c0-b5d1-46d7-89a2-f64672010979}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HomingBusy : BOOL]]></Declaration>
+      <Get Name="Get" Id="{4350797f-1e59-4083-b7c2-86586cc287ad}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{4aa1be67-b2f0-46e0-aecb-85c18cbef79b}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Method Name="Interlock" Id="{b9614087-83f0-4675-8dad-b6765017e9ea}">
       <Declaration><![CDATA[METHOD Interlock
 VAR_INPUT
@@ -28,8 +99,16 @@ END_VAR
 ]]></Declaration>
     </Method>
     <Method Name="Logger" Id="{36d29a03-8107-42f2-b596-87523b11c29f}">
-      <Declaration><![CDATA[METHOD Logger : BOOL
+      <Declaration><![CDATA[METHOD Logger
 VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="MotionParams" Id="{26e38a32-22d0-42ae-b0c6-5a30c1359c2c}">
+      <Declaration><![CDATA[METHOD MotionParams
+VAR_INPUT
+    bEnable: BOOL;
+    tRefreshDelay: TIME;
 END_VAR
 ]]></Declaration>
     </Method>
@@ -39,6 +118,26 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
+    <Property Name="MoveBusy" Id="{d0e70aa3-dd5f-4993-80bc-c333f23353c3}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY MoveBusy : BOOL]]></Declaration>
+      <Get Name="Get" Id="{2ff17fdf-37b3-4f53-933b-aa2caf936d99}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{b7604329-d89a-4af5-b773-b6e19b1e5f38}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="MoveDone" Id="{90606f0a-a16a-4ffe-93ef-405ecad06807}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY MoveDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{0ae3f37d-a00f-4d46-89b6-82fdb536fd4e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{d0d57c30-381a-47aa-a3c5-49b7443da0de}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Method Name="MoveVelocity" Id="{bc7db01d-6c11-4d35-a626-79d63771cf0a}">
       <Declaration><![CDATA[METHOD MoveVelocity
 VAR_INPUT
@@ -53,6 +152,12 @@ END_VAR
     </Method>
     <Method Name="Reset" Id="{43fc3192-2758-4d04-872e-08906cd5bf28}">
       <Declaration><![CDATA[METHOD Reset : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="SetEnables" Id="{b93a945e-5ba8-456d-9ebc-47294f36ee3e}">
+      <Declaration><![CDATA[METHOD SetEnables
 VAR_INPUT
 END_VAR
 ]]></Declaration>

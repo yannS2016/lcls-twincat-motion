@@ -19,7 +19,7 @@ END_VAR
 THIS^.Power();
 THIS^.Halt();
 THIS^.Reset();
-THIS^.DS402StateMachine();
+THIS^.StateMachine();
 
 
 
@@ -28,7 +28,7 @@ THIS^.DS402StateMachine();
 ]]></ST>
     </Implementation>
     <Method Name="Brake" Id="{22a77937-1757-472e-8a24-02f41806a6fb}">
-      <Declaration><![CDATA[METHOD Brake : BOOL
+      <Declaration><![CDATA[METHOD Brake
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[SUPER^.Brake();]]></ST>
@@ -73,12 +73,12 @@ END_VAR
             // No running Job : only true for discrete motion
             IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
                 // drive dependent, it seems PI drive only support absolute motion.
-                IF SUPER^.stPiezoStage.eMoveMode = E_DS402MoveMode.ABSOLUTE THEN
+                IF SUPER^.stPiezoStage.eMoveMode = E_EpicsMotorCmd.MOVE_ABSOLUTE THEN
                     // Absolute move
 					SUPER^.stPiezoStage.nCommand:=3;
                     THIS^.MoveAbsolute();
                 ELSE
-                    // Relative move
+                    // Relative move: Not implemented
 					SUPER^.stPiezoStage.nCommand:=2;
                     THIS^.MoveRelative();
                 END_IF
@@ -124,19 +124,14 @@ END_CASE
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="DS402StateMachine" Id="{adad349e-6f22-41f6-bf4b-2c2ba773c644}">
-      <Declaration><![CDATA[METHOD DS402StateMachine
+    <Method Name="EncSaveRestore" Id="{28aa3355-f5d7-4497-9454-690cd72c3f29}">
+      <Declaration><![CDATA[METHOD EncSaveRestore
 VAR_INPUT
+	bEnable	: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.DS402StateMachine();
-THIS^.HandleMoveRequest();
-SUPER^.SyncEPICSStatus();
-SUPER^.PostInterlocks();
-
-
-]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="FB_Init" Id="{ea3b8a11-1b80-40a7-b145-7a2a5e25ca70}">
@@ -263,7 +258,7 @@ SUPER^.EncValue();
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{f160a88a-3c4d-4691-a405-183a03bb632e}">
-      <Declaration><![CDATA[METHOD Logger : BOOL
+      <Declaration><![CDATA[METHOD Logger
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[SUPER^.Logger();]]></ST>
@@ -367,6 +362,21 @@ END_IF
       <Implementation>
         <ST><![CDATA[SUPER^.ReadStatus();
 SUPER^.SyncEpicsStatus();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{adad349e-6f22-41f6-bf4b-2c2ba773c644}">
+      <Declaration><![CDATA[METHOD StateMachine
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+THIS^.HandleMoveRequest();
+SUPER^.SyncEPICSStatus();
+SUPER^.PostInterlocks();
+
+
+]]></ST>
       </Implementation>
     </Method>
   </POU>

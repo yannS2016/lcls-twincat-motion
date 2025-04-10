@@ -7,6 +7,8 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
+	// Save abd restore encoder value
+    fbSetPos: MC_SetPosition;
 END_VAR
 ]]></Declaration>
     <Implementation>

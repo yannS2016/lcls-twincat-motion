@@ -1,0 +1,349 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_MotionErrorLogger" Id="{823180da-a8af-497e-9f77-f60a0d93f39a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionErrorLogger  IMPLEMENTS I_Logger
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR CONSTANT
+	// 10 Message long buffer ( it takes 81 for each string and a 4 byte overhead in the buffer)
+	MAX_BUFFER_SIZE : UDINT := 850;
+	WARNING_CODE :UDINT := 99;
+END_VAR
+VAR
+	arrBuffer 	: ARRAY[0..MAX_BUFFER_SIZE] OF BYTE; (* Buffer memory used by FB_MemRingBuffer function block *)
+	fbBuffer	: FB_MemRingBuffer;
+	sInternalLogMessage	: STRING;
+	sInternalOldLogMessage	: STRING;
+	bSuccess		: BOOL;
+	nUsedSpace		: UDINT;
+	nStoredSets		: UDINT;
+	bOverwrite		: BOOL := TRUE;
+	bUpdateConnectedClient	: BOOL;
+	bErrorState		: BOOL;
+	nPrevStoredSets	: UDINT;
+    uExposedLogMsg 	: U_ExposedLogMsg;
+	
+    fbLogMessage: FB_LogMessage;
+    rtNewError: R_TRIG;
+    bChangedError: BOOL;
+    sPrevErr: STRING(80);
+    fbJson: FB_JsonSaxWriter;
+	stMotionStage	: REFERENCE TO ST_MotionStage;
+	bInit			: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="AddMsg" Id="{dcca8bef-c712-4036-a808-49f9b85487c4}">
+      <Declaration><![CDATA[METHOD AddMsg : BOOL
+VAR_INPUT
+	ErrorId	: UDINT;
+	ErrorMessage : STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF sInternalLogMessage <> sInternalOldLogMessage THEN
+	// lookup error code 
+	IF ErrorId <> WARNING_CODE THEN
+		// actual motion error: do a lookup first 
+		sInternalLogMessage:=MotionErrorLookUp(ErrorId);
+	ELSE 
+		// this a warning
+		sInternalLogMessage:=ErrorMessage;
+	END_IF
+	
+	fbBuffer.A_AddTail( pWrite:= ADR( sInternalLogMessage ),
+						cbWrite:= SIZEOF( sInternalLogMessage ),
+						pBuffer:= ADR( arrBuffer ),
+						cbBuffer:= SIZEOF( arrBuffer ),
+						bOk=> bSuccess,
+						nCount => nStoredSets );
+	IF NOT bSuccess THEN (* overflow ? *)
+		IF bOverwrite THEN
+			fbBuffer.A_RemoveHead(); (* remove one oldest entry *)
+	
+			fbBuffer.A_AddTail( bOk => bSuccess, nCount => nStoredSets );
+		END_IF
+	END_IF
+END_IF
+
+sInternalOldLogMessage := sInternalLogMessage;
+// return the used space as % of total storage
+nUsedSpace := (fbBuffer.cbSize * 100) / MAX_BUFFER_SIZE;
+
+AddMsg := bSuccess;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ExposedErrorMessage" Id="{fe8a4e45-2f88-4be2-8545-3b981e5bf655}">
+      <Declaration><![CDATA[METHOD ExposedErrorMessage
+VAR_INPUT
+	bReady : BOOL;
+END_VAR
+
+VAR_INST
+	Counter : UDINT;
+	sTmp	: STRING(80);
+	rtExposedReady	: R_TRIG;
+	sEpicsDelimeter	: STRING := '-';
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[rtExposedReady(CLK:=bReady);
+IF rtExposedReady.Q THEN
+	(* remove oldest entry *)
+	nPrevStoredSets := nStoredSets;
+	FOR counter := 1 TO nPrevStoredSets BY 1 DO
+		RemoveMsg();
+		IF bSuccess THEN
+			sTmp:=CONCAT(sInternalLogMessage, sEpicsDelimeter);
+			CONCAT2(ADR(uExposedLogMsg.sExposedEpicsMessage), ADR(sTmp), ADR(uExposedLogMsg.sExposedEpicsMessage), SIZEOF(uExposedLogMsg.sExposedEpicsMessage));
+		ELSE
+			RETURN;
+		END_IF
+	END_FOR
+	bReady := FALSE;
+END_IF
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_Init" Id="{03688e5f-125a-4cec-a8c0-d898ba1ca7d0}">
+      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
+//The return value is not evaluated. For a specific influence, you can also declare the
+//methods explicitly and provide additional code there with the standard initialization
+//code. You can evaluate the return value.
+METHOD FB_Init: BOOL
+VAR_INPUT
+    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="GetMsg" Id="{a789d61f-49cd-49ac-9e66-88632c265d87}">
+      <Declaration><![CDATA[METHOD GetMsg : STRING(80)
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fbBuffer.A_GetHead( pRead:= ADR( sInternalLogMessage ),
+					cbRead:= SIZEOF( sInternalLogMessage ),
+					pBuffer:= ADR( arrBuffer ),
+					cbBuffer:= SIZEOF( arrBuffer ),
+					bOk=> bSuccess,
+					nCount => nStoredSets );
+
+// return the used space as % of total storage
+nUsedSpace := (fbBuffer.cbSize * 100) / MAX_BUFFER_SIZE;
+
+GetMsg := sInternalLogMessage;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getRef" Id="{056c94a9-6ce7-4a1d-a1a1-db3913bbda62}">
+      <Declaration><![CDATA[METHOD getRef
+VAR_INPUT
+	stLogMotionStage	: REFERENCE TO ST_MotionStage;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF __ISVALIDREF(stLogMotionStage) THEN
+	// get the motion stage ref for logging usage
+	bInit := TRUE;
+ELSE 
+	bInit := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MotionErrorLookUp" Id="{ee655643-5e35-4783-99a0-1481de036b22}">
+      <Declaration><![CDATA[METHOD MotionErrorLookUp : STRING
+VAR_INPUT
+	ErrorId	: UDINT;
+END_VAR
+
+VAR
+    msg: STRING;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE ErrorId OF
+    // Common NC errors
+    16#4221: msg:='Requested set velocity is not allowed';
+    16#4222: msg:='Requested set position is not allowed';
+    16#4223: msg:='No enable for controller and/or feed';
+    16#4225: msg:='Drive not ready during axis start';
+    16#4260: msg:='Drive disabled';
+    16#42A0: msg:='Coupled axis error';
+    16#4357: msg:='Negative limit hit';
+    16#4358: msg:='Positive limit hit';
+    16#4395: msg:='Set velocity not allowed';
+    16#4466: msg:='Invalid I/O data for more than n continuous NC cycles (encoder)';
+    16#4467: msg:='Encoder error: invalid actual position data';
+    16#4550: msg:='Stall: position lag monitoring error';
+    16#4650: msg:='Drive hardware not ready to operate';
+    16#4655: msg:='Invalid IO data';
+    16#4B07: msg:='Timeout axis function block after 6 seconds';
+    16#4FFF: msg:='Unknown NC error (not in manual)';
+
+    // Custom error definitions
+    E_LCLSMotionError.ABORTED: msg:='Aborted move request with active move in progress';
+    E_LCLSMotionError.UNSAFE: msg:='Position state unsafe';
+    E_LCLSMotionError.INVALID: msg:='Position state invalid';
+    E_LCLSMotionError.TEST: msg:='Fake testing error';
+
+    // Fallbacks
+    0: msg:='';
+    ELSE
+        msg:='Contact PCDS to add new message';
+END_CASE
+MotionErrorLookUp:=msg;]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="NumLogMessages" Id="{da56db49-39b4-46e1-adc4-ae621ac47d50}">
+      <Declaration><![CDATA[PROPERTY NumLogMessages : UDINT
+]]></Declaration>
+      <Get Name="Get" Id="{78a0b3a5-6f4c-48ed-9781-823c41a36e1d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[NumLogMessages := nStoredSets;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="RemoveMsg" Id="{9685dc33-66f1-4c6a-805b-1e56e98884a9}">
+      <Declaration><![CDATA[METHOD RemoveMsg : STRING(80)
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fbBuffer.A_RemoveHead( 	pRead:= ADR( sInternalLogMessage ),
+						cbRead:= SIZEOF( sInternalLogMessage ),
+						pBuffer:= ADR( arrBuffer ),
+						cbBuffer:= SIZEOF( arrBuffer ),
+						bOk=> bSuccess,
+						nCount => nStoredSets );
+
+// return the used space as % of total storage
+nUsedSpace := (fbBuffer.cbSize * 100) / MAX_BUFFER_SIZE;
+
+RemoveMsg := sInternalLogMessage;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{311df3d9-4748-4dd6-a5b1-3a9bc717d529}">
+      <Declaration><![CDATA[METHOD Reset
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[MEMSET( ADR( arrBuffer ), 0, SIZEOF( arrBuffer ) ); (* reset (optional) internal buffer *)
+
+fbBuffer.A_Reset( 	bOk=> bSuccess,
+					nCount => nStoredSets );
+sInternalLogMessage := '';
+uExposedLogMsg.sExposedEpicsMessage := '';
+
+nUsedSpace := (fbBuffer.cbSize * 100) / MAX_BUFFER_SIZE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="UpdateConnectedClients" Id="{b7e0cf19-688b-4bca-af46-51e5c2bbe581}">
+      <Declaration><![CDATA[(*
+    If the motion struct has an error, log it.
+
+    The log condition is:
+    - When bError goes TRUE (catch transition from no error to error)
+    - When the error message changes while bError is TRUE (catch transition from error a to error b)
+
+    Includes the motor name and the NC error id in the json blob
+*)
+METHOD UpdateConnectedClients
+VAR_INPUT
+	Enabled 		: BOOL;
+	// this is a general error condition that will put the axis in standstill/disbaled state
+	//  the condition errors and warning will be sent to connected client once 
+	// no error logging will occurs till the condition is reset and new erro/warning are buffered in
+	Error	 		: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// We update clients only if We actually add error/warning to the log buffer
+// We Not already in an error state and the logging feature is enabled
+bUpdateConnectedClient:=(Enabled AND (NumLogMessages > 0) AND NOT bErrorState);
+
+IF bUpdateConnectedClient THEN
+	// inflate error buffer for EPICS client
+	ExposedErrorMessage(bUpdateConnectedClient);
+	// update epics client - this a copy perhaps we could get a ref to this motion stage var
+	stMotionStage.sExtendedErrorMessage := uExposedLogMsg.sExposedEpicsMessage;
+	// update event logger
+    fbJson.StartObject();
+    fbJson.AddKey('schema');
+    fbJson.AddString('ST_MotionStage.bError');
+    fbJson.AddKey('dut_name');
+    fbJson.AddString(stMotionStage.sName);
+    fbJson.AddKey('axis_name');
+    fbJson.AddString(stMotionStage.stAxisParameters.sAxisName);
+    fbJson.AddKey('axis_id');
+    fbJson.AddUdint(stMotionStage.stAxisParameters.AxisId);
+    fbJson.AddKey('err_id');
+    fbJson.AddUdint(stMotionStage.nErrorId);
+    fbJson.AddKey('position');
+    fbJson.AddLreal(stMotionStage.stAxisStatus.fActPosition);
+    fbJson.AddKey('position_lag');
+    fbJson.AddLreal(stMotionStage.stAxisStatus.fActDiff);
+    fbJson.EndObject();
+    fbLogMessage.sJson:=fbJson.GetDocument();
+	// should we return the full inflated buffer to event logger or just the latest error/warning?
+	// for now we returning latest error/warning as the general library needs some twicks to support
+	// the  larger string(800)
+    fbLogMessage(
+        sMsg:=GetMsg(),
+        eSevr:=TcEventSeverity.Error,
+        eSubsystem:=E_Subsystem.MOTION,
+    );
+    fbJson.ResetDocument();
+	// if Error we in error state no client update shall occur
+	bErrorState := Error;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_MotionErrorLogger">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.AddMsg">
+      <LineId Id="3" Count="28" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.ExposedErrorMessage">
+      <LineId Id="3" Count="16" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.GetMsg">
+      <LineId Id="3" Count="9" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.getRef">
+      <LineId Id="3" Count="4" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.MotionErrorLookUp">
+      <LineId Id="3" Count="29" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.NumLogMessages.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.RemoveMsg">
+      <LineId Id="3" Count="9" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.Reset">
+      <LineId Id="3" Count="6" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionErrorLogger.UpdateConnectedClients">
+      <LineId Id="3" Count="37" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

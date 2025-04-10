@@ -13,7 +13,7 @@ VAR
     eModeOFOperation	: E_DS402OperationMode:=E_DS402OperationMode.NONE;
     eHomingState		: E_DS402Homing;
 	// reuse to absolute/relative moves for DS402
-    eAxisState		:  MC_AxisStates;
+    eAxisState			:  MC_AxisStates;
     fbMotionErrorLogger : FB_MotionErrorLogger;
     // create a property for some of these
     bExecMove			: BOOL;
@@ -25,8 +25,8 @@ VAR
     bHomingBusy			: BOOL;
     bHomingDone			: BOOL;
     bPrepareDisable		: BOOL;
-    bMoveDone			:  BOOL;
-    bMoveBusy			:  BOOL;
+    bMoveDone			: BOOL;
+    bMoveBusy			: BOOL;
     // use this for motion time axis states
     bExecute			: BOOL;
 	// This prevent unexpected logical 1 on stMotionStage.bExecute 
@@ -49,13 +49,30 @@ VAR
     nErrorId			: UDINT:=0;
     sLocalErrorMessage	: STRING;
     tonHoming 			: TON;
+	
+	// Save abd restore encoder value
+    timer: TON;
+    bInit: BOOL;
+    bLoad: BOOL;
+    nLatchError: UDINT;
+    bEncError: BOOL;
+    tRetryDelay: TIME := T#1s;
+    nMaxRetries: UINT := 10;
+    nCurrTries: UINT := 0;
+    bWaitRetry: BOOL;
+    tonRetry: TON;
+END_VAR
+
+VAR PERSISTENT
+    bSaved: BOOL;
+    fPosition: LREAL;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
     <Method Name="Brake" Id="{c6b36a48-c7b1-4cfe-936b-d492d651f479}">
-      <Declaration><![CDATA[METHOD PUBLIC Brake : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Brake
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -74,7 +91,7 @@ END_VAR
       </Get>
     </Property>
     <Method Name="CalibratedMotionParams" Id="{67fcb905-3933-48da-aebe-2bf2e7a7195e}">
-      <Declaration><![CDATA[METHOD CalibratedMotionParams
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT CalibratedMotionParams
 VAR_INPUT
 END_VAR
 ]]></Declaration>
@@ -82,38 +99,10 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ConfigureDriveParams" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
-      <Declaration><![CDATA[METHOD ConfigureDriveParams : BOOL
-VAR_INPUT
-    bExecute	:	BOOL:=FALSE;
-    nIndex     	: 	WORD ; 		   (* CoE Object Index *)
-    nSubIndex  	: 	BYTE ; 			   (* Subindex of CoE Object *)
-    nValue		: 	DINT;
-    fbSdoWrite	: 	FB_EcCoESdoWrite;
-END_VAR
-
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF NOT fbSdoWrite.bBusy THEN
-    bExecute:=FALSE;
-    IF NOT fbSdoWrite.bError THEN
-        (* write successful *)
-        Error:=FALSE;
-        ErrorCode:=0;
-    ELSE
-        (* write failed *)
-        Error:=fbSdoWrite.bError;
-        ErrorCode:=fbSdoWrite.nErrId;
-
-    END_IF
-
-    fbSdoWrite(bExecute:=FALSE);
-END_IF]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="EncSaveRestore" Id="{1cc8bf99-0b38-4eef-833a-ad133fa28032}">
-      <Declaration><![CDATA[METHOD EncSaveRestore : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT EncSaveRestore
 VAR_INPUT
+	 bEnable: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
@@ -121,24 +110,13 @@ END_VAR
       </Implementation>
     </Method>
     <Method Name="EncValue" Id="{b3a7b314-e49d-4a2f-9c18-94fd8f33f576}">
-      <Declaration><![CDATA[METHOD EncValue : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT EncValue
 VAR_INPUT
+  //  bEnable: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[(* SmartACT: The encoder count from the Piezo drive is not a raw count from the embeded actuator device
-   we get a calibrated nm value. thus the use of abs() since this value is signed. 
-   PI: to be discovered *)
-IF stPiezoStage.nRawEncoderDINT <> 0 THEN
-    stPiezoStage.nEncoderCount:=DINT_TO_UDINT(ABS(stPiezoStage.nRawEncoderDINT));
-ELSE
-    stPiezoStage.nEncoderCount:=0;
-END_IF
-
-// calibrated encoder readback
-fCalibratedActPos:=UDINT_TO_REAL(stPiezoStage.nEncoderCount) *  MAX(stPiezoStage.fscalingFactor, fDefaultScalingFactor);
-stPiezoStage.fPosDiff:=stPiezoStage.fPosition - fCalibratedActPos;
-]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Property Name="Error" Id="{6f16c5a8-a341-41d8-bb67-663d3f8d4084}">
@@ -450,7 +428,7 @@ END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{7fb0d460-52d2-4ae2-accf-52e93bd858b3}">
-      <Declaration><![CDATA[METHOD PUBLIC Logger : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC Logger
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -477,7 +455,7 @@ END_VAR
       </Set>
     </Property>
     <Method Name="MotionParams" Id="{d4d497ab-25de-4a2d-9f0c-7fd0abae8c76}">
-      <Declaration><![CDATA[METHOD MotionParams : BOOL
+      <Declaration><![CDATA[METHOD MotionParams
 VAR_INPUT
     bEnable: BOOL;
     tRefreshDelay: TIME;
@@ -556,18 +534,6 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="QuickStop" Id="{3433f4ca-0bf8-494d-bdbf-c805b64891fa}">
-      <Declaration><![CDATA[METHOD QuickStop : BOOL
-VAR_INPUT
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// // Try to clear any faults if they are present by setting bit 7 of the Control Word.
-// IF NOT stPiezoStage.stPiezoStageControl.QuickStop THEN
-//     stPiezoStage.stPiezoStageControl.QuickStop:=TRUE;
-// END_IF]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="Reset" Id="{872bc095-326f-40be-9faa-244cb7e5f547}">
       <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Reset : BOOL
 ]]></Declaration>
@@ -576,7 +542,7 @@ END_VAR
       </Implementation>
     </Method>
     <Method Name="SetEnables" Id="{8bb4d6f6-cdad-41b7-afa8-a970de274d07}">
-      <Declaration><![CDATA[METHOD SetEnables : BOOL
+      <Declaration><![CDATA[METHOD SetEnables
 VAR_INPUT
 END_VAR
 ]]></Declaration>
@@ -589,7 +555,7 @@ stPiezoStage.bAllEnable R= NOT stPiezoStage.bUserEnable;]]></ST>
       </Implementation>
     </Method>
     <Method Name="StateMachine" Id="{55686adc-350f-4c3a-957a-0bcda1d209a7}">
-      <Declaration><![CDATA[METHOD StateMachine
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT StateMachine
 VAR_INPUT
 END_VAR
 ]]></Declaration>

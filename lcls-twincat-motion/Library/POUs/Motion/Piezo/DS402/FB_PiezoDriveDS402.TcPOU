@@ -103,10 +103,9 @@ END_IF
       </Implementation>
     </Method>
     <Method Name="Brake" Id="{e5829bdb-4f85-41d9-84ca-59543bab5ffb}">
-      <Declaration><![CDATA[METHOD Brake : BOOL
-]]></Declaration>
+      <Declaration><![CDATA[METHOD Brake]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.Brake();]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Property Name="CalibratedAcceleration" Id="{c9db77b1-cfd0-4d09-b550-344bf9246222}">
@@ -210,132 +209,64 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="DS402StateMachine" Id="{d963b9d7-d9e1-4a33-bb79-0f8a7e20b1de}">
-      <Declaration><![CDATA[
-METHOD DS402StateMachine
+    <Method Name="ConfigureDriveParams" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
+      <Declaration><![CDATA[METHOD ConfigureDriveParams : BOOL
 VAR_INPUT
+    bExecute	:	BOOL:=FALSE;
+    nIndex     	: 	WORD ; 		   (* CoE Object Index *)
+    nSubIndex  	: 	BYTE ; 			   (* Subindex of CoE Object *)
+    nValue		: 	DINT;
+    fbSdoWrite	: 	FB_EcCoESdoWrite;
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT fbSdoWrite.bBusy THEN
+    bExecute:=FALSE;
+    IF NOT fbSdoWrite.bError THEN
+        (* write successful *)
+        Error:=FALSE;
+        ErrorCode:=0;
+    ELSE
+        (* write failed *)
+        Error:=fbSdoWrite.bError;
+        ErrorCode:=fbSdoWrite.nErrId;
+
+    END_IF
+
+    fbSdoWrite(bExecute:=FALSE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EncSaveRestore" Id="{62326dfa-915c-4ff5-a6ba-aedff0abd839}">
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT EncSaveRestore
+VAR_INPUT
+	bEnable	: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[(*switch on disable*)
-IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
-    AND  SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-
-    eDriveState :=E_DS402DriveState.SWITCH_ON_DISABLED;
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EncValue" Id="{f460e6f3-54f0-4341-b7f0-33fb3e421551}">
+      <Declaration><![CDATA[METHOD EncValue
+VAR_INPUT
+  //  bEnable: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(* SmartACT: The encoder count from the Piezo drive is not a raw count from the embeded actuator device
+   we get a calibrated nm value. thus the use of abs() since this value is signed. 
+   PI: to be discovered *)
+IF stPiezoStage.nRawEncoderDINT <> 0 THEN
+    stPiezoStage.nEncoderCount:=DINT_TO_UDINT(ABS(stPiezoStage.nRawEncoderDINT));
+ELSE
+    stPiezoStage.nEncoderCount:=0;
 END_IF
 
-(*Ready to switch*)
-IF  SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-
-    eDriveState :=E_DS402DriveState.SWITCH_ON_READY;
-END_IF
-
-(*Switch on*)
-IF  SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-
-    eDriveState :=E_DS402DriveState.SWITCH_ON;
-END_IF
-
-(*Operation enbaled*)
-IF    SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-
-    eDriveState :=E_DS402DriveState.OPERATION_ENABLED;
-END_IF
-
-(*Fault*)
-IF  NOT  SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-
-    eDriveState :=E_DS402DriveState.FAULT;
-END_IF
-
-(*Fault reaction active*)
-IF    SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-
-    eDriveState :=E_DS402DriveState.FAULT_ACTIVE;
-END_IF
-
-(*Quick Stop*)
-IF    SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
-    AND SUPER^.stPiezoStage.stPiezoDriveStatus.VoltageEnabled
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
-    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-
-    eDriveState :=E_DS402DriveState.QUICK_STOP_ACTIVE;
-END_IF
-
-CASE eDriveState  OF
-
-    E_DS402DriveState.SWITCH_ON_DISABLED:;
-		SUPER^.Error := FALSE;
-		SUPER^.ErrorCode := 0;
-    E_DS402DriveState.SWITCH_ON_READY:;
-        // Transition to Switch on state
-        SUPER^.stPiezoStage.nPiezoDriveControl:=16#07;
-    E_DS402DriveState.SWITCH_ON:;
-		SUPER^.Error := FALSE;
-		SUPER^.ErrorCode := 0;
-		
-    E_DS402DriveState.OPERATION_ENABLED:;
-
-    E_DS402DriveState.FAULT:;
-        (* This is not a motion fault but rather a hardware, lost of enabled, wc or loss of calibration issue
-			The condition will set bit 3 'fault' but not bit 13 'error' so waiting in the error state would won't  clear this condition *)
-		SUPER^.Error := TRUE;
-		// Catch the drive errors code
-		ReadDriveErrors();
-		SUPER^.ErrorCode := SUPER^.stPiezoStage.nPiezoErrorCode;
-		// log the error condition
-		fbMotionErrorLogger.AddMsg(SUPER^.ErrorCode, SUPER^.ErrorMessage);
-		eAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
-	
-    E_DS402DriveState.QUICK_STOP_ACTIVE:
-        // return back to operation enabled: transition 16
-        SUPER^.stPiezoStage.nPiezoDriveControl:=16#0F;
-
-END_CASE
-
-bOperational := (eDriveState = E_DS402DriveState.OPERATION_ENABLED);
-rtOperational(CLK:=bOperational);
-ftOperational(CLK:= bOperational);
-
-IF rtOperational.Q THEN
-	// in 'DURING_MOTION' mode we place the drive in this state before a move is initiated
-	eAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
-END_IF
-
-IF ftOperational.Q THEN
-	eAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
-END_IF
-
+// calibrated encoder readback
+fCalibratedActPos:=UDINT_TO_REAL(stPiezoStage.nEncoderCount) *  MAX(stPiezoStage.fscalingFactor, fDefaultScalingFactor);
+stPiezoStage.fPosDiff:=stPiezoStage.fPosition - fCalibratedActPos;
 ]]></ST>
       </Implementation>
     </Method>
@@ -443,14 +374,14 @@ SUPER^.Interlock();
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{c74ad8cb-1745-4df8-b83c-c7761caffd8e}">
-      <Declaration><![CDATA[METHOD Logger : BOOL
+      <Declaration><![CDATA[METHOD Logger
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[SUPER^.Logger();]]></ST>
       </Implementation>
     </Method>
     <Method Name="MotionParams" Id="{f9010265-bfde-4e4a-8b05-a4f8748f71cd}">
-      <Declaration><![CDATA[METHOD MotionParams : BOOL
+      <Declaration><![CDATA[METHOD MotionParams
 VAR_INPUT
     bEnable: BOOL;
     tRefreshDelay: TIME;
@@ -628,6 +559,134 @@ IF rtReset.Q THEN
     SUPER^.stPiezoStage.sCustomErrorMessage:='';
     bExecute:=FALSE;
 END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{d963b9d7-d9e1-4a33-bb79-0f8a7e20b1de}">
+      <Declaration><![CDATA[METHOD StateMachine
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*switch on disable*)
+IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
+    AND  SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+
+    eDriveState :=E_DS402DriveState.SWITCH_ON_DISABLED;
+END_IF
+
+(*Ready to switch*)
+IF  SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+
+    eDriveState :=E_DS402DriveState.SWITCH_ON_READY;
+END_IF
+
+(*Switch on*)
+IF  SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+
+    eDriveState :=E_DS402DriveState.SWITCH_ON;
+END_IF
+
+(*Operation enbaled*)
+IF    SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+
+    eDriveState :=E_DS402DriveState.OPERATION_ENABLED;
+END_IF
+
+(*Fault*)
+IF  NOT  SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+
+    eDriveState :=E_DS402DriveState.FAULT;
+END_IF
+
+(*Fault reaction active*)
+IF    SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+
+    eDriveState :=E_DS402DriveState.FAULT_ACTIVE;
+END_IF
+
+(*Quick Stop*)
+IF    SUPER^.stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Fault
+    AND SUPER^.stPiezoStage.stPiezoDriveStatus.VoltageEnabled
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.QuickStopActive
+    AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+
+    eDriveState :=E_DS402DriveState.QUICK_STOP_ACTIVE;
+END_IF
+
+CASE eDriveState  OF
+
+    E_DS402DriveState.SWITCH_ON_DISABLED:;
+		SUPER^.Error := FALSE;
+		SUPER^.ErrorCode := 0;
+    E_DS402DriveState.SWITCH_ON_READY:;
+        // Transition to Switch on state
+        SUPER^.stPiezoStage.nPiezoDriveControl:=16#07;
+    E_DS402DriveState.SWITCH_ON:;
+		SUPER^.Error := FALSE;
+		SUPER^.ErrorCode := 0;
+		
+    E_DS402DriveState.OPERATION_ENABLED:;
+
+    E_DS402DriveState.FAULT:;
+        (* This is not a motion fault but rather a hardware, lost of enabled, wc or loss of calibration issue
+			The condition will set bit 3 'fault' but not bit 13 'error' so waiting in the error state would won't  clear this condition *)
+		SUPER^.Error := TRUE;
+		// Catch the drive errors code
+		ReadDriveErrors();
+		SUPER^.ErrorCode := SUPER^.stPiezoStage.nPiezoErrorCode;
+		// log the error condition
+		fbMotionErrorLogger.AddMsg(SUPER^.ErrorCode, SUPER^.ErrorMessage);
+		eAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
+	
+    E_DS402DriveState.QUICK_STOP_ACTIVE:
+        // return back to operation enabled: transition 16
+        SUPER^.stPiezoStage.nPiezoDriveControl:=16#0F;
+
+END_CASE
+
+bOperational := (eDriveState = E_DS402DriveState.OPERATION_ENABLED);
+rtOperational(CLK:=bOperational);
+ftOperational(CLK:= bOperational);
+
+IF rtOperational.Q THEN
+	// in 'DURING_MOTION' mode we place the drive in this state before a move is initiated
+	eAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+END_IF
+
+IF ftOperational.Q THEN
+	eAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
+END_IF
+
 ]]></ST>
       </Implementation>
     </Method>
