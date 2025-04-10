@@ -56,11 +56,7 @@ VAR
     bLoad: BOOL;
     nLatchError: UDINT;
     bEncError: BOOL;
-    tRetryDelay: TIME := T#1s;
-    nMaxRetries: UINT := 10;
-    nCurrTries: UINT := 0;
-    bWaitRetry: BOOL;
-    tonRetry: TON;
+
 END_VAR
 
 VAR PERSISTENT

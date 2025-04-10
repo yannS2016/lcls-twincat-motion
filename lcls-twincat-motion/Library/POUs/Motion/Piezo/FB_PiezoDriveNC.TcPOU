@@ -8,7 +8,12 @@ VAR_OUTPUT
 END_VAR
 VAR
 	// Save abd restore encoder value
-    fbSetPos: MC_SetPosition;
+    fbSetPos		: MC_SetPosition;
+    tRetryDelay		: TIME := T#1S;
+    nMaxRetries		: UINT := 10;
+    nCurrTries		: UINT := 0;
+    bWaitRetry		: BOOL;
+    tonRetry		: TON;
 END_VAR
 ]]></Declaration>
     <Implementation>

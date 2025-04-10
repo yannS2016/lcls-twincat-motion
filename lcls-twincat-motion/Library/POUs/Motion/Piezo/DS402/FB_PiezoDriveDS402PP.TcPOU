@@ -10,8 +10,13 @@ VAR
     eMotionState		:  E_DS402MotionState;
     DiscreteMotion 		:  BOOL;
     ContinuousMotion 	:  BOOL;
-    // for test
-	bReady  : BOOL;
+	bSaveDone			:  BOOL;
+	
+END_VAR
+
+VAR CONSTANT
+	// DS 402 Motor encoder defective code : this needed for save and restore.
+	nEncErrorCode	: WORD := 16#7300;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -20,10 +25,6 @@ THIS^.Power();
 THIS^.Halt();
 THIS^.Reset();
 THIS^.StateMachine();
-
-
-
-
 
 ]]></ST>
     </Implementation>
@@ -117,11 +118,7 @@ END_VAR
 		// the axis will reset bit 12 after a fallign edge on this bit to signal readiness for new set point
 		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
         eAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
-END_CASE
-
-
-
-]]></ST>
+END_CASE]]></ST>
       </Implementation>
     </Method>
     <Method Name="EncSaveRestore" Id="{28aa3355-f5d7-4497-9454-690cd72c3f29}">
@@ -131,7 +128,33 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[IF bEnable THEN
+    // Trigger a load if anything was saved at all
+    IF NOT bInit THEN
+        bInit := TRUE;
+        bLoad S= bSaved;
+    END_IF
+
+    // Set our position if bLoad is true
+	IF bLoad THEN
+		stPiezoStage.fPosition:=fPosition;
+		bSaveDone := TRUE;
+	END_IF
+
+    // Only load once, at startup
+    bLoad R= bSaveDone;
+
+    // Check ST_PiezoStage for an encoder error
+    bEncError := stPiezoStage.bError AND (stPiezoStage.nErrorId = nEncErrorCode);
+
+    // Do not save if we're currently loading or if there is an encoder error
+    IF NOT bLoad AND NOT bEncError THEN
+        fPosition := stPiezoStage.stAxisStatus.fActPosition;
+        // This persistent variable lets us check if anything was saved
+        // It will be TRUE at startup if we have saved values
+        bSaved := TRUE;
+    END_IF
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="FB_Init" Id="{ea3b8a11-1b80-40a7-b145-7a2a5e25ca70}">
@@ -233,13 +256,8 @@ END_IF
 
 // update encoder value and calibrated position
 SUPER^.EncValue();
-
-
-
-
-
-
-]]></ST>
+// Save and restore as long as not an absolute encoder
+EncSaveRestore( bEnable:=stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE);]]></ST>
       </Implementation>
     </Method>
     <Method Name="Home" Id="{b3172138-e5cb-4d78-92a5-25024c9364c9}">

@@ -7,6 +7,7 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
+	 fbSetPos: MC_SetPosition;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -26,7 +27,61 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[IF bEnable THEN
+    // Trigger a load if anything was saved at all
+    IF NOT bInit THEN
+        bInit := TRUE;
+        bLoad S= bSaved;
+        fbSetPos.Options.ClearPositionLag := TRUE;
+    END_IF
+
+    // Set our position if bLoad is true
+    fbSetPos(
+        Axis:=stPiezoStage.Axis,
+        Execute:=bLoad,
+        Position:=fPosition);
+
+    // Only load once, at startup
+    bLoad R= fbSetPos.Done OR fbSetPos.Error;
+
+    IF fbSetPos.Error THEN
+        // Keep the error latched, it can disappear if Execute is set to FALSE
+        nLatchError := fbSetPos.ErrorID;
+        nCurrTries := nCurrTries + 1;
+        IF nCurrTries >= nMaxRetries THEN
+            // Alert the user that something has gone wrong
+            stPiezoStage.bError := TRUE;
+            stPiezoStage.nErrorId := nLatchError;
+            stPiezoStage.sCustomErrorMessage := 'Error loading previously saved position.';
+        ELSE
+            // Reset the FB for the next retry
+            fbSetPos(
+                Axis:=stPiezoStage.Axis,
+                Execute:=FALSE,
+                Position:=fPosition);
+            // Try again
+            bWaitRetry := TRUE;
+        END_IF
+    END_IF
+
+    tonRetry(
+        IN := bWaitRetry,
+        PT := tRetryDelay);
+
+    bLoad S= tonRetry.Q;
+    bWaitRetry R= tonRetry.Q;
+
+    // Check ST_MotionStage for an encoder error (range 0x44nn)
+    bEncError := stPiezoStage.bError AND stPiezoStage.nErrorId >= 16#4400 AND stPiezoStage.nErrorId <= 16#44FF;
+
+    // Do not save if we're currently loading or if there is an encoder error
+    IF NOT bLoad AND NOT bEncError AND NOT bWaitRetry THEN
+        fPosition := stPiezoStage.stAxisStatus.fActPosition;
+        // This persistent variable lets us check if anything was saved
+        // It will be TRUE at startup if we have saved values
+        bSaved := TRUE;
+    END_IF
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="FB_Init" Id="{600fe1d5-2de2-4cdf-af05-fefe1f75066a}">
