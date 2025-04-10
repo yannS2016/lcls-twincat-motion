@@ -6,8 +6,8 @@
 {attribute 'to_string'}
 TYPE E_DS402MoveMode :
 (
-    ABSOLUTE := 0,
-    RELATIVE := 1
+    ABSOLUTE:=0,
+    RELATIVE:=1
 ) UINT;
 END_TYPE
 ]]></Declaration>

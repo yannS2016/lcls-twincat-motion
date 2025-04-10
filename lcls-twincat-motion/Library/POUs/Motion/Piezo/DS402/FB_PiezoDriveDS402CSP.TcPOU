@@ -72,7 +72,7 @@ END_VAR
       </Implementation>
     </Method>
     <Method Name="Interlock" Id="{1b42e465-3d2a-4756-9fdc-810195b4a90c}">
-      <Declaration><![CDATA[METHOD Interlock : BOOL
+      <Declaration><![CDATA[METHOD Interlock
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[SUPER^.Interlock();
@@ -81,9 +81,9 @@ END_VAR
 CASE SUPER^.stPiezoStage.Axis.Status.MotionState OF
     // We are not enabled if there is an issue
     MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
-        SUPER^.stPiezoStage.bEnableDone := FALSE;
+        SUPER^.stPiezoStage.bEnableDone:=FALSE;
     ELSE
-        SUPER^.stPiezoStage.bEnableDone := TRUE;
+        SUPER^.stPiezoStage.bEnableDone:=TRUE;
 END_CASE]]></ST>
       </Implementation>
     </Method>
@@ -102,14 +102,14 @@ END_CASE]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveRelative" Id="{b53079a9-7fd1-49ab-81ed-1d38acd79883}">
-      <Declaration><![CDATA[METHOD MoveRelative : BOOL
+      <Declaration><![CDATA[METHOD MoveRelative
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveVelocity" Id="{46faa047-3c68-4ca3-a258-bc1a2fc3e753}">
-      <Declaration><![CDATA[METHOD MoveVelocity : BOOL
+      <Declaration><![CDATA[METHOD MoveVelocity
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -130,5 +130,49 @@ METHOD Power : BOOL
         <ST><![CDATA[SUPER^.Reset();]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_PiezoDriveDS402CSP">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.Brake">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.DS402StateMachine">
+      <LineId Id="3" Count="3" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.Halt">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.HandleMoveRequest">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.Home">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.Interlock">
+      <LineId Id="3" Count="8" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.Logger">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.MoveAbsolute">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.MoveRelative">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.MoveVelocity">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.Power">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveDS402CSP.Reset">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

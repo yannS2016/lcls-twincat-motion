@@ -9,7 +9,7 @@ VAR_OUTPUT
     stAxisStatus : ST_AxisStatus;
 END_VAR
 VAR
-    eModeOFOperation		: 	E_DS402OperationMode := E_DS402OperationMode.NONE;
+    eModeOFOperation		: 	E_DS402OperationMode:=E_DS402OperationMode.NONE;
     eHomingState			:	E_DS402Homing;
     // use this for motion time axis states
     mcAxisStates			:   MC_AxisStates;
@@ -49,9 +49,22 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[stPiezoAxis := stPiezoStageRef;]]></ST>
+          <ST><![CDATA[stPiezoAxis:=stPiezoStageRef;]]></ST>
         </Implementation>
       </Set>
     </Property>
+    <LineIds Name="DS402_AXIS">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="DS402_AXIS.ReadStatus">
+      <LineId Id="3" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="DS402_AXIS.stPiezoStageRef.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="DS402_AXIS.stPiezoStageRef.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

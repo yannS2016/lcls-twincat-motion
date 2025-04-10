@@ -6,8 +6,7 @@ STRUCT
     (* Global variables for the TPDO data from the drive. Each one is linked to the respective TPDO channel. *)
     stPiezoDriveStatus 		AT %I*	: 	ST_DS402DriveStatus;
     nModeOfOperationDisplay AT %I*	: 	SINT;
-    nActualPosition 		AT %I*	: 	DINT;
-    nPiezoErrorCode			AT %I*	: 	UINT;
+    //nActualPosition 		AT %I*	: 	DINT;
     (*CSP drive mode*)
     nFollowingError 		AT %I*	: 	DINT;
 
@@ -24,24 +23,23 @@ STRUCT
     nScantargetPosition		AT %Q*	: 	DINT;
     uScantargetVelocity		AT %Q*	: 	ULINT;
 
-    eEgu							:	E_DS402EGU 		:= E_DS402EGU.UM;
-    eMoveMode						: 	E_DS402MoveMode := E_DS402MoveMode.ABSOLUTE;
-    ePPMode							: 	E_DS402MotionMode := E_DS402MotionMode.DISCRETE;
-
+    eEgu							:	E_DS402EGU 			:= E_DS402EGU.NM;
+    eMoveMode						: 	E_EpicsMotorCmd 	:= E_EpicsMotorCmd.MOVE_ABSOLUTE;
+    ePPMode							: 	E_DS402MotionMode 	:= E_DS402MotionMode.DISCRETE;
     // Default unit is um
     fscalingFactor					: 	REAL :=	0.001;
-    fMaxVelocity					: 	REAL := 1000.0; // um/s
+    fMaxVelocity					: 	REAL := 100000.0; // um/s
     fMaxAcceleration 				: 	REAL := 10000.0; // um/s2
     nHomingSpeed					: 	DINT :=	100;
     nHomingAcceleration				:	DINT := 1000;
-
-    // halt/stop motion
-    bHalt							: 	BOOL;
-
     // For setting drives parameter via SDOs ( not yet implemented)
-    sNetId    						: 	T_AmsNetId;         (* NetId of EtherCAT Master *)
-    nSlaveAddr      				: 	UINT;               (* Port Number of EtherCAT Slave *)
-
+	nPiezoErrorCode			        : 	UINT;
+	eModule							: 	E_Module;
+	(* NetId of EtherCAT Master *)
+    arNetId  				AT %I*	: 	AMSNETID; 
+    (* Port Number of EtherCAT Slave *)        
+    nSlaveAddr 				AT %I* 	: 	UINT;               
+	
 END_STRUCT
 END_TYPE
 ]]></Declaration>

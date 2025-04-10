@@ -7,17 +7,31 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-    // will set the associated classes intances externally from this cluster
-    fbPiezoDriveDS402Pp : FB_PiezoDriveDS402PP(stStage := stInternalPiezoStage);
-    // add variable for associated class here
-    iPiezoDrive : I_PiezoDrive;
-    appInternalVar :	BOOL;
-    stInternalPiezoStage: REFERENCE TO ST_PiezoStage;
-
+// will set the associated classes intances externally from this cluster
+stPiezoStage: ST_PiezoStage:=(sName:='TST:MCS2',
+				bPowerSelf:=TRUE,
+				nEnableMode:= ENUM_StageEnableMode.DURING_MOTION,
+				fHomePosition:=0.0,
+				nHomingMode:=ENUM_EpicsHomeCmd.AUTO_ZERO,
+				eEgu:=E_DS402EGU.NM, // namometer
+				fScalingFactor:=1,
+				fMaxVelocity:=1000000.0,
+				fMaxAcceleration:=10000000.0,
+				fVelocity:=500000,
+				fAcceleration:=1000000,
+				fDeceleration:=1000000 );
+ 
+ fbPiezoDriveDS402Pp : FB_PiezoDriveDS402PP(stSTage:=stPiezoStage);
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[]]></ST>
+      <ST><![CDATA[// code
+//  limit swtiched in both direction track the internal limit switch actuvated 
+// based on the soft limits
+stPiezoStage.bHardwareEnable:=TRUE;
+// Stand-in for no PMPS governer
+stPiezoStage.bPowerSelf:=TRUE;
+fbPiezoDriveDS402Pp();]]></ST>
     </Implementation>
     <Method Name="FB_Init" Id="{d9e0eb23-9afd-4536-8af3-7852dfd2c0d2}">
       <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
@@ -28,15 +42,17 @@ METHOD FB_Init: BOOL
 VAR_INPUT
     bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
     bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
-    appVar :	BOOL;
-    stPiezoStagePp : REFERENCE TO ST_PiezoStage_PP;
-    stPiezoStageCsp : REFERENCE TO ST_PiezoStage_CSP;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[	THIS^.appInternalVar := appVar;
-    fbPiezoDriveDS402Pp.FB_Init(bInitRetains := bInitRetains, bInCopyCode := bInCopyCode, stStage := stPiezoStagePp);
-    fbPiezoDriveDS402CSP.FB_Init(bInitRetains := bInitRetains, bInCopyCode := bInCopyCode, stStage:= stPiezoStageCsp);]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_PiezoDriveCluster">
+      <LineId Id="3" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PiezoDriveCluster.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

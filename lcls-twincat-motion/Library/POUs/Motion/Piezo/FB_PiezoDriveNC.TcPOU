@@ -30,6 +30,7 @@ VAR_INPUT
     bInitRetains	: BOOL;
     (* TRUE: the instance will be copied to the copy code afterward (online change)   *)
     bInCopyCode	: BOOL;
+    stStage : REFERENCE TO  ST_PiezoStage;
 END_VAR
 ]]></Declaration>
       <Implementation>
@@ -37,139 +38,130 @@ END_VAR
       </Implementation>
     </Method>
     <Method Name="Halt" Id="{0f823143-5f15-43f3-944a-9090c1d33d70}">
-      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
-METHOD Halt : BOOL
+      <Declaration><![CDATA[METHOD Halt : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="Home" Id="{637d2584-8e89-4521-8900-02bb8710587f}">
-      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
-METHOD Home : BOOL
+      <Declaration><![CDATA[METHOD Home : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="Interlock" Id="{6f055a87-c1f7-4988-a18a-6b1c9220e328}">
-      <Declaration><![CDATA[METHOD Interlock : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC Interlock
 
 VAR
-    fbMotionHome: INT;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// call top interlocks checker
-SUPER^.Interlock();
-
-// Start with an accurate status
-SUPER^.stPiezoStage.Axis.ReadStatus();
-
-// Get a definitive bEnabled reading
-CASE SUPER^.stPiezoStage.Axis.Status.MotionState OF
-    // We are not enabled if there is an issue
-    MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
-        SUPER^.stPiezoStage.bEnableDone := FALSE;
-    ELSE
-        SUPER^.stPiezoStage.bEnableDone := TRUE;
-END_CASE
-
-// Check the limits and cancel execution if appropriate. Without this block we have infinite error spam
-bFwdHit := stPiezoStage.Axis.Status.PositiveDirection AND NOT stPiezoStage.bAllForwardEnable;
-bBwdHit := stPiezoStage.Axis.Status.NegativeDirection AND NOT stPiezoStage.bAllBackwardEnable;
-
-IF (bFwdHit OR bBwdHit) AND NOT bHomingBusy THEN
-    stPiezoStage.bExecute := FALSE;
-END_IF
-
-rtTarget(CLK:=(stPiezoStage.Axis.Status.InTargetPosition AND SUPER^.MoveDone AND bExecMove));
-rtHomed(CLK:=SUPER^.HomeDone AND bExecHome);
-
-// Check done moving via user stop, fbDriveVirtual and Target Position Monitoring, or from homing.
-IF ftExec.Q OR rtTarget.Q OR rtHomed.Q THEN
-    IF NOT stPiezoStage.bDone THEN
-        stPiezoStage.bDone := TRUE;
-        stPiezoStage.bBusy := FALSE;
-        IF NOT stPiezoStage.Axis.Status.Error THEN
-            bExecute := FALSE;
-            stPiezoStage.bExecute := FALSE;
-        END_IF
-    END_IF
-END_IF
-
-// Handle auto-disable timing
-bPrepareDisable S= SUPER^.stPiezoStage.nEnableMode = E_StageEnableMode.DURING_MOTION AND ftExec.Q;
-// Delay the disable until we reach standstill, else brake issues or other race conditions
-IF bPrepareDisable AND SUPER^.stPiezoStage.Axis.Status.MotionState = MC_AXISSTATE_STANDSTILL THEN
-    bPrepareDisable := FALSE;
-    SUPER^.stPiezoStage.bEnable := FALSE;
-END_IF
-
-// Get a definitive bEnabled reading
-CASE SUPER^.stPiezoStage.Axis.Status.MotionState OF
-    // We are not enabled if there is an issue
-    MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
-        SUPER^.stPiezoStage.bEnableDone := FALSE;
-    ELSE
-        SUPER^.stPiezoStage.bEnableDone := TRUE;
-END_CASE
-
-// Handle the brake. TRUE means brake disabled/released
-IF SUPER^.stPiezoStage.nBrakeMode <> E_StageBrakeMode.NO_BRAKE THEN
-    CASE SUPER^.stPiezoStage.Axis.Status.MotionState OF
-        MC_AXISSTATE_UNDEFINED,
-        MC_AXISSTATE_DISABLED,
-        MC_AXISSTATE_ERRORSTOP:
-            SUPER^.stPiezoStage.bBrakeRelease := FALSE;
-        MC_AXISSTATE_STANDSTILL:
-            IF SUPER^.stPiezoStage.nBrakeMode = E_StageBrakeMode.IF_MOVING THEN
-                SUPER^.stPiezoStage.bBrakeRelease := FALSE;
-            ELSE
-                SUPER^.stPiezoStage.bBrakeRelease := TRUE;
-            END_IF
-        ELSE
-            SUPER^.stPiezoStage.bBrakeRelease := TRUE;
-    END_CASE
-END_IF
-
-]]></ST>
+        <ST><![CDATA[// // call top interlocks checker
+// SUPER^.Interlock();
+// 
+// // Start with an accurate status
+// SUPER^.stPiezoStage.Axis.ReadStatus();
+// 
+// // Get a definitive bEnabled reading
+// CASE SUPER^.stPiezoStage.Axis.Status.MotionState OF
+//     // We are not enabled if there is an issue
+//     MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
+//         SUPER^.stPiezoStage.bEnableDone:=FALSE;
+//     ELSE
+//         SUPER^.stPiezoStage.bEnableDone:=TRUE;
+// END_CASE
+// 
+// // Check the limits and cancel execution if appropriate. Without this block we have infinite error spam
+// bFwdHit:=stPiezoStage.Axis.Status.PositiveDirection AND NOT stPiezoStage.bAllForwardEnable;
+// bBwdHit:=stPiezoStage.Axis.Status.NegativeDirection AND NOT stPiezoStage.bAllBackwardEnable;
+// 
+// IF (bFwdHit OR bBwdHit) AND NOT bHomingBusy THEN
+//     stPiezoStage.bExecute:=FALSE;
+// END_IF
+// 
+// rtTarget(CLK:=(stPiezoStage.Axis.Status.InTargetPosition AND SUPER^.MoveDone AND bExecMove));
+// rtHomed(CLK:=SUPER^.HomeDone AND bExecHome);
+// 
+// // Check done moving via user stop, fbDriveVirtual and Target Position Monitoring, or from homing.
+// IF ftExec.Q OR rtTarget.Q OR rtHomed.Q THEN
+//     IF NOT stPiezoStage.bDone THEN
+//         stPiezoStage.bDone:=TRUE;
+//         stPiezoStage.bBusy:=FALSE;
+//         IF NOT stPiezoStage.Axis.Status.Error THEN
+//             bExecute:=FALSE;
+//             stPiezoStage.bExecute:=FALSE;
+//         END_IF
+//     END_IF
+// END_IF
+// 
+// // Handle auto-disable timing
+// bPrepareDisable S= SUPER^.stPiezoStage.nEnableMode = E_StageEnableMode.DURING_MOTION AND ftExec.Q;
+// // Delay the disable until we reach standstill, else brake issues or other race conditions
+// IF bPrepareDisable AND SUPER^.stPiezoStage.Axis.Status.MotionState = MC_AXISSTATE_STANDSTILL THEN
+//     bPrepareDisable:=FALSE;
+//     SUPER^.stPiezoStage.bEnable:=FALSE;
+// END_IF
+// 
+// // Get a definitive bEnabled reading
+// CASE SUPER^.stPiezoStage.Axis.Status.MotionState OF
+//     // We are not enabled if there is an issue
+//     MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
+//         SUPER^.stPiezoStage.bEnableDone:=FALSE;
+//     ELSE
+//         SUPER^.stPiezoStage.bEnableDone:=TRUE;
+// END_CASE
+// 
+// // Handle the brake. TRUE means brake disabled/released
+// IF SUPER^.stPiezoStage.nBrakeMode <> E_StageBrakeMode.NO_BRAKE THEN
+//     CASE SUPER^.stPiezoStage.Axis.Status.MotionState OF
+//         MC_AXISSTATE_UNDEFINED,
+//         MC_AXISSTATE_DISABLED,
+//         MC_AXISSTATE_ERRORSTOP:
+//             SUPER^.stPiezoStage.bBrakeRelease:=FALSE;
+//         MC_AXISSTATE_STANDSTILL:
+//             IF SUPER^.stPiezoStage.nBrakeMode = E_StageBrakeMode.IF_MOVING THEN
+//                 SUPER^.stPiezoStage.bBrakeRelease:=FALSE;
+//             ELSE
+//                 SUPER^.stPiezoStage.bBrakeRelease:=TRUE;
+//             END_IF
+//         ELSE
+//             SUPER^.stPiezoStage.bBrakeRelease:=TRUE;
+//     END_CASE
+// END_IF
+// 
+SUPER^.McAxisState := SUPER^.stPiezoStage.Axis.Status.MotionState;]]></ST>
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{f9c2add2-c380-482d-93ab-6d4d86e49536}">
-      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
-METHOD Logger : BOOL
+      <Declaration><![CDATA[METHOD Logger : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveAbsolute" Id="{f756ee1e-3825-4cd8-b891-8d869366e53c}">
-      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
-METHOD MoveAbsolute : BOOL
+      <Declaration><![CDATA[METHOD MoveAbsolute 
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveVelocity" Id="{8f37121b-0b37-43ec-9e4b-419fea3ddbed}">
-      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
-METHOD MoveVelocity : BOOL
-]]></Declaration>
+      <Declaration><![CDATA[METHOD MoveVelocity]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="Power" Id="{a1e2ff79-06c3-4746-94b0-9d7d52157ef7}">
-      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
-METHOD Power : BOOL
+      <Declaration><![CDATA[METHOD Power : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="Reset" Id="{59c746f0-19f0-444f-b9d8-791b087de669}">
-      <Declaration><![CDATA[{error 'Add method implementation or delete method to use base implementation'}
-METHOD Reset : BOOL
+      <Declaration><![CDATA[METHOD Reset : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>

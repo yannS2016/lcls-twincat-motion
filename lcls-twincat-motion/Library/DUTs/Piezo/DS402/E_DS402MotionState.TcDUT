@@ -6,12 +6,12 @@
 {attribute 'to_string'}
 TYPE E_DS402MotionState :
 (
-    PREPARE_MOTION_PARAMS := 0,
-    INITIATE_MOTION := 10,
+    PREPARE_MOTION_PARAMS:=0,
+    INITIATE_MOTION:=10,
     DRIVE_IN_MOTION :=20,
-    TARGET_REACHED := 30,
+    TARGET_REACHED:=30,
     DONE			:= 40,
-    ERROR := 99
+    ERROR:=99
 );
 END_TYPE
 ]]></Declaration>

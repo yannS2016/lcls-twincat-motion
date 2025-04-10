@@ -6,13 +6,13 @@
 TYPE E_EpicsHomeCmd :
     // Defines the valid options for homing in FB_MotionStage
 (
-    LOW_LIMIT := 1, // Low limit switch
-    HIGH_LIMIT := 2, // High limit switch
-    HOME_VIA_LOW := 3, // Home switch via low switch
-    HOME_VIA_HIGH := 4, // Home switch via high switch
+    LOW_LIMIT:=1, // Low limit switch
+    HIGH_LIMIT:=2, // High limit switch
+    HOME_VIA_LOW:=3, // Home switch via low switch
+    HOME_VIA_HIGH:=4, // Home switch via high switch
     AUTO_ZERO	:= 5,	// Piezo Drives Homing
-    ABSOLUTE_SET := 15, // Set here to be fHomePosition
-    NONE := -1 // Do not home, ever
+    ABSOLUTE_SET:=15, // Set here to be fHomePosition
+    NONE:=-1 // Do not home, ever
 );
 END_TYPE
 ]]></Declaration>

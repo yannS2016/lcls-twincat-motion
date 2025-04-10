@@ -22,7 +22,7 @@ END_VAR
 ]]></Declaration>
     </Method>
     <Method Name="Interlock" Id="{b9614087-83f0-4675-8dad-b6765017e9ea}">
-      <Declaration><![CDATA[METHOD Interlock : BOOL
+      <Declaration><![CDATA[METHOD Interlock
 VAR_INPUT
 END_VAR
 ]]></Declaration>

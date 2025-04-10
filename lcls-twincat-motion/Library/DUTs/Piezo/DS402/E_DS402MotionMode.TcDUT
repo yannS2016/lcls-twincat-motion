@@ -6,9 +6,9 @@
 {attribute 'to_string'}
 TYPE E_DS402MotionMode :
 (
-    DISCRETE := 0,
-    CONTINUOUS := 1,
-    SYNCHRONOUS := 2
+    DISCRETE:=0,
+    CONTINUOUS:=1,
+    SYNCHRONOUS:=2
 ) UINT;
 END_TYPE
 ]]></Declaration>
