@@ -132,7 +132,16 @@
     <Compile Include="DUTs\Piezo\DS402\E_DS402Homing.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DUTs\Piezo\DS402\E_Module.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\DS402\E_DS402ModuleParams.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DUTs\Piezo\DS402\ST_DS402DriveStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\Piezo\ENUM_AxisStates.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\Piezo\ST_PiezoStage.TcDUT">
@@ -199,6 +208,9 @@
     <Compile Include="DUTs\ST_StatePMPSPlcToEpics.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DUTs\U_ExposedLogMsg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GVLs\MOTION_GVL.TcGVL">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
@@ -261,9 +273,6 @@
     <Compile Include="POUs\ImplicitChecks\CheckDivReal.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\FB_BasePiezoDS402Stage.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Motion\FB_EncoderValue.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -319,13 +328,16 @@
     <Compile Include="POUs\Motion\Piezo\DS402\helpers\DS402_AXIS.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\Piezo\DS402\ST_PIEZO_AXIS_REF.TcDUT">
+    <Compile Include="POUs\Motion\Piezo\FB_MotionErrorLogger.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\Piezo\FB_PiezoDrive.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\Piezo\FB_PiezoDriveNC.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\Piezo\I_Logger.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\Piezo\I_PiezoDrive.TcIO">

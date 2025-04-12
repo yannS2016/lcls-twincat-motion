@@ -1,20 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_PiezoDriveDS402CSP" Id="{888e3a3f-5a56-4d26-ba78-fe3db55f3f31}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK PUBLIC FB_PiezoDriveDS402CSP EXTENDS FB_PiezoDriveDS402
+    <Declaration><![CDATA[{attribute 'call_after_init'}
+FUNCTION_BLOCK PUBLIC FB_PiezoDriveDS402CSP EXTENDS FB_PiezoDriveDS402
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-	 fbSetPos: MC_SetPosition;
+
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
     <Method Name="Brake" Id="{9a0e88c2-6809-4fed-8bb3-199d998b109d}">
-      <Declaration><![CDATA[METHOD Brake : BOOL
+      <Declaration><![CDATA[METHOD Brake
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[SUPER^.Brake();]]></ST>
@@ -24,78 +25,6 @@ END_VAR
       <Declaration><![CDATA[METHOD EncSaveRestore
 VAR_INPUT
 	bEnable	: BOOL;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF bEnable THEN
-    // Trigger a load if anything was saved at all
-    IF NOT bInit THEN
-        bInit := TRUE;
-        bLoad S= bSaved;
-        fbSetPos.Options.ClearPositionLag := TRUE;
-    END_IF
-
-    // Set our position if bLoad is true
-    fbSetPos(
-        Axis:=stPiezoStage.Axis,
-        Execute:=bLoad,
-        Position:=fPosition);
-
-    // Only load once, at startup
-    bLoad R= fbSetPos.Done OR fbSetPos.Error;
-
-    IF fbSetPos.Error THEN
-        // Keep the error latched, it can disappear if Execute is set to FALSE
-        nLatchError := fbSetPos.ErrorID;
-        nCurrTries := nCurrTries + 1;
-        IF nCurrTries >= nMaxRetries THEN
-            // Alert the user that something has gone wrong
-            stPiezoStage.bError := TRUE;
-            stPiezoStage.nErrorId := nLatchError;
-            stPiezoStage.sCustomErrorMessage := 'Error loading previously saved position.';
-        ELSE
-            // Reset the FB for the next retry
-            fbSetPos(
-                Axis:=stPiezoStage.Axis,
-                Execute:=FALSE,
-                Position:=fPosition);
-            // Try again
-            bWaitRetry := TRUE;
-        END_IF
-    END_IF
-
-    tonRetry(
-        IN := bWaitRetry,
-        PT := tRetryDelay);
-
-    bLoad S= tonRetry.Q;
-    bWaitRetry R= tonRetry.Q;
-
-    // Check ST_MotionStage for an encoder error (range 0x44nn)
-    bEncError := stPiezoStage.bError AND stPiezoStage.nErrorId >= 16#4400 AND stPiezoStage.nErrorId <= 16#44FF;
-
-    // Do not save if we're currently loading or if there is an encoder error
-    IF NOT bLoad AND NOT bEncError AND NOT bWaitRetry THEN
-        fPosition := stPiezoStage.stAxisStatus.fActPosition;
-        // This persistent variable lets us check if anything was saved
-        // It will be TRUE at startup if we have saved values
-        bSaved := TRUE;
-    END_IF
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="FB_Init" Id="{600fe1d5-2de2-4cdf-af05-fefe1f75066a}">
-      <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
-The return value is not evaluated. For a specific influence, you can also declare the
-methods explicitly and provide additional code there with the standard initialization
-code. You can evaluate the return value.*)
-METHOD FB_Init : BOOL
-VAR_INPUT
-    (* TRUE: the retain variables are initialized (reset warm / reset cold)*)
-    bInitRetains	: BOOL;
-    (* TRUE: the instance will be copied to the copy code afterward (online change)   *)
-    bInCopyCode	: BOOL;
-    stStage : REFERENCE TO  ST_PiezoStage;
 END_VAR
 ]]></Declaration>
       <Implementation>
@@ -142,7 +71,7 @@ END_CASE]]></ST>
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{c96ef2ce-8290-44fd-b101-af264edbe5be}">
-      <Declaration><![CDATA[METHOD Logger : BOOL
+      <Declaration><![CDATA[METHOD Logger
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[SUPER^.Logger();]]></ST>

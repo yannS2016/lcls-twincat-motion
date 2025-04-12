@@ -3,6 +3,7 @@
   <POU Name="FB_MotionErrorLogger" Id="{823180da-a8af-497e-9f77-f60a0d93f39a}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionErrorLogger  IMPLEMENTS I_Logger
 VAR_INPUT
+
 END_VAR
 VAR_OUTPUT
 END_VAR
@@ -24,13 +25,12 @@ VAR
 	bErrorState		: BOOL;
 	nPrevStoredSets	: UDINT;
     uExposedLogMsg 	: U_ExposedLogMsg;
-	
+	stMotionStage	: REFERENCE TO ST_MotionStage;
     fbLogMessage: FB_LogMessage;
     rtNewError: R_TRIG;
     bChangedError: BOOL;
     sPrevErr: STRING(80);
     fbJson: FB_JsonSaxWriter;
-	stMotionStage	: REFERENCE TO ST_MotionStage;
 	bInit			: BOOL;
 END_VAR
 ]]></Declaration>
@@ -109,20 +109,6 @@ END_IF
 
 
 ]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="FB_Init" Id="{03688e5f-125a-4cec-a8c0-d898ba1ca7d0}">
-      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
-//The return value is not evaluated. For a specific influence, you can also declare the
-//methods explicitly and provide additional code there with the standard initialization
-//code. You can evaluate the return value.
-METHOD FB_Init: BOOL
-VAR_INPUT
-    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
-    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
-END_VAR]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="GetMsg" Id="{a789d61f-49cd-49ac-9e66-88632c265d87}">
@@ -304,46 +290,5 @@ IF bUpdateConnectedClient THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionErrorLogger">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.AddMsg">
-      <LineId Id="3" Count="28" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.ExposedErrorMessage">
-      <LineId Id="3" Count="16" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.GetMsg">
-      <LineId Id="3" Count="9" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.getRef">
-      <LineId Id="3" Count="4" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.MotionErrorLookUp">
-      <LineId Id="3" Count="29" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.NumLogMessages.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.RemoveMsg">
-      <LineId Id="3" Count="9" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.Reset">
-      <LineId Id="3" Count="6" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionErrorLogger.UpdateConnectedClients">
-      <LineId Id="3" Count="37" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

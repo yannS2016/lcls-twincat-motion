@@ -4,11 +4,12 @@
     <Declaration><![CDATA[{attribute 'qualified_only'}
 {attribute 'strict'}
 {attribute 'to_string'}
+// Default CHAN 1, add 0x800 next channel
 TYPE E_Module :
 (
-    CHAN1	:= 16#603F,
-    CHAN2	:= 16#683F,
-    CHAN3	:= 16#703F
+    CHAN1	:= 1,
+    CHAN2	:= 2,
+    CHAN3	:= 3
 ) WORD;
 END_TYPE
 ]]></Declaration>

@@ -9,13 +9,6 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
-    <Property Name="CalibratedActPos" Id="{02057f2c-b8f5-43b2-998d-dd4bf1625921}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY CalibratedActPos : REAL]]></Declaration>
-      <Get Name="Get" Id="{2e2e5a93-1600-45a1-8fd2-6ebb7d198240}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
     <Method Name="EncSaveRestore" Id="{2714254e-be9f-442a-9ff0-fec0cfde8ef7}">
       <Declaration><![CDATA[METHOD EncSaveRestore
 VAR_INPUT
@@ -107,7 +100,6 @@ END_VAR
     <Method Name="MotionParams" Id="{26e38a32-22d0-42ae-b0c6-5a30c1359c2c}">
       <Declaration><![CDATA[METHOD MotionParams
 VAR_INPUT
-    bEnable: BOOL;
     tRefreshDelay: TIME;
 END_VAR
 ]]></Declaration>
@@ -158,6 +150,12 @@ END_VAR
     </Method>
     <Method Name="SetEnables" Id="{b93a945e-5ba8-456d-9ebc-47294f36ee3e}">
       <Declaration><![CDATA[METHOD SetEnables
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="StateMachine" Id="{35531d1d-083e-4e0e-a309-4f04090b40cb}">
+      <Declaration><![CDATA[METHOD StateMachine
 VAR_INPUT
 END_VAR
 ]]></Declaration>

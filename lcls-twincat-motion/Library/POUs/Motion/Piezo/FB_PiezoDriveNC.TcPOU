@@ -7,20 +7,96 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-	// Save abd restore encoder value
-    fbSetPos		: MC_SetPosition;
-    tRetryDelay		: TIME := T#1S;
-    nMaxRetries		: UINT := 10;
-    nCurrTries		: UINT := 0;
-    bWaitRetry		: BOOL;
-    tonRetry		: TON;
+    fbSetPos: MC_SetPosition;
+    tonReadParamsTimer: TON;
+
+    tRetryDelay: TIME := T#1s;
+    nMaxRetries: UINT := 10;
+    nCurrTries: UINT := 0;
+    bWaitRetry: BOOL;
+	bSaveDone	: BOOL;
+    tonRetry: TON;
+    mcReadParams: MC_ReadParameterSet;
+    bReadParamsExec: BOOL := TRUE;
+    nLatchErrId: UDINT;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
     <Method Name="Brake" Id="{a23dd471-fc06-4b84-bbce-dca5a779d151}">
-      <Declaration><![CDATA[METHOD Brake : BOOL
+      <Declaration><![CDATA[METHOD Brake
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EncSaveRestore" Id="{a24d666c-ec71-4afe-9509-4f94738da469}">
+      <Declaration><![CDATA[METHOD EncSaveRestore
+VAR_INPUT
+	bEnable	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF bEnable THEN
+    // Trigger a load if anything was saved at all
+    IF NOT bInit THEN
+        bInit := TRUE;
+        bLoad S= bSaved;
+        fbSetPos.Options.ClearPositionLag := TRUE;
+    END_IF
+
+    // Set our position if bLoad is true
+    fbSetPos(
+        Axis:=SUPER^.stPiezoStage.Axis,
+        Execute:=bLoad,
+        Position:=fPosition);
+
+    // Only load once, at startup
+    bLoad R= fbSetPos.Done OR fbSetPos.Error;
+
+    IF fbSetPos.Error THEN
+        // Keep the error latched, it can disappear if Execute is set to FALSE
+        nLatchError := fbSetPos.ErrorID;
+        nCurrTries := nCurrTries + 1;
+        IF nCurrTries >= nMaxRetries THEN
+            // Alert the user that something has gone wrong
+            SUPER^.stPiezoStage.bError := TRUE;
+            SUPER^.stPiezoStage.nErrorId := nLatchError;
+            SUPER^.stPiezoStage.sCustomErrorMessage := 'Error loading previously saved position.';
+        ELSE
+            // Reset the FB for the next retry
+            fbSetPos(
+                Axis:=SUPER^.stPiezoStage.Axis,
+                Execute:=FALSE,
+                Position:=fPosition);
+            // Try again
+            bWaitRetry := TRUE;
+        END_IF
+    END_IF
+
+    tonRetry(
+        IN := bWaitRetry,
+        PT := tRetryDelay);
+
+    bLoad S= tonRetry.Q;
+    bWaitRetry R= tonRetry.Q;
+
+    // Check ST_MotionStage for an encoder error (range 0x44nn)
+    bEncError := SUPER^.stPiezoStage.bError AND SUPER^.stPiezoStage.nErrorId >= 16#4400 AND SUPER^.stPiezoStage.nErrorId <= 16#44FF;
+
+    // Do not save if we're currently loading or if there is an encoder error
+    IF NOT bLoad AND NOT bEncError AND NOT bWaitRetry THEN
+        fPosition := SUPER^.stPiezoStage.stAxisStatus.fActPosition;
+        // This persistent variable lets us check if anything was saved
+        // It will be TRUE at startup if we have saved values
+        bSaved := TRUE;
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EncValue" Id="{93af6776-3237-4fc8-ae60-2edc9a845593}">
+      <Declaration><![CDATA[METHOD EncValue
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -141,10 +217,48 @@ SUPER^.McAxisState := SUPER^.stPiezoStage.Axis.Status.MotionState;]]></ST>
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{f9c2add2-c380-482d-93ab-6d4d86e49536}">
-      <Declaration><![CDATA[METHOD Logger : BOOL
+      <Declaration><![CDATA[METHOD Logger
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MotionParams" Id="{0a8584fe-3c80-4a7e-938d-fcc07474a976}">
+      <Declaration><![CDATA[METHOD MotionParams
+VAR_INPUT
+	tRefreshDelay	: TIME;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[tonReadParamsTimer(
+    IN:= NOT bReadParamsExec,
+    PT:=tRefreshDelay);
+bReadParamsExec S= tonReadParamsTimer.Q;
+mcReadParams(
+    Parameter:=SUPER^.stPiezoStage.stAxisParameters,
+    Axis:=SUPER^.stPiezoStage.Axis,
+    Execute:=bReadParamsExec,
+    Error=>bError);
+
+// Copy axis parameters that we want to expose to the EPICS layer.
+SUPER^.stPiezoStage.stAxisParametersExposed.bCtrlEnablePosDiffControl     := SUPER^.stPiezoStage.stAxisParameters.bCtrlEnablePosDiffControl;
+SUPER^.stPiezoStage.stAxisParametersExposed.bEncEnableSoftEndMaxControl   := SUPER^.stPiezoStage.stAxisParameters.bEncEnableSoftEndMaxControl;
+SUPER^.stPiezoStage.stAxisParametersExposed.bEncEnableSoftEndMinControl   := SUPER^.stPiezoStage.stAxisParameters.bEncEnableSoftEndMinControl;
+SUPER^.stPiezoStage.stAxisParametersExposed.fAccelerationMax              := SUPER^.stPiezoStage.stAxisParameters.fAccelerationMax;
+SUPER^.stPiezoStage.stAxisParametersExposed.fCtrlPosDiffMax               := SUPER^.stPiezoStage.stAxisParameters.fCtrlPosDiffMax;
+SUPER^.stPiezoStage.stAxisParametersExposed.fCtrlPosDiffMaxTime           := SUPER^.stPiezoStage.stAxisParameters.fCtrlPosDiffMaxTime;
+SUPER^.stPiezoStage.stAxisParametersExposed.fDecelerationMax              := SUPER^.stPiezoStage.stAxisParameters.fDecelerationMax;
+SUPER^.stPiezoStage.stAxisParametersExposed.fEncSoftEndMax                := SUPER^.stPiezoStage.stAxisParameters.fEncSoftEndMax;
+SUPER^.stPiezoStage.stAxisParametersExposed.fEncSoftEndMin                := SUPER^.stPiezoStage.stAxisParameters.fEncSoftEndMin;
+SUPER^.stPiezoStage.stAxisParametersExposed.fVeloMaximum                  := SUPER^.stPiezoStage.stAxisParameters.fVeloMaximum;
+SUPER^.stPiezoStage.stAxisParametersExposed.fEncOffset               		:= SUPER^.stPiezoStage.stAxisParameters.fEncOffset;
+SUPER^.stPiezoStage.stAxisParametersExposed.fEncScaleFactorInternal       := SUPER^.stPiezoStage.stAxisParameters.fEncScaleFactorInternal;
+
+IF mcReadParams.ErrorID <> 0 THEN
+    nLatchErrId := 0;
+END_IF
+bReadParamsExec R= mcReadParams.Done OR mcReadParams.Error;
+SUPER^.stPiezoStage.bAxisParamsInit S= mcReadParams.Done;]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveAbsolute" Id="{f756ee1e-3825-4cd8-b891-8d869366e53c}">
@@ -169,6 +283,13 @@ SUPER^.McAxisState := SUPER^.stPiezoStage.Axis.Status.MotionState;]]></ST>
     </Method>
     <Method Name="Reset" Id="{59c746f0-19f0-444f-b9d8-791b087de669}">
       <Declaration><![CDATA[METHOD Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{40a30f3e-7028-4eb5-b741-0aaf9ae8a06b}">
+      <Declaration><![CDATA[METHOD StateMachine
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>

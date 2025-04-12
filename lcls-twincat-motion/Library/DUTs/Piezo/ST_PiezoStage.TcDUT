@@ -26,14 +26,22 @@ STRUCT
     eEgu							:	E_DS402EGU 			:= E_DS402EGU.NM;
     eMoveMode						: 	E_EpicsMotorCmd 	:= E_EpicsMotorCmd.MOVE_ABSOLUTE;
     ePPMode							: 	E_DS402MotionMode 	:= E_DS402MotionMode.DISCRETE;
-    // Default unit is um
+    // User Configurations data : Default unit is um
     fscalingFactor					: 	REAL :=	0.001;
     fMaxVelocity					: 	REAL := 100000.0; // um/s
     fMaxAcceleration 				: 	REAL := 10000.0; // um/s2
+	// This can be written to the drive via WriteDriveParams or just configure in Online COE
     nHomingSpeed					: 	DINT :=	100;
     nHomingAcceleration				:	DINT := 1000;
-    // For setting drives parameter via SDOs ( not yet implemented)
-	nPiezoErrorCode			        : 	UINT;
+	nSoftwareLimMin					: 	LINT;
+	nSoftwareLimMax 				: 	LINT;
+	nfollowErrorWin 				: 	UDINT;
+    // These will be read via SDO read periodically or via event in status words.
+	nPiezoErrorCode			        : UDINT;
+	nLogicalScaleOffset 			: LINT;
+	nLogicalScaleInversion 			: BOOL;
+	nMotorLoad						: USINT;
+
 	eModule							: 	E_Module;
 	(* NetId of EtherCAT Master *)
     arNetId  				AT %I*	: 	AMSNETID; 

@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_PiezoDriveDS402PP" Id="{6e47a4a9-16e3-49c8-8786-19fbbc700413}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_PiezoDriveDS402PP EXTENDS FB_PiezoDriveDS402
+    <Declaration><![CDATA[{attribute 'call_after_init'}
+FUNCTION_BLOCK FB_PiezoDriveDS402PP EXTENDS FB_PiezoDriveDS402
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
@@ -11,7 +12,9 @@ VAR
     DiscreteMotion 		:  BOOL;
     ContinuousMotion 	:  BOOL;
 	bSaveDone			:  BOOL;
-	
+	//rtErrorEvent		: R_TRIG;
+    bDS04Execute: BOOL := TRUE;
+
 END_VAR
 
 VAR CONSTANT
@@ -20,12 +23,16 @@ VAR CONSTANT
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[THIS^.Interlock();
-THIS^.Power();
-THIS^.Halt();
-THIS^.Reset();
-THIS^.StateMachine();
+      <ST><![CDATA[// IF init failed to get a valid reference then dont proceed here.
+IF NOT __ISVALIDREF(SUPER^.stPiezoStage) THEN
+    RETURN;
+END_IF
 
+THIS^.Power();
+THIS^.Interlock();
+THIS^.Halt();
+THIS^.StateMachine();
+THIS^.Reset();
 ]]></ST>
     </Implementation>
     <Method Name="Brake" Id="{22a77937-1757-472e-8a24-02f41806a6fb}">
@@ -114,7 +121,6 @@ END_VAR
 
     E_DS402MotionState.DONE:;
         SUPER^.bMoveDone:=TRUE;
-        SUPER^.MoveBusy:=FALSE;
 		// the axis will reset bit 12 after a fallign edge on this bit to signal readiness for new set point
 		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
         eAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
@@ -157,24 +163,6 @@ END_VAR
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_Init" Id="{ea3b8a11-1b80-40a7-b145-7a2a5e25ca70}">
-      <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
-The return value is not evaluated. For a specific influence, you can also declare the
-methods explicitly and provide additional code there with the standard initialization
-code. You can evaluate the return value.*)
-METHOD FB_Init : BOOL
-VAR_INPUT
-    (* TRUE: the retain variables are initialized (reset warm / reset cold)*)
-    bInitRetains	: BOOL;
-    (* TRUE: the instance will be copied to the copy code afterward (online change)   *)
-    bInCopyCode	: BOOL;
-    stStage : REFERENCE TO ST_PiezoStage;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="Halt" Id="{a3eb5c8c-6142-41f2-a5f0-329f2aa7b09f}">
       <Declaration><![CDATA[METHOD Halt : BOOL
 ]]></Declaration>
@@ -200,62 +188,66 @@ MC_AxisStates.MC_AXISSTATE_STANDSTILL:
     IF SUPER^.bExecHome THEN
 		SUPER^.eHomingState := E_DS402Homing.INIT_HOMING;
 		SUPER^.HomeDone := FALSE;
-        eAxisState:= MC_AxisStates.MC_AXISSTATE_HOMING;
+        SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_HOMING;
     END_IF
 
     IF SUPER^.bExecMove THEN
         // we supporting only discrete motion for now
         SUPER^.stPiezoStage.nPiezoDriveControl.5:=FALSE;
-        eAxisState:= MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
+        SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
         // enter move discrete or continous here:
         eMotionState:=E_DS402MotionState.PREPARE_MOTION_PARAMS;
     END_IF
 
-MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
-    SUPER^.bMoveBusy:=FALSE;
-    SUPER^.bMoveDone:=FALSE;
+MC_AxisStates.MC_AXISSTATE_ERRORSTOP:
+	// Force everything off in case of error
+    SUPER^.MoveBusy:=FALSE;
+    SUPER^.MoveDone:=FALSE;
+	SUPER^.HomingBusy:= FALSE;
     SUPER^.InTargetPosition:=FALSE;
-    SUPER^.stPiezoStage.bEnable:=FALSE;
-	SUPER^.Error := TRUE;
+	// resetting this flag will take the drive away from operation enable
+	// which will set this state machine to a disable state.
+	// we need to wait for the read error sdo function to complete.
 	// Catch the drive errors code
-	ReadDriveErrors();
-	SUPER^.ErrorCode := SUPER^.stPiezoStage.nPiezoErrorCode;
-	// log the error condition
-	fbMotionErrorLogger.AddMsg(SUPER^.ErrorCode, SUPER^.ErrorMessage);
-	
-    // Error Cleared?
-    IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-        eAxisState:= MC_AxisStates.MC_AXISSTATE_UNDEFINED;
-    END_IF
+	IF ReadDriveErrors(SUPER^.Error) THEN
+		bSdoReadDone := FALSE;
+		// motion error do not disabled the drive ctrl word will  still be 31.
+		// thus we're explicitely turn off power.
+		SUPER^.stPiezoStage.bEnable:=FALSE;
+	END_IF
 
-MC_AxisStates.MC_AXISSTATE_STOPPING:;
-    eAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+MC_AxisStates.MC_AXISSTATE_STOPPING:
+    SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 
 MC_AxisStates.MC_AXISSTATE_HOMING:
 	IF NOT SUPER^.HomeDone THEN
 		THIS^.Home();
 	ELSE
-		SUPER^.stPiezoStage.bHomed := SUPER^.HomeDone;
-		eAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 	END_IF
 
 MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
-    THIS^.DiscreteMove();
+	// stopping
+	IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
+		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
+	// error bit set ?
+	ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+		SUPER^.Error := TRUE;
+		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
+	ELSE
+		// all good here
+		THIS^.DiscreteMove();
+	END_IF
 
 END_CASE
 
-// error bit set ?
-IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-    eAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
-END_IF
-
-// stopping
-IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
-        eAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
-END_IF
+//ReadDriveErrors(SUPER^.Error);
 
 // update encoder value and calibrated position
 SUPER^.EncValue();
+
+SUPER^.MotionParams(tRefreshDelay:=T#1S);
+
 // Save and restore as long as not an absolute encoder
 EncSaveRestore( bEnable:=stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE);]]></ST>
       </Implementation>
@@ -318,53 +310,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// Check the limits and cancel execution if appropriate. Without this block we have infinite error spam
-// it seems this limit are software limits.. need to be checked
-IF THIS^.MoveBusy THEN
-    // Positive or Negative direction
-    IF  fCalibratedStandStillPos > CalibratedActPos THEN
-        THIS^.PositiveDirection:=TRUE;
-        THIS^.NegativeDirection:=FALSE;
-    ELSE
-        THIS^.PositiveDirection:=FALSE;
-        THIS^.NegativeDirection:=TRUE;
-    END_IF
-ELSE
-    // store idle Position
-    fCalibratedStandStillPos:=CalibratedActPos;
-END_IF
-
-bFwdHit:=THIS^.PositiveDirection AND NOT SUPER^.stPiezoStage.bAllForwardEnable;
-bBwdHit:=THIS^.NegativeDirection AND NOT SUPER^.stPiezoStage.bAllBackwardEnable;
-
-IF (bFwdHit OR bBwdHit) AND NOT bHomingBusy THEN
-    SUPER^.stPiezoStage.bExecute:=FALSE;
-END_IF
-
-// Check done moving via user stop, fbDriveVirtual and Target Position Monitoring, or from homing.
-// set/reset SUPER^.stPiezoStage.bDone after move absolute/Relative
-SUPER^.ftExec(CLK:=SUPER^.stPiezoStage.bExecute);
-SUPER^.rtTarget(CLK:=(THIS^.InTargetPosition AND THIS^.MoveDone AND SUPER^.bExecMove));
-SUPER^.rtHomed(CLK:=SUPER^.HomeDone AND SUPER^.bExecHome);
-
-// user can override execute from EPICS, since we using R_TRIG on bMoveCMD this possible
-IF SUPER^.ftExec.Q OR SUPER^.rtTarget.Q OR SUPER^.rtHomed.Q THEN
-    IF NOT SUPER^.stPiezoStage.bDone THEN
-        SUPER^.stPiezoStage.bDone:=TRUE;
-        SUPER^.stPiezoStage.bBusy:=FALSE;
-        IF NOT SUPER^.Error THEN
-            SUPER^.bExecute:=FALSE;
-            SUPER^.stPiezoStage.bExecute:=FALSE;
-        END_IF
-    END_IF
-END_IF
-
-
-IF SUPER^.bExecute AND NOT stPiezoStage.bError THEN
-    // Reset local warnings if things are going well
-    SUPER^.stPiezoStage.sErrorMessage:='';
-END_IF
-]]></ST>
+        <ST><![CDATA[SUPER^.PostInterlocks();]]></ST>
       </Implementation>
     </Method>
     <Method Name="Power" Id="{852126ed-4322-4881-92be-0a3202e7e349}">
@@ -390,9 +336,8 @@ END_VAR
       <Implementation>
         <ST><![CDATA[SUPER^.StateMachine();
 THIS^.HandleMoveRequest();
-SUPER^.SyncEPICSStatus();
 SUPER^.PostInterlocks();
-
+SUPER^.SyncEPICSStatus();
 
 ]]></ST>
       </Implementation>

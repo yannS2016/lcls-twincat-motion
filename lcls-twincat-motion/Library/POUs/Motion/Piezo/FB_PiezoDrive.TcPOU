@@ -9,12 +9,13 @@ VAR_OUTPUT
 
 END_VAR
 VAR
+	{attribute 'no_copy'}
     stPiezoStage		: REFERENCE TO ST_PiezoStage;
     eModeOFOperation	: E_DS402OperationMode:=E_DS402OperationMode.NONE;
     eHomingState		: E_DS402Homing;
 	// reuse to absolute/relative moves for DS402
     eAxisState			:  MC_AxisStates;
-    fbMotionErrorLogger : FB_MotionErrorLogger;
+    //fbMotionErrorLogger : FB_MotionErrorLogger;
     // create a property for some of these
     bExecMove			: BOOL;
     bExecHome			: BOOL;
@@ -43,15 +44,13 @@ VAR
 	ftForwardEnabled: F_TRIG;
 	ftBackwardEnabled: F_TRIG;
 	
-	fDefaultScalingFactor 		: REAL:=0.000001;
-    fCalibratedActPos			: REAL;
+
     bError				: BOOL:=FALSE;
     nErrorId			: UDINT:=0;
     sLocalErrorMessage	: STRING;
     tonHoming 			: TON;
-	
+	ntest				: UINT;
 	// Save abd restore encoder value
-    timer: TON;
     bInit: BOOL;
     bLoad: BOOL;
     nLatchError: UDINT;
@@ -69,27 +68,6 @@ END_VAR
     </Implementation>
     <Method Name="Brake" Id="{c6b36a48-c7b1-4cfe-936b-d492d651f479}">
       <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Brake
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="CalibratedActPos" Id="{f59b6d0c-3ed5-49c8-8c42-f3fe81b218e0}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY CalibratedActPos : REAL]]></Declaration>
-      <Get Name="Get" Id="{7008e174-6003-4a34-8527-bc95fa10dfd5}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[CalibratedActPos:=fCalibratedActPos;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Method Name="CalibratedMotionParams" Id="{67fcb905-3933-48da-aebe-2bf2e7a7195e}">
-      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT CalibratedMotionParams
-VAR_INPUT
-END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -175,28 +153,6 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Method Name="FB_Init" Id="{2fe42046-83dd-4d2e-8525-51e430d15d86}">
-      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
-//The return value is not evaluated. For a specific influence, you can also declare the
-//methods explicitly and provide additional code there with the standard initialization
-//code. You can evaluate the return value.
-METHOD FB_Init: BOOL
-VAR_INPUT
-    bInitRetains	: 	BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
-    bInCopyCode		: 	BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
-    stStage 		:	REFERENCE TO ST_PiezoStage;
-
-END_VAR]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[THIS^.stPiezoStage REF= stStage;
-THIS^.fbMotionErrorLogger.getRef(stStage);
-
-
-
-
-]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="Halt" Id="{3dd7f3b3-f32f-443b-9959-87442cc8fa69}">
       <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Halt : BOOL
 ]]></Declaration>
@@ -252,8 +208,6 @@ CASE eHomingState OF
 		// prepare next move
 		stPiezoStage.nPiezoDriveControl.4:=FALSE;
 		tonHoming.IN := FALSE;
-		//stPiezoStage.nModeOfOperation:=E_DS402OperationMode.PROFILE_POSITION;
-		//stPiezoStage.stAxisStatus.nCommand:=3; // If this is not 3, the IOC stops updating positions during homing
 		stPiezoStage.fPosition := 0.0;
     E_DS402Homing.HOMING_INTERRUPTED :;
         HomingBusy:=FALSE;
@@ -262,7 +216,7 @@ CASE eHomingState OF
         Error:=FALSE;
         ErrorCode:=99; 
 		// log the warning
-		fbMotionErrorLogger.AddMsg(ErrorCode, ErrorMessage);
+		//fbMotionErrorLogger.AddMsg(ErrorCode, ErrorMessage);
 
     E_DS402Homing.HOMING_ERROR:;
         HomingBusy:=FALSE;
@@ -270,7 +224,7 @@ CASE eHomingState OF
         Error:=TRUE;
         ErrorCode:=stPiezoStage.nPiezoErrorCode;
 		// log the warning
-		fbMotionErrorLogger.AddMsg(ErrorCode, ErrorMessage);
+		//fbMotionErrorLogger.AddMsg(ErrorCode, ErrorMessage);
 END_CASE
 
 tonHoming(PT:=T#1S);
@@ -406,7 +360,9 @@ CASE THIS^.McAxisState OF
     // We are not enabled if there is an issue
     MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
         stPiezoStage.bEnableDone:=FALSE;
+				//ntest := ntest +1;
     ELSE
+
         stPiezoStage.bEnableDone:=TRUE;
 END_CASE
 
@@ -451,22 +407,14 @@ END_VAR
       </Set>
     </Property>
     <Method Name="MotionParams" Id="{d4d497ab-25de-4a2d-9f0c-7fd0abae8c76}">
-      <Declaration><![CDATA[METHOD MotionParams
+      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT MotionParams
 VAR_INPUT
-    bEnable: BOOL;
     tRefreshDelay: TIME;
 END_VAR
 
-VAR
-    timer: TON;
-    bExecute: BOOL:=TRUE;
-    nLatchErrId: UDINT;
-END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[timer( IN:=bEnable AND NOT bExecute, PT:=tRefreshDelay);
-bExecute S= timer.Q;
-]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="MoveAbsolute" Id="{67006bb1-1c73-49f6-ab52-7a06b1d0c294}">
@@ -559,5 +507,16 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Property Name="stPzStage" Id="{9f92815a-2a54-4642-bace-23982d7df851}">
+      <Declaration><![CDATA[PROPERTY PUBLIC stPzStage : REFERENCE TO ST_PiezoStage]]></Declaration>
+      <Set Name="Set" Id="{c8f7e1d0-f544-4543-a5ce-d8889c56fbb7}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[THIS^.stPiezoStage REF= stPzStage;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
   </POU>
 </TcPlcObject>
