@@ -12,26 +12,14 @@ VAR
 	eDriveState		: 	E_DS402DriveState;
 	fbLogError		:   FB_LogMotionError;
     // axis status -- emulating some NC axis
-    bOperational		:  BOOL;
-    PositiveDirection	:  BOOL;
-    NegativeDirection 	:  BOOL;
-    NotMoving 			:  BOOL;
-    NewTargetPosition 	:  BOOL;
-    InPositionArea 		:  BOOL;
-    InTargetPosition 	:  BOOL;
-    StandStill 			:  BOOL;
-    SynchronizedMotion 	:  BOOL;
-
-    bFwdHit				:  BOOL;
-    bBwdHit				:  BOOL;
-	bHalt				:  BOOL;
-	bReported			: BOOL;
-	bReadDone		: BOOL;
-	bLogReady		: BOOL;
-	rtMotionDir			: R_TRIG;
-	rtMotionErrorEvent		: R_TRIG;
-	ftReset				: F_TRIG;
-	errorCount			:UDINT;
+    bOperational		:	BOOL;
+    PositiveDirection	:  	BOOL;
+    NegativeDirection 	:  	BOOL;
+    InTargetPosition 	:  	BOOL;
+	bReadDone			: 	BOOL;
+	bLogReady			: 	BOOL;
+	bFault				: 	BOOL;
+    bSlowParamReadTimer	: 	BOOL := TRUE;
     // Drive calibrated motion params
     nCalibratedVelocity			: DINT;
     nCalibratedAcceleration		: DINT;
@@ -45,53 +33,37 @@ VAR
     fOverride					: REAL;
 	fDefaultScalingFactor 		: REAL:=0.000001;
     fCalibratedActPos			: REAL;
+	
+	rtFault			: R_TRIG;
     rtHomed			: R_TRIG;
     ftExec			: F_TRIG;
     rtTarget		: R_TRIG;
     rtReset			: R_TRIG;
-    rtEnableDrive	: R_TRIG;
-    ftDisbaleDrive	: F_TRIG;
-	
-	rtNotOperational 	: R_TRIG;
-	ftOperational	: F_TRIG;
-	ftTest	: F_TRIG;
-	rtTest	: R_TRIG;
-	rtFault			: R_TRIG;
-	bFault			: BOOL;
-	rtAmsNetId		: R_TRIG;
-	rtSdoRead 		: R_TRIG;
 	ftAmsNetId 		: F_TRIG;
-	ftErrorSdoRead 		: F_TRIG;
-	ftFollowWinSdoRead 	: F_TRIG;	
-	ftSoftLimMaxSdoRead : F_TRIG;	
-	ftSoftLimMinSdoRead : F_TRIG;	
-	ftMotorloadSdoRead 	: F_TRIG;
-	//	slow chaging parameter timer
-    bSlowParamReadTimer: BOOL := TRUE;
+    rtEnableDrive	: R_TRIG;
+	ftErrorSdoRead	: F_TRIG;
+    ftDisbaleDrive	: F_TRIG;
+	rtMotionErrorEvent	: R_TRIG;
+	rtNotOperational 	: R_TRIG;
+
     tonSlowParamReadTimer: TON;
 	// fast changing paramter timer -- wwe could have used PDO for this params
 	// but the Piezo ESC have fixed PDO list.
 	tonFastParamReadTimer: TON;
-	bInitiated	: BOOL;
+	//bInitiated	: BOOL;
     // Diagnotics data from the drive, mainly Error codes
 	tRefreshDelay   : TIME := T#1S;
-	bSdoExecute     : BOOL;
-    fbErrorSdoRead  			: FB_EcCoESdoRead;
-    fbFollowWinSdoRead  		: FB_EcCoESdoRead;
-    fbSoftLimMaxSdoRead  		: FB_EcCoESdoRead;
-    fbSoftLimMinSdoRead  		: FB_EcCoESdoRead;
-    fbMotorloadSdoRead  		: FB_EcCoESdoRead;
-	// get 4 drive motions params all at once
-    //arErrorSdoRead  		: ARRAY [1..4] OF FB_EcCoESdoRead;
-	
-    fbGetAmsNetId 	: FB_GetLocalAmsNetId;
-    bRequestStarted : BOOL := FALSE;
-    sAmsNetId 		: T_AmsNetId;
-    nSlaveAddr 		: UINT;
-    nIndex     		: WORD;
-    nSubIndex  		: BYTE := 0;
-    //  
-	sCriticalFault:	STRING;
+
+    fbErrorSdoRead			: FB_EcCoESdoRead;
+    fbFollowWinSdoRead		: FB_EcCoESdoRead;
+    fbSoftLimMaxSdoRead		: FB_EcCoESdoRead;
+    fbSoftLimMinSdoRead 	: FB_EcCoESdoRead;
+    fbMotorloadSdoRead		: FB_EcCoESdoRead;
+    fbGetAmsNetId			: FB_GetLocalAmsNetId;
+
+    sAmsNetId 				: T_AmsNetId;
+    nSubIndex  				: BYTE := 0;
+
   	nChanFollowErrorWinIndex	: WORD;
   	nChanSoftwareLimIndex 		: WORD;
   	nChanMotorLoadIndex			: WORD;
@@ -585,7 +557,7 @@ END_IF
     <Method Name="ReadDriveErrors" Id="{b0585027-4ae7-4117-8a3d-d9e1621fba78}">
       <Declaration><![CDATA[METHOD ReadDriveErrors : BOOL
 VAR_INPUT
-	bReady : bool;
+
 END_VAR
 
 VAR
@@ -676,14 +648,14 @@ fbSoftLimMinSdoRead( sNetId:= sAmsNetId,
 
 
 
-IF ftMotorloadSdoRead.Q THEN
-	IF 	fbMotorloadSdoRead.bError THEN
-		// this will be logged as a warning
-		SUPER^.PiezoErrorCode := fbMotorloadSdoRead.nErrId;
-		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
-	END_IF
-	tonFastParamReadTimer.IN:=TRUE AND NOT THIS^.ftExec.Q;
-END_IF	  
+// IF ftMotorloadSdoRead.Q THEN
+// 	IF 	fbMotorloadSdoRead.bError THEN
+// 		// this will be logged as a warning
+// 		SUPER^.PiezoErrorCode := fbMotorloadSdoRead.nErrId;
+// 		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
+// 	END_IF
+// 	tonFastParamReadTimer.IN:=TRUE AND NOT THIS^.ftExec.Q;
+// END_IF	  
 
 
 // ftFollowWinSdoRead(CLK:=fbFollowWinSdoRead.bBusy);
@@ -905,7 +877,7 @@ CASE eDriveState  OF
 			SUPER^.Error := TRUE;
 		END_IF
 		// Catch the drive errors code
-		ReadDriveErrors(SUPER^.Error);
+		ReadDriveErrors();
 		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_UNDEFINED;
 		
     E_DS402DriveState.QUICK_STOP_ACTIVE:;

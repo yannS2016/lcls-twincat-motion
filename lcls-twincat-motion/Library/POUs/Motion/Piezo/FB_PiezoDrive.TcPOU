@@ -11,18 +11,15 @@ END_VAR
 VAR
 	{attribute 'no_copy'}
     stPiezoStage		: REFERENCE TO ST_PiezoStage;
-    eModeOFOperation	: E_DS402OperationMode:=E_DS402OperationMode.NONE;
     eHomingState		: E_DS402Homing;
 	// reuse to absolute/relative moves for DS402
     eAxisState			:  MC_AxisStates;
-    //fbMotionErrorLogger : FB_MotionErrorLogger;
     // create a property for some of these
     bExecMove			: BOOL;
     bExecHome			: BOOL;
     bPosGoal			: BOOL;
     bNegGoal			: BOOL;
     bNewMoveReq			: BOOL;
-    bMoveCmd			: BOOL;
     bHomingBusy			: BOOL;
     bHomingDone			: BOOL;
     bPrepareDisable		: BOOL;
@@ -33,30 +30,27 @@ VAR
 	// This prevent unexpected logical 1 on stMotionStage.bExecute 
 	// outside rising edges from bMoveCmd or bHomeCmd 
 	bOverrideExternalExec	: BOOL;
-	
-//    rtHomed				: R_TRIG;
+
     rtMoveCmdShortcut	: R_TRIG;
     rtHomeCmdShortcut	: R_TRIG;
     rtEnableMode		: R_TRIG;
     rtUserExec			: R_TRIG;
-    rtExec			: R_TRIG;
+
 	rtNewMoveReq	: R_TRIG;
 	ftForwardEnabled: F_TRIG;
 	ftBackwardEnabled: F_TRIG;
-	
 
     bError				: BOOL:=FALSE;
     nErrorId			: UDINT:=0;
     sLocalErrorMessage	: STRING;
-    tonSyncHoming 			: TON;
-	ntest				: UINT;
-	nPiezoErrorCode			        : UDINT;
+    tonSyncHoming 		: TON;
+
+	nPiezoErrorCode		: UDINT;
 	// Save abd restore encoder value
     bInit: BOOL;
     bLoad: BOOL;
-    nLatchError: UDINT;
     bEncError: BOOL;
-    cpuCounter : GETCPUCOUNTER;
+
 END_VAR
 
 VAR PERSISTENT
@@ -291,7 +285,7 @@ ELSIF rtHomeCmdShortcut.Q AND NOT stPiezoStage.bExecute THEN
 	// Automatically fill the correct nCmdData for homing
 	stPiezoStage.nCmdData:=stPiezoStage.nHomingMode;
 END_IF
-cpuCounter();
+
 // Handle main execs .  Rising on bMoved should be the ntry point
 // bu this is not the case in production its a rising on bExecute.
 rtUserExec(CLK:=stPiezoStage.bExecute (*AND bOverrideExternalExec*));

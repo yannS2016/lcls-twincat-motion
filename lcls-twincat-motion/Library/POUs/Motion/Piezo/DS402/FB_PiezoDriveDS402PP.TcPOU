@@ -12,14 +12,11 @@ VAR
     DiscreteMotion 		:  BOOL;
     ContinuousMotion 	:  BOOL;
 	bSaveDone			:  BOOL;
-	//rtErrorEvent		: R_TRIG;
-    bDS04Execute: BOOL := TRUE;
-	bStartDiscreteMotion : BOOL;
-	tonDiscreteMotion	: TON;
+
 END_VAR
 
 VAR CONSTANT
-	// DS 402 Motor encoder defective code : this needed for save and restore.
+	// DS 402 Motor encoder defective code : this is needed for save and restore.
 	nEncErrorCode	: WORD := 16#7300;
 END_VAR
 ]]></Declaration>
@@ -217,7 +214,7 @@ MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
 	// which will set this state machine to a disable state.
 	// we need to wait for the read error sdo function to complete.
 	// Catch the drive errors code
-	IF ReadDriveErrors(SUPER^.Error) THEN
+	IF ReadDriveErrors() THEN
 		bReadDone := FALSE;
 		// motion error do not disabled the drive ctrl word will  still be 31.
 		// thus we're explicitely turn off power.
