@@ -14,7 +14,8 @@ VAR
 	bSaveDone			:  BOOL;
 	//rtErrorEvent		: R_TRIG;
     bDS04Execute: BOOL := TRUE;
-
+	bStartDiscreteMotion : BOOL;
+	tonDiscreteMotion	: TON;
 END_VAR
 
 VAR CONSTANT
@@ -28,10 +29,10 @@ IF NOT __ISVALIDREF(SUPER^.stPiezoStage) THEN
     RETURN;
 END_IF
 
-THIS^.Power();
 THIS^.Interlock();
-THIS^.Halt();
+THIS^.Power();
 THIS^.StateMachine();
+THIS^.Halt();
 THIS^.Reset();
 ]]></ST>
     </Implementation>
@@ -65,9 +66,9 @@ END_VAR
         SUPER^.stPiezoStage.nProfilVelocity:=THIS^.CalibratedVelocity;
         SUPER^.stPiezoStage.nProfilAcceleration:=THIS^.CalibratedAcceleration;
         SUPER^.stPiezoStage.nProfilDecceleration:=THIS^.CalibratedAcceleration;
-        SUPER^.bMoveDone:=FALSE;
-        SUPER^.MoveBusy:=FALSE;
-        SUPER^.InTargetPosition:=FALSE;
+        //SUPER^.bMoveDone:=FALSE;
+        //SUPER^.MoveBusy:=FALSE;
+        //SUPER^.InTargetPosition:=FALSE;
 		THIS^.ContinuousMotion:=FALSE;
 		THIS^.DiscreteMotion:=TRUE;
 		// bit 5: change set immediately set
@@ -171,8 +172,7 @@ END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="HandleMoveRequest" Id="{6f021476-362f-4001-9f7a-3364b0ed4a04}">
-      <Declaration><![CDATA[METHOD HandleMoveRequest : BOOL
-]]></Declaration>
+      <Declaration><![CDATA[METHOD HandleMoveRequest]]></Declaration>
       <Implementation>
         <ST><![CDATA[CASE SUPER^.McAxisState OF
 
@@ -184,23 +184,31 @@ MC_AxisStates.MC_AXISSTATE_DISABLED:;
     SUPER^.bMoveDone:=FALSE;
     SUPER^.InTargetPosition:=FALSE;
 
-MC_AxisStates.MC_AXISSTATE_STANDSTILL:
+MC_AxisStates.MC_AXISSTATE_STANDSTILL:;
     IF SUPER^.bExecHome THEN
 		SUPER^.eHomingState := E_DS402Homing.INIT_HOMING;
 		SUPER^.HomeDone := FALSE;
+		THIS^.InTargetPosition:=FALSE;
+		SUPER^.stPiezoStage.bDone:=FALSE;
+		tonSyncHoming.IN := FALSE;
         SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_HOMING;
-    END_IF
-
-    IF SUPER^.bExecMove THEN
+    ELSIF SUPER^.bExecMove THEN
+        // enter move discrete or continous here:
+		SUPER^.bMoveBusy := TRUE;
+		SUPER^.bMoveDone := FALSE;
+		THIS^.InTargetPosition:=FALSE;
+		SUPER^.stPiezoStage.bDone:=FALSE;
         // we supporting only discrete motion for now
         SUPER^.stPiezoStage.nPiezoDriveControl.5:=FALSE;
         SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
-        // enter move discrete or continous here:
         eMotionState:=E_DS402MotionState.PREPARE_MOTION_PARAMS;
+	ELSE
+;
     END_IF
 
-MC_AxisStates.MC_AXISSTATE_ERRORSTOP:
+MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
 	// Force everything off in case of error
+	SUPER^.Error:= TRUE;
     SUPER^.MoveBusy:=FALSE;
     SUPER^.MoveDone:=FALSE;
 	SUPER^.HomingBusy:= FALSE;
@@ -210,23 +218,35 @@ MC_AxisStates.MC_AXISSTATE_ERRORSTOP:
 	// we need to wait for the read error sdo function to complete.
 	// Catch the drive errors code
 	IF ReadDriveErrors(SUPER^.Error) THEN
-		bSdoReadDone := FALSE;
+		bReadDone := FALSE;
 		// motion error do not disabled the drive ctrl word will  still be 31.
 		// thus we're explicitely turn off power.
 		SUPER^.stPiezoStage.bEnable:=FALSE;
-	END_IF
-
-MC_AxisStates.MC_AXISSTATE_STOPPING:
-    SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
-
-MC_AxisStates.MC_AXISSTATE_HOMING:
-	IF NOT SUPER^.HomeDone THEN
-		THIS^.Home();
 	ELSE
-		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+		bLogReady := FALSE;
 	END_IF
 
-MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
+MC_AxisStates.MC_AXISSTATE_STOPPING:;
+
+
+MC_AxisStates.MC_AXISSTATE_HOMING:;
+	// stopping
+	IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
+		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
+	// error bit set ?
+	ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+		SUPER^.Error := TRUE;
+		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
+	ELSE
+		IF NOT SUPER^.HomeDone THEN
+			THIS^.Home();
+		ELSE
+			SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+		END_IF
+	END_IF
+	
+
+MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:;
 	// stopping
 	IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
 		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
@@ -241,15 +261,14 @@ MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
 
 END_CASE
 
-//ReadDriveErrors(SUPER^.Error);
-
 // update encoder value and calibrated position
 SUPER^.EncValue();
 
 SUPER^.MotionParams(tRefreshDelay:=T#1S);
 
 // Save and restore as long as not an absolute encoder
-EncSaveRestore( bEnable:=stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE);]]></ST>
+EncSaveRestore( bEnable:=stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE);
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="Home" Id="{b3172138-e5cb-4d78-92a5-25024c9364c9}">

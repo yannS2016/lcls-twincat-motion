@@ -37,7 +37,6 @@ STRUCT
 	nSoftwareLimMax 				: 	LINT;
 	nfollowErrorWin 				: 	UDINT;
     // These will be read via SDO read periodically or via event in status words.
-	nPiezoErrorCode			        : UDINT;
 	nLogicalScaleOffset 			: LINT;
 	nLogicalScaleInversion 			: BOOL;
 	nMotorLoad						: USINT;

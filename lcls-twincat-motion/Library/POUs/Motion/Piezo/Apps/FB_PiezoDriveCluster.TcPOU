@@ -21,7 +21,8 @@ stPiezoStage: ST_PiezoStage:=(sName:='TST:MCS2',
 				fAcceleration:=1000000,
 				fDeceleration:=1000000 );
  
- fbPiezoDriveDS402Pp : FB_PiezoDriveDS402PP(stSTage:=stPiezoStage);
+ fbPiezoDriveDS402Pp : FB_PiezoDriveDS402PP := (stPzStage:=stPiezoStage);
+ // other associated FBs ...
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -47,12 +48,5 @@ END_VAR]]></Declaration>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_PiezoDriveCluster">
-      <LineId Id="3" Count="5" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_PiezoDriveCluster.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

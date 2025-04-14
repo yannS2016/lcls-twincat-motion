@@ -10,7 +10,7 @@ END_VAR
 
 VAR
 	eDriveState		: 	E_DS402DriveState;
-
+	fbLogError		:   FB_LogMotionError;
     // axis status -- emulating some NC axis
     bOperational		:  BOOL;
     PositiveDirection	:  BOOL;
@@ -26,7 +26,8 @@ VAR
     bBwdHit				:  BOOL;
 	bHalt				:  BOOL;
 	bReported			: BOOL;
-	bSdoReadDone		: BOOL;
+	bReadDone		: BOOL;
+	bLogReady		: BOOL;
 	rtMotionDir			: R_TRIG;
 	rtMotionErrorEvent		: R_TRIG;
 	ftReset				: F_TRIG;
@@ -51,7 +52,7 @@ VAR
     rtEnableDrive	: R_TRIG;
     ftDisbaleDrive	: F_TRIG;
 	
-	rtOperational 	: R_TRIG;
+	rtNotOperational 	: R_TRIG;
 	ftOperational	: F_TRIG;
 	ftTest	: F_TRIG;
 	rtTest	: R_TRIG;
@@ -499,8 +500,9 @@ THIS^.rtHomed(CLK:=SUPER^.HomeDone AND SUPER^.bExecHome);
 
 IF THIS^.ftExec.Q OR THIS^.rtTarget.Q OR THIS^.rtHomed.Q THEN
     IF NOT SUPER^.stPiezoStage.bDone THEN
-        SUPER^.stPiezoStage.bDone:=TRUE;
 		SUPER^.MoveBusy:=FALSE;
+		SUPER^.stPiezoStage.bDone := THIS^.bMoveDone OR SUPER^.HomeDone;
+		SUPER^.stPiezoStage.bHomed := SUPER^.HomeDone;
         IF NOT SUPER^.Error THEN
             THIS^.bExecute:=FALSE;
             SUPER^.stPiezoStage.bExecute:=FALSE;
@@ -531,14 +533,28 @@ IF NOT SUPER^.bExecute AND (SUPER^.stPiezoStage.bMoveCmd OR SUPER^.stPiezoStage.
 	SUPER^.bOverrideExternalExec := FALSE;
 END_IF
 
-// Error is general error status from the output of each motion fucntion called
-SUPER^.stPiezoStage.bHomed := SUPER^.HomeDone;
-SUPER^.stPiezoStage.bError := SUPER^.Error;
-SUPER^.stPiezoStage.nErrorId := SUPER^.ErrorCode;
+// Force everything off in case of error
+IF SUPER^.stPiezoStage.bError THEN
+    SUPER^.stPiezoStage.bBusy := FALSE;
+    SUPER^.stPiezoStage.bDone := FALSE;
+    SUPER^.stPiezoStage.bEnable := FALSE;
+END_IF
+
 SUPER^.stPiezoStage.bBusy:=SUPER^.HomingBusy OR SUPER^.MoveBusy;
 
+// Log errors
+// Set the error message if we have one
 
+// Hook if other code wants to inject a non-NC error
+IF SUPER^.stPiezoStage.sCustomErrorMessage <> '' THEN
+	bLogReady := FALSE;
+	SUPER^.stPiezoStage.sErrorMessage := SUPER^.stPiezoStage.sCustomErrorMessage;
 
+ELSE
+	SUPER^.stPiezoStage.sErrorMessage := F_MotionErrorCodeLookup(nErrorId := SUPER^.stPiezoStage.nErrorId);
+END_IF
+
+fbLogError( stMotionStage:=SUPER^.stPiezoStage, bEnable:=bLogReady);
 
 ]]></ST>
       </Implementation>
@@ -584,8 +600,8 @@ fbErrorSdoRead( sNetId:= sAmsNetId,
 				nSlaveAddr:=SUPER^.stPiezoStage.nSlaveAddr, 
 				nIndex:=nChanErrorCodeIndex, 
 				nSubIndex :=nSubIndex, 
-				pDstBuf:= ADR(SUPER^.stPiezoStage.nPiezoErrorCode), 
-				cbBufLen:=SIZEOF(SUPER^.stPiezoStage.nPiezoErrorCode),
+				pDstBuf:= ADR(SUPER^.nPiezoErrorCode), 
+				cbBufLen:=SIZEOF(SUPER^.nPiezoErrorCode),
 				bExecute:= SUPER^.Error );
 				
 IF ftErrorSdoRead.Q THEN
@@ -593,14 +609,20 @@ IF ftErrorSdoRead.Q THEN
 		SUPER^.Error:=fbErrorSdoRead.bError;
 		SUPER^.ErrorCode:=fbErrorSdoRead.nErrId;
 	ELSE
-		// log the error condition
-		SUPER^.ErrorCode := SUPER^.stPiezoStage.nPiezoErrorCode;
-		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.ErrorCode, '');
+		// Update Motion Error code;
+		SUPER^.ErrorCode := SUPER^.PiezoErrorCode;
+
+		// Error is general error status from the output of each motion fucntion called
+		SUPER^.stPiezoStage.bError := SUPER^.Error;
+		SUPER^.stPiezoStage.nErrorId := SUPER^.ErrorCode;	
+		bLogReady := TRUE;
 	END_IF
-	bSdoReadDone := TRUE;
+	bReadDone := TRUE;
+ELSE
+	bReadDone := FALSE;
 END_IF
 
-ReadDriveErrors := bSdoReadDone;
+ReadDriveErrors := bReadDone;
 
 
 
@@ -663,8 +685,8 @@ END_IF
 IF ftMotorloadSdoRead.Q THEN
 	IF 	fbMotorloadSdoRead.bError THEN
 		// this will be logged as a warning
-		SUPER^.stPiezoStage.nPiezoErrorCode := fbMotorloadSdoRead.nErrId;
-		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.stPiezoStage.nPiezoErrorCode, '');
+		SUPER^.PiezoErrorCode := fbMotorloadSdoRead.nErrId;
+		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
 	END_IF
 	tonFastParamReadTimer.IN:=TRUE AND NOT THIS^.ftExec.Q;
 END_IF	  
@@ -685,38 +707,38 @@ IF ftFollowWinSdoRead.Q
 
 	IF 	fbFollowWinSdoRead.bError THEN
 		// this will be logged as a warning
-		SUPER^.stPiezoStage.nPiezoErrorCode := fbFollowWinSdoRead.nErrId;
-		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.stPiezoStage.nPiezoErrorCode, '');
+		SUPER^.PiezoErrorCode := fbFollowWinSdoRead.nErrId;
+		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
 	ELSIF 	fbSoftLimMaxSdoRead.bError THEN
 		// this will be logged as a warning
-		SUPER^.stPiezoStage.nPiezoErrorCode := fbSoftLimMaxSdoRead.nErrId;
-		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.stPiezoStage.nPiezoErrorCode, '');
+		SUPER^.PiezoErrorCode := fbSoftLimMaxSdoRead.nErrId;
+		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
 	ELSIF 	fbSoftLimMinSdoRead.bError THEN
 		// this will be logged as a warning
-		SUPER^.stPiezoStage.nPiezoErrorCode := fbSoftLimMinSdoRead.nErrId;
-		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.stPiezoStage.nPiezoErrorCode, '');
-	ELSE
-	 
-		stPiezoStage.stAxisParameters.bCtrlEnablePosDiffControl   := BOOL_TO_WORD(SUPER^.stPiezoStage.nfollowErrorWin > 0);
-		stPiezoStage.stAxisParameters.bEncEnableSoftEndMaxControl := BOOL_TO_WORD(SUPER^.stPiezoStage.nSoftwareLimMax > SUPER^.stPiezoStage.nSoftwareLimMin);
-		stPiezoStage.stAxisParameters.bEncEnableSoftEndMinControl := BOOL_TO_WORD(SUPER^.stPiezoStage.nSoftwareLimMin < SUPER^.stPiezoStage.nSoftwareLimMax);
-		stPiezoStage.stAxisParameters.fAccelerationMax := SUPER^.stPiezoStage.fMaxAcceleration;
-		stPiezoStage.stAxisParameters.fCtrlPosDiffMax := SUPER^.stPiezoStage.nfollowErrorWin;
-		// this info is not provided by the drive we keep it 0
-		stPiezoStage.stAxisParameters.fCtrlPosDiffMaxTime := 0.0;
-		stPiezoStage.stAxisParameters.fDecelerationMax := SUPER^.stPiezoStage.fMaxAcceleration;
-		stPiezoStage.stAxisParameters.fEncSoftEndMax := LINT_TO_LREAL(stPiezoStage.nSoftwareLimMax);
-		stPiezoStage.stAxisParameters.fEncSoftEndMin := LINT_TO_LREAL(stPiezoStage.nSoftwareLimMin);
-		stPiezoStage.stAxisParameters.fVeloMaximum := SUPER^.stPiezoStage.fMaxVelocity;
-		stPiezoStage.stAxisParameters.fEncOffset := 0.0;
-		// this info is not provided by the driver we keep it 0
-		stPiezoStage.stAxisParameters.fEncScaleFactorInternal := 0.0;
-		SUPER^.stPiezoStage.bAxisParamsInit S= TRUE;
+		SUPER^.PiezoErrorCode := fbSoftLimMinSdoRead.nErrId;
+		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
 	END_IF 
 	tonSlowParamReadTimer.IN:=TRUE;
 
 END_IF
 
+stPiezoStage.stAxisParameters.sAxisName := stPiezoStage.sName;
+stPiezoStage.stAxisParameters.AxisId := stPiezoStage.nMotionAxisID;
+stPiezoStage.stAxisParameters.bCtrlEnablePosDiffControl   := BOOL_TO_WORD(SUPER^.stPiezoStage.nfollowErrorWin > 0);
+stPiezoStage.stAxisParameters.bEncEnableSoftEndMaxControl := BOOL_TO_WORD(SUPER^.stPiezoStage.nSoftwareLimMax > SUPER^.stPiezoStage.nSoftwareLimMin);
+stPiezoStage.stAxisParameters.bEncEnableSoftEndMinControl := BOOL_TO_WORD(SUPER^.stPiezoStage.nSoftwareLimMin < SUPER^.stPiezoStage.nSoftwareLimMax);
+stPiezoStage.stAxisParameters.fAccelerationMax := SUPER^.stPiezoStage.fMaxAcceleration;
+stPiezoStage.stAxisParameters.fCtrlPosDiffMax := SUPER^.stPiezoStage.nfollowErrorWin;
+// this info is not provided by the drive we keep it 0
+stPiezoStage.stAxisParameters.fCtrlPosDiffMaxTime := 0.0;
+stPiezoStage.stAxisParameters.fDecelerationMax := SUPER^.stPiezoStage.fMaxAcceleration;
+stPiezoStage.stAxisParameters.fEncSoftEndMax := LINT_TO_LREAL(stPiezoStage.nSoftwareLimMax);
+stPiezoStage.stAxisParameters.fEncSoftEndMin := LINT_TO_LREAL(stPiezoStage.nSoftwareLimMin);
+stPiezoStage.stAxisParameters.fVeloMaximum := SUPER^.stPiezoStage.fMaxVelocity;
+stPiezoStage.stAxisParameters.fEncOffset := 0.0;
+// this info is not provided by the driver we keep it 0
+stPiezoStage.stAxisParameters.fEncScaleFactorInternal := 0.0;
+SUPER^.stPiezoStage.bAxisParamsInit S= TRUE;
 
 ]]></ST>
       </Implementation>
@@ -738,22 +760,25 @@ END_VAR
 rtReset(CLK:=SUPER^.stPiezoStage.bReset);
 IF rtReset.Q THEN
     SUPER^.stPiezoStage.nPiezoDriveControl:=16#80;
-	// This a hack to allow homing after the condition is already reached or the MCS2 power cycled
-	SUPER^.stPiezoStage.nModeOfOperation:=E_DS402OperationMode.PROFILE_POSITION;
-	SUPER^.HomeDone := FALSE;
     // Reset everything when bReset is flagged
     SUPER^.stPiezoStage.bEnable:=FALSE;
     SUPER^.stPiezoStage.bReset:=FALSE;
     SUPER^.stPiezoStage.bExecute:=FALSE;
 	SUPER^.Error := FALSE;
 	SUPER^.ErrorCode := 0;
-	SUPER^.stPiezoStage.nPiezoErrorCode := 0;
+	SUPER^.PiezoErrorCode := 0;
+	SUPER^.stPiezoStage.bError := 0;
+	SUPER^.stPiezoStage.nErrorId := 0;	
     SUPER^.stPiezoStage.sErrorMessage:='';
     SUPER^.stPiezoStage.sCustomErrorMessage:='';
-	tonSlowParamReadTimer.IN:=FALSE;
     bExecute:=FALSE;
+	bLogReady := FALSE;
+	SUPER^.HomeDone := FALSE;
+	//tonSlowParamReadTimer.IN:=FALSE;
+	// This a hack to allow homing after the condition is already reached or the MCS2 power cycled
+	//SUPER^.stPiezoStage.nModeOfOperation:=E_DS402OperationMode.PROFILE_POSITION;
 END_IF
-ftReset(CLK:=SUPER^.stPiezoStage.bReset);]]></ST>
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="StateMachine" Id="{d963b9d7-d9e1-4a33-bb79-0f8a7e20b1de}">
@@ -845,11 +870,9 @@ CASE eDriveState  OF
     E_DS402DriveState.SWITCH_ON_DISABLED:;
 
     E_DS402DriveState.SWITCH_ON_READY:;
-        // Transition to Switch on state
-        SUPER^.stPiezoStage.nPiezoDriveControl:=16#07;
+
     E_DS402DriveState.SWITCH_ON:;
-		//SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
-		
+
     E_DS402DriveState.OPERATION_ENABLED:;
 		IF NOT bOperational THEN
 			bOperational := TRUE;
@@ -864,16 +887,14 @@ CASE eDriveState  OF
 		// Catch the drive errors code
 		ReadDriveErrors(SUPER^.Error);
 		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_UNDEFINED;
-	
-    E_DS402DriveState.QUICK_STOP_ACTIVE:
-        // return back to operation enabled: transition 16
-        SUPER^.stPiezoStage.nPiezoDriveControl:=16#0F;
+		
+    E_DS402DriveState.QUICK_STOP_ACTIVE:;
+
 
 END_CASE
 
-
-rtOperational(CLK:= eDriveState <> E_DS402DriveState.OPERATION_ENABLED);
-IF rtOperational.Q THEN
+rtNotOperational(CLK:= eDriveState <> E_DS402DriveState.OPERATION_ENABLED);
+IF rtNotOperational.Q THEN
 	bOperational := FALSE;
 	SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
 END_IF

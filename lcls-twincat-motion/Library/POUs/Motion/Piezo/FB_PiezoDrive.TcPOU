@@ -48,14 +48,15 @@ VAR
     bError				: BOOL:=FALSE;
     nErrorId			: UDINT:=0;
     sLocalErrorMessage	: STRING;
-    tonHoming 			: TON;
+    tonSyncHoming 			: TON;
 	ntest				: UINT;
+	nPiezoErrorCode			        : UDINT;
 	// Save abd restore encoder value
     bInit: BOOL;
     bLoad: BOOL;
     nLatchError: UDINT;
     bEncError: BOOL;
-
+    cpuCounter : GETCPUCOUNTER;
 END_VAR
 
 VAR PERSISTENT
@@ -164,28 +165,25 @@ END_VAR
       <Declaration><![CDATA[METHOD PUBLIC Home : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[(* IMPORTANT: Homing options and parameters must be configured either via the COE online tab or via the service tool *)
+        <ST><![CDATA[tonSyncHoming(PT:=T#1000MS);
+(* IMPORTANT: Homing options and parameters must be configured either via the COE online tab or via the service tool *)
 CASE eHomingState OF
     E_DS402Homing.INIT_HOMING :;
         stPiezoStage.nModeOfOperation:=E_DS402OperationMode.HOMING;
         IF stPiezoStage.nModeOfOperationDisplay = E_DS402OperationMode.HOMING THEN
 			HomeDone := FALSE;
-			tonHoming.IN := TRUE;
+			tonSyncHoming.IN := TRUE;
             stPiezoStage.nPiezoDriveControl.4:=TRUE;
+			IF tonSyncHoming.Q THEN
+				eHomingState:=E_DS402Homing.HOMING_IN_PROGRESS;
+			END_IF
         END_IF
-		IF tonHoming.Q THEN
-			eHomingState:=E_DS402Homing.HOMING_IN_PROGRESS;
-		END_IF
+
     E_DS402Homing.HOMING_IN_PROGRESS:
         IF NOT stPiezoStage.stPiezoDriveStatus.TargetReached
            AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
                 HomingBusy:=TRUE;
                 HomeDone:=FALSE;
-        END_IF
-
-        // homing error
-        IF stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-            eHomingState:=E_DS402Homing.HOMING_ERROR;
         END_IF
 		
         // Interrupted
@@ -205,31 +203,23 @@ CASE eHomingState OF
         HomingBusy:=FALSE;
         HomeDone:=TRUE;
         Error:=FALSE;
-		// prepare next move
-		stPiezoStage.nPiezoDriveControl.4:=FALSE;
-		tonHoming.IN := FALSE;
+		tonSyncHoming.IN := FALSE;
 		stPiezoStage.fPosition := 0.0;
+		//prepare next move
+		stPiezoStage.nPiezoDriveControl.4:=FALSE;
+		stPiezoStage.nModeOfOperation:=E_DS402OperationMode.PROFILE_POSITION;
+		
     E_DS402Homing.HOMING_INTERRUPTED :;
         HomingBusy:=FALSE;
         HomeDone:=FALSE;
         ErrorMessage:='Warning: Halt interrupted homing sequence';
         Error:=FALSE;
         ErrorCode:=99; 
-		// log the warning
-		//fbMotionErrorLogger.AddMsg(ErrorCode, ErrorMessage);
 
-    E_DS402Homing.HOMING_ERROR:;
-        HomingBusy:=FALSE;
-        HomeDone:=FALSE;
-        Error:=TRUE;
-        ErrorCode:=stPiezoStage.nPiezoErrorCode;
-		// log the warning
-		//fbMotionErrorLogger.AddMsg(ErrorCode, ErrorMessage);
 END_CASE
 
-tonHoming(PT:=T#1S);
 // update main homing status
-stPiezoStage.bHomed:=HomeDone;]]></ST>
+//stPiezoStage.bHomed:=HomeDone;]]></ST>
       </Implementation>
     </Method>
     <Property Name="HomeDone" Id="{ef80f79d-a7a5-4a2f-a11f-e37d59b9ba61}">
@@ -301,7 +291,7 @@ ELSIF rtHomeCmdShortcut.Q AND NOT stPiezoStage.bExecute THEN
 	// Automatically fill the correct nCmdData for homing
 	stPiezoStage.nCmdData:=stPiezoStage.nHomingMode;
 END_IF
-
+cpuCounter();
 // Handle main execs .  Rising on bMoved should be the ntry point
 // bu this is not the case in production its a rising on bExecute.
 rtUserExec(CLK:=stPiezoStage.bExecute (*AND bOverrideExternalExec*));
@@ -353,6 +343,12 @@ IF NOT THIS^.HomingBusy AND ftBackwardEnabled.Q THEN
 	stPiezoStage.bExecute:=FALSE;
 END_IF
 
+IF NOT stPiezoStage.bError AND stPiezoStage.bExecute AND NOT stPiezoStage.bUserEnable THEN
+    stPiezoStage.bError := TRUE;
+    stPiezoStage.nErrorId := 1;
+    stPiezoStage.sCustomErrorMessage := 'Move requested, but user enable is disabled!';
+END_IF
+
 // Update all enable booleans
 THIS^.SetEnables();
 
@@ -372,11 +368,11 @@ bExecHome:=bExecute AND stPiezoStage.nCommand = 10;
 bExecMove:=bExecute AND NOT bExecHome;
 
 // When we start, set the busy/done appropriately
-rtExec(CLK:=bExecute);
-IF rtExec.Q THEN
-    stPiezoStage.bBusy:=TRUE;
-    stPiezoStage.bDone:=FALSE;
-END_IF]]></ST>
+// rtExec(CLK:=bExecute);
+// IF rtExec.Q THEN
+//     stPiezoStage.bBusy:=TRUE;
+//     stPiezoStage.bDone:=FALSE;
+// END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{7fb0d460-52d2-4ae2-accf-52e93bd858b3}">
@@ -471,6 +467,26 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Property Name="PiezoErrorCode" Id="{6909d919-bde9-446f-9642-d6b8f1850cfe}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PiezoErrorCode : UDINT]]></Declaration>
+      <Get Name="Get" Id="{2ea8d926-6bc6-4780-b02a-0d0e439964a4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[PiezoErrorCode := nPiezoErrorCode;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{dec4dd39-3493-44de-bc51-b50700783e93}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nPiezoErrorCode := PiezoErrorCode;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="Power" Id="{e042f171-1fa4-41aa-931e-1ad0031d9e59}">
       <Declaration><![CDATA[METHOD PUBLIC ABSTRACT Power : BOOL
 ]]></Declaration>
