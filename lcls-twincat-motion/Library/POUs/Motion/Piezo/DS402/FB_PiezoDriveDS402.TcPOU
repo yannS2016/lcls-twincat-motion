@@ -67,6 +67,7 @@ VAR
 	ftSoftLimMinSdoRead : F_TRIG;	
 	ftMotorloadSdoRead 	: F_TRIG;
 	//	slow chaging parameter timer
+    bSlowParamReadTimer: BOOL := TRUE;
     tonSlowParamReadTimer: TON;
 	// fast changing paramter timer -- wwe could have used PDO for this params
 	// but the Piezo ESC have fixed PDO list.
@@ -637,16 +638,12 @@ VAR_INPUT
 END_VAR
 
 VAR
-	bTmpLimMaxAct: BOOL;
-	bTmpLimMinAct: BOOL;
-	bTmpLimAct: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// Get the Master Ams Net Into into correct format
+        <ST><![CDATA[tonSlowParamReadTimer( IN:=bSlowParamReadTimer, PT:=tRefreshDelay );
+// Get the Master Ams Net Into into correct format
 AmsNetIdToString();
-tonSlowParamReadTimer( PT:=tRefreshDelay );
-
 // Get the following Error
 fbFollowWinSdoRead(	sNetId:= sAmsNetId, 
 				nSlaveAddr:=SUPER^.stPiezoStage.nSlaveAddr, 
@@ -676,11 +673,8 @@ fbSoftLimMinSdoRead( sNetId:= sAmsNetId,
 				bExecute:=tonSlowParamReadTimer.Q
 			  );
 
-			  
-			  
-IF tonSlowParamReadTimer.Q THEN
-//	tonSlowParamReadTimer.IN:=FALSE;
-END_IF
+
+
 
 IF ftMotorloadSdoRead.Q THEN
 	IF 	fbMotorloadSdoRead.bError THEN
@@ -692,35 +686,61 @@ IF ftMotorloadSdoRead.Q THEN
 END_IF	  
 
 
-ftFollowWinSdoRead(CLK:=fbFollowWinSdoRead.bBusy);
-ftSoftLimMaxSdoRead(CLK:=fbSoftLimMaxSdoRead.bBusy);
-ftSoftLimMinSdoRead(CLK:=fbSoftLimMinSdoRead.bBusy);
-ftMotorloadSdoRead(CLK:=fbMotorloadSdoRead.bBusy);
+// ftFollowWinSdoRead(CLK:=fbFollowWinSdoRead.bBusy);
+// ftSoftLimMaxSdoRead(CLK:=fbSoftLimMaxSdoRead.bBusy);
+// ftSoftLimMinSdoRead(CLK:=fbSoftLimMinSdoRead.bBusy);
+// ftMotorloadSdoRead(CLK:=fbMotorloadSdoRead.bBusy);
 
-//ftTest(CLK:=tonSlowParamReadTimer.Q);
+IF fbSoftLimMinSdoRead.bBusy AND fbSoftLimMaxSdoRead.bBusy AND fbFollowWinSdoRead.bBusy THEN
+	bSlowParamReadTimer:=FALSE;
+END_IF
 
-// done reading params?	
-IF ftFollowWinSdoRead.Q 
-
-	AND ftSoftLimMinSdoRead.Q 
-	AND ftSoftLimMaxSdoRead.Q  THEN
-
+IF NOT fbSoftLimMinSdoRead.bBusy AND NOT fbSoftLimMaxSdoRead.bBusy AND NOT fbFollowWinSdoRead.bBusy THEN
+	IF NOT bSlowParamReadTimer THEN
+		bSlowParamReadTimer:=TRUE;
+	END_IF
 	IF 	fbFollowWinSdoRead.bError THEN
 		// this will be logged as a warning
+		SUPER^.Error := FALSE;
 		SUPER^.PiezoErrorCode := fbFollowWinSdoRead.nErrId;
 		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
 	ELSIF 	fbSoftLimMaxSdoRead.bError THEN
 		// this will be logged as a warning
+		SUPER^.Error := FALSE;
 		SUPER^.PiezoErrorCode := fbSoftLimMaxSdoRead.nErrId;
 		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
 	ELSIF 	fbSoftLimMinSdoRead.bError THEN
 		// this will be logged as a warning
+		SUPER^.Error := FALSE;
 		SUPER^.PiezoErrorCode := fbSoftLimMinSdoRead.nErrId;
 		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
-	END_IF 
-	tonSlowParamReadTimer.IN:=TRUE;
-
+	END_IF
+	SUPER^.stPiezoStage.bError := SUPER^.Error;
+	SUPER^.stPiezoStage.nErrorId := SUPER^.PiezoErrorCode;
 END_IF
+
+// done reading params?	
+// IF ftFollowWinSdoRead.Q 
+// 
+// 	AND ftSoftLimMinSdoRead.Q 
+// 	AND ftSoftLimMaxSdoRead.Q  THEN
+// 
+// 	IF 	fbFollowWinSdoRead.bError THEN
+// 		// this will be logged as a warning
+// 		SUPER^.PiezoErrorCode := fbFollowWinSdoRead.nErrId;
+// 		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
+// 	ELSIF 	fbSoftLimMaxSdoRead.bError THEN
+// 		// this will be logged as a warning
+// 		SUPER^.PiezoErrorCode := fbSoftLimMaxSdoRead.nErrId;
+// 		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
+// 	ELSIF 	fbSoftLimMinSdoRead.bError THEN
+// 		// this will be logged as a warning
+// 		SUPER^.PiezoErrorCode := fbSoftLimMinSdoRead.nErrId;
+// 		//SUPER^.fbMotionErrorLogger.AddMsg(SUPER^.PiezoErrorCode, '');
+// 	END_IF 
+// 	bSlowParamReadTimer:=TRUE;
+// 
+// END_IF
 
 stPiezoStage.stAxisParameters.sAxisName := stPiezoStage.sName;
 stPiezoStage.stAxisParameters.AxisId := stPiezoStage.nMotionAxisID;
