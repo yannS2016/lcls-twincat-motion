@@ -766,9 +766,6 @@ IF rtReset.Q THEN
     bExecute:=FALSE;
 	bLogReady := FALSE;
 	SUPER^.HomeDone := FALSE;
-	//tonSlowParamReadTimer.IN:=FALSE;
-	// This a hack to allow homing after the condition is already reached or the MCS2 power cycled
-	//SUPER^.stPiezoStage.nModeOfOperation:=E_DS402OperationMode.PROFILE_POSITION;
 END_IF
 ]]></ST>
       </Implementation>
