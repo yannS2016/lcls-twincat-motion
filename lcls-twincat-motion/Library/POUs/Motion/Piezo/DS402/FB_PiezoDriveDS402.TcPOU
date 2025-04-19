@@ -318,8 +318,8 @@ ELSE
 END_IF
 
 // calibrated encoder readback
-fCalibratedActPos:=UDINT_TO_REAL(stPiezoStage.nEncoderCount) *  MAX(stPiezoStage.fscalingFactor, fDefaultScalingFactor);
-stPiezoStage.fPosDiff:=stPiezoStage.fPosition - fCalibratedActPos;
+fCalibratedActPos:=DINT_TO_REAL(stPiezoStage.nRawEncoderDINT) *  MAX(stPiezoStage.fscalingFactor, fDefaultScalingFactor);
+stPiezoStage.fPosDiff:=ABS(stPiezoStage.fPosition) - ABS(fCalibratedActPos);
 ]]></ST>
       </Implementation>
     </Method>
@@ -355,7 +355,7 @@ END_IF
       <Implementation>
         <ST><![CDATA[(* Stop condition: User stopped and either Absolute/Relative move or Homing busy? 
   Halt the move by setting bit 8 of the Control Word *)
-//SUPER^.stPiezoStage.nPiezoDriveControl.8 := NOT THIS^.bExecute AND ((THIS^.MoveBusy  AND (SUPER^.stPiezoStage.nCommand=2 OR SUPER^.stPiezoStage.nCommand=3)) OR (SUPER^.HomingBusy AND SUPER^.stPiezoStage.nCommand=10));]]></ST>
+ SUPER^.stPiezoStage.nPiezoDriveControl.8 := NOT SUPER^.stPiezoStage.bExecute;]]></ST>
       </Implementation>
     </Method>
     <Method Name="Home" Id="{d33ee575-f547-404d-bc45-25b73c38be5a}">
@@ -546,7 +546,7 @@ IF rtEnableDrive.Q THEN
 END_IF
 
 IF ftDisbaleDrive.Q THEN
-	//  should we remove voltage on the drive? will piezo hold position?
+	//  inhibit motion functions! keep amplifier enable
 	SUPER^.stPiezoStage.nPiezoDriveControl:=16#07;
     fOverride:=0.0;
 END_IF
