@@ -40,7 +40,8 @@ STRUCT
 	nLogicalScaleOffset 			: LINT;
 	nLogicalScaleInversion 			: BOOL;
 	nMotorLoad						: USINT;
-
+	// timeout for holding actual position in close loop mode 
+	ptHoldTime						: TIME := T#10S;
 	eModule							: 	E_Module;
 	(* NetId of EtherCAT Master *)
     arNetId  				AT %I*	: 	AMSNETID; 

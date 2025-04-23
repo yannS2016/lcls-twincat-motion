@@ -1,18 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <POU Name="FB_PiezoDriveDS402PP" Id="{6e47a4a9-16e3-49c8-8786-19fbbc700413}" SpecialFunc="None">
+  <POU Name="FB_DS402DrivePP" Id="{6e47a4a9-16e3-49c8-8786-19fbbc700413}" SpecialFunc="None">
     <Declaration><![CDATA[{attribute 'call_after_init'}
-FUNCTION_BLOCK FB_PiezoDriveDS402PP EXTENDS FB_PiezoDriveDS402
+FUNCTION_BLOCK FB_DS402DrivePP EXTENDS FB_DS402Drive
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
     eMotionState		:  E_DS402MotionState;
-    DiscreteMotion 		:  BOOL;
-    ContinuousMotion 	:  BOOL;
 	bSaveDone			:  BOOL;
-
+	bReadyToHold	: BOOL;
+	
+	rtExecMoveCmd	: R_TRIG;
+	rtExecHomeCmd	: R_TRIG;
+	rtHoldPosition  : R_TRIG;
 END_VAR
 
 VAR CONSTANT
@@ -29,6 +31,7 @@ END_IF
 THIS^.Interlock();
 THIS^.Power();
 THIS^.StateMachine();
+THIS^.HandleMoveRequest();
 THIS^.Halt();
 THIS^.Reset();
 ]]></ST>
@@ -37,7 +40,35 @@ THIS^.Reset();
       <Declaration><![CDATA[METHOD Brake
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.Brake();]]></ST>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CompleteInit" Id="{d833fbe7-e9ac-4353-bb5f-2247f06bb205}">
+      <Declaration><![CDATA[{attribute 'call_after_init'}
+METHOD CompleteInit
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE stPiezoStage.eModule OF
+	E_Module.CHAN1:
+		  nChanFollowErrorWinIndex 	:= nFollowErrorWinIdex;
+		  nChanSoftwareLimIndex 	:= nSoftLimIndex;
+		  nChanMotorLoadIndex		:= nMotorLoadIndex;
+		  nChanErrorCodeIndex		:= nErrorCodeIndex;
+		
+	E_Module.CHAN2:
+		  nChanFollowErrorWinIndex 	:= nFollowErrorWinIdex + nModuleOffsetIndex;
+		  nChanSoftwareLimIndex 	:= nSoftLimIndex + nModuleOffsetIndex;
+		  nChanMotorLoadIndex		:= nMotorLoadIndex + nModuleOffsetIndex;
+		  nChanErrorCodeIndex		:= nErrorCodeIndex + nModuleOffsetIndex;
+		  
+	E_Module.CHAN3:
+		  nChanFollowErrorWinIndex 	:= nFollowErrorWinIdex + (2 * nModuleOffsetIndex);
+		  nChanSoftwareLimIndex 	:= nSoftLimIndex + (2 * nModuleOffsetIndex);;
+		  nChanMotorLoadIndex		:= nMotorLoadIndex + (2 * nModuleOffsetIndex);
+		  nChanErrorCodeIndex		:= nErrorCodeIndex + (2 * nModuleOffsetIndex);
+END_CASE]]></ST>
       </Implementation>
     </Method>
     <Method Name="ContinousMove" Id="{dd8dccf7-cf39-4951-959f-1329aff5f5d8}">
@@ -58,16 +89,13 @@ END_VAR
         <ST><![CDATA[CASE eMotionState OF
     E_DS402MotionState.PREPARE_MOTION_PARAMS:
         // Activate soft limit to avoid bumping hard on the end stops
-        THIS^.CalibratedMotionParams();
-		SUPER^.stPiezoStage.nTargetPosition:=THIS^.CalibratedTargetPosition;
-        SUPER^.stPiezoStage.nProfilVelocity:=THIS^.CalibratedVelocity;
-        SUPER^.stPiezoStage.nProfilAcceleration:=THIS^.CalibratedAcceleration;
-        SUPER^.stPiezoStage.nProfilDecceleration:=THIS^.CalibratedAcceleration;
-        //SUPER^.bMoveDone:=FALSE;
-        //SUPER^.MoveBusy:=FALSE;
-        //SUPER^.InTargetPosition:=FALSE;
-		THIS^.ContinuousMotion:=FALSE;
-		THIS^.DiscreteMotion:=TRUE;
+        SUPER^.CalibratedMotionParams();
+		SUPER^.stPiezoStage.nTargetPosition:=SUPER^.CalibratedTargetPosition;
+        SUPER^.stPiezoStage.nProfilVelocity:=SUPER^.CalibratedVelocity;
+        SUPER^.stPiezoStage.nProfilAcceleration:=SUPER^.CalibratedAcceleration;
+        SUPER^.stPiezoStage.nProfilDecceleration:=SUPER^.CalibratedAcceleration;
+		SUPER^.bContinuousMotion:=FALSE;
+		SUPER^.bDiscreteMotion:=TRUE;
 		// bit 5: change set immediately set
     	SUPER^.stPiezoStage.nPiezoDriveControl.5:=0;
         SUPER^.stPiezoStage.nModeOfOperation:=E_DS402OperationMode.PROFILE_POSITION;
@@ -98,6 +126,7 @@ END_VAR
         END_IF
 
     E_DS402MotionState.DRIVE_IN_MOTION:;
+	
         IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
 			SUPER^.MoveBusy:=TRUE;
 			eMotionState:=E_DS402MotionState.TARGET_REACHED;
@@ -105,23 +134,36 @@ END_VAR
         END_IF
 
     E_DS402MotionState.TARGET_REACHED:
+
+		// stopping ?
+		IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
+			SUPER^.Halted := TRUE;
+			SUPER^.InTargetPosition:=FALSE;
+			SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
+		END_IF
+		
+		// error bit set ?
+		IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+			SUPER^.Error := TRUE;
+			SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
+		END_IF
+		
+		// Reached ?
         IF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
            AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-            // Halted?
-            IF NOT stPiezoStage.nPiezoDriveControl.8 THEN
-                THIS^.InTargetPosition:=TRUE;
-            ELSE
-                THIS^.InTargetPosition:=FALSE;
-            END_IF
+			SUPER^.Halted := FALSE;
+			SUPER^.InTargetPosition:=TRUE;
             // exit this state machine gracefully
             eMotionState:=E_DS402MotionState.DONE;
         END_IF
-
+		
     E_DS402MotionState.DONE:;
-        SUPER^.bMoveDone:=TRUE;
+        //SUPER^.bMoveDone:=TRUE;
+		THIS^.PositionHoldReady := TRUE;
+		SUPER^.tonHoldTime.IN:=TRUE;
 		// the axis will reset bit 12 after a fallign edge on this bit to signal readiness for new set point
 		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
-        eAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+        SUPER^.eAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 END_CASE]]></ST>
       </Implementation>
     </Method>
@@ -171,7 +213,10 @@ END_IF]]></ST>
     <Method Name="HandleMoveRequest" Id="{6f021476-362f-4001-9f7a-3364b0ed4a04}">
       <Declaration><![CDATA[METHOD HandleMoveRequest]]></Declaration>
       <Implementation>
-        <ST><![CDATA[CASE SUPER^.McAxisState OF
+        <ST><![CDATA[
+rtExecMoveCmd(CLK:=SUPER^.bExecMove);
+rtExecHomeCmd(CLK:=SUPER^.bExecHome);
+CASE SUPER^.McAxisState OF
 
 MC_AxisStates.MC_AXISSTATE_UNDEFINED:;
 
@@ -182,25 +227,28 @@ MC_AxisStates.MC_AXISSTATE_DISABLED:;
     SUPER^.InTargetPosition:=FALSE;
 
 MC_AxisStates.MC_AXISSTATE_STANDSTILL:;
-    IF SUPER^.bExecHome THEN
+
+    IF rtExecHomeCmd.Q THEN
 		SUPER^.eHomingState := E_DS402Homing.INIT_HOMING;
 		SUPER^.HomeDone := FALSE;
-		THIS^.InTargetPosition:=FALSE;
+		SUPER^.InTargetPosition:=FALSE;
 		SUPER^.stPiezoStage.bDone:=FALSE;
-		tonSyncHoming.IN := FALSE;
+		SUPER^.Halted := FALSE;
+		SUPER^.tonSyncHoming.IN := FALSE;
         SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_HOMING;
-    ELSIF SUPER^.bExecMove THEN
+    ELSIF rtExecMoveCmd.Q THEN
         // enter move discrete or continous here:
-		SUPER^.bMoveBusy := TRUE;
-		SUPER^.bMoveDone := FALSE;
-		THIS^.InTargetPosition:=FALSE;
+		SUPER^.MoveBusy := TRUE;
+		SUPER^.MoveDone := FALSE;
+		SUPER^.InTargetPosition:=FALSE;
 		SUPER^.stPiezoStage.bDone:=FALSE;
+		SUPER^.Halted := FALSE;
         // we supporting only discrete motion for now
         SUPER^.stPiezoStage.nPiezoDriveControl.5:=FALSE;
         SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
         eMotionState:=E_DS402MotionState.PREPARE_MOTION_PARAMS;
 	ELSE
-;
+	;
     END_IF
 
 MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
@@ -210,21 +258,24 @@ MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
     SUPER^.MoveDone:=FALSE;
 	SUPER^.HomingBusy:= FALSE;
     SUPER^.InTargetPosition:=FALSE;
+
 	// resetting this flag will take the drive away from operation enable
 	// which will set this state machine to a disable state.
 	// we need to wait for the read error sdo function to complete.
 	// Catch the drive errors code
-	IF ReadDriveErrors() THEN
-		bReadDone := FALSE;
+	IF SUPER^.ReadDriveErrors() THEN
+		SUPER^.bReadDone := FALSE;
 		// motion error do not disabled the drive ctrl word will  still be 31.
 		// thus we're explicitely turn off power.
 		SUPER^.stPiezoStage.bEnable:=FALSE;
 	ELSE
-		bLogReady := FALSE;
+		SUPER^.bLogReady := FALSE;
 	END_IF
 
 MC_AxisStates.MC_AXISSTATE_STOPPING:;
-
+ // start hold position timer
+ THIS^.PositionHoldReady := TRUE;
+ SUPER^.tonHoldTime.IN:= TRUE;
 
 MC_AxisStates.MC_AXISSTATE_HOMING:;
 	// stopping
@@ -243,20 +294,24 @@ MC_AxisStates.MC_AXISSTATE_HOMING:;
 	END_IF
 	
 
-MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:;
-	// stopping
-	IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
-		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
-	// error bit set ?
-	ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-		SUPER^.Error := TRUE;
-		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
-	ELSE
-		// all good here
+MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
 		THIS^.DiscreteMove();
-	END_IF
-
+		
 END_CASE
+
+(* hold position with closed loop operation active before timeout *)
+tonHoldTime(PT:=SUPER^.stPiezoStage.ptHoldTime);
+
+IF tonHoldTime.Q AND THIS^.PositionHoldReady THEN
+	(*
+		when the move is halted or completed hold the position for sometime before transitioning the drive 
+		to 'switched on' state, power is only removed to the drive after the axis reached 'standstill state'.
+		This will keep the close loop on to ensure the accuracy of the move 
+	*)
+	THIS^.PositionHoldReady := FALSE;
+	SUPER^.MoveDone:=TRUE;
+	SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+END_IF
 
 // update encoder value and calibrated position
 SUPER^.EncValue();
@@ -264,7 +319,11 @@ SUPER^.EncValue();
 SUPER^.MotionParams(tRefreshDelay:=T#1S);
 
 // Save and restore as long as not an absolute encoder
-EncSaveRestore( bEnable:=stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE);
+EncSaveRestore( bEnable:=SUPER^.stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE);
+// 
+SUPER^.PostInterlocks();
+// 
+SUPER^.SyncEpicsStatus();
 ]]></ST>
       </Implementation>
     </Method>
@@ -279,7 +338,8 @@ EncSaveRestore( bEnable:=stPiezoStage.nHomingMode <> E_EpicsHomeCmd.NONE);
       <Declaration><![CDATA[METHOD Interlock
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.Interlock();
+        <ST><![CDATA[// For SmartAct MCS2 these limit are range and enstop limits. however a single bit in the status 
+SUPER^.Interlock();
 ]]></ST>
       </Implementation>
     </Method>
@@ -320,6 +380,26 @@ SUPER^.stPiezoStage.nPiezoDriveControl.4:=TRUE;]]></ST>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Property Name="PositionHoldReady" Id="{e226e4b0-8acf-4778-a7f2-5563386decdf}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PositionHoldReady : BOOL]]></Declaration>
+      <Get Name="Get" Id="{fa1e74e1-69bd-4c78-9656-8f0f118f5bf5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[PositionHoldReady:=bReadyToHold;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{251de8c0-a49b-4b24-abe6-27ac9dc8ffe4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bReadyToHold:=PositionHoldReady;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="PostMoveInterlocks" Id="{fdfad17f-f4c5-4acf-ad7c-c467a5ef1afc}">
       <Declaration><![CDATA[METHOD PostMoveInterlocks
 VAR_INPUT
@@ -336,26 +416,13 @@ END_VAR
         <ST><![CDATA[SUPER^.Power();]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ReadStatus" Id="{f33694a7-9468-497f-90b8-80c94e8daff2}">
-      <Declaration><![CDATA[METHOD ReadStatus
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.ReadStatus();
-SUPER^.SyncEpicsStatus();]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="StateMachine" Id="{adad349e-6f22-41f6-bf4b-2c2ba773c644}">
       <Declaration><![CDATA[METHOD StateMachine
 VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.StateMachine();
-THIS^.HandleMoveRequest();
-SUPER^.PostInterlocks();
-SUPER^.SyncEPICSStatus();
-
-]]></ST>
+        <ST><![CDATA[SUPER^.StateMachine();]]></ST>
       </Implementation>
     </Method>
   </POU>

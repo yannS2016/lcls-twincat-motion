@@ -7,7 +7,7 @@
     <ProjectGuid>{e61ef94a-cfe8-4ddf-b7c9-5f7ad2cf9d83}</ProjectGuid>
     <SubObjectsSortedByName>True</SubObjectsSortedByName>
     <Name>Library</Name>
-    <ProgramVersion>3.1.4026.13</ProgramVersion>
+    <ProgramVersion>3.1.4026.15</ProgramVersion>
     <Application>{ded1545c-5fcd-48e2-b686-7d2c250a3641}</Application>
     <TypeSystem>{01b9929f-5eae-4d08-887f-bdca016b362e}</TypeSystem>
     <Implicit_Task_Info>{c8ac8a6e-d812-4a3d-8fa1-472a994335a5}</Implicit_Task_Info>
@@ -18,8 +18,11 @@
     <Company>SLAC</Company>
     <Released>false</Released>
     <Title>lcls-twincat-motion</Title>
-    <ProjectVersion>0.0.0</ProjectVersion>
+    <ProjectVersion>2.2.2</ProjectVersion>
     <WriteProductVersion>false</WriteProductVersion>
+    <AllowChecksForLibrary>false</AllowChecksForLibrary>
+    <POUsForPropertyAccessIncluded>false</POUsForPropertyAccessIncluded>
+    <GlobalVersionStructureIncluded>false</GlobalVersionStructureIncluded>
     <!--    <OutputType>Exe</OutputType>
     <RootNamespace>MyApplication</RootNamespace>
     <AssemblyName>MyApplication</AssemblyName>-->
@@ -31,7 +34,7 @@
     <Folder Include="DUTs\Piezo\DS402" />
     <Folder Include="GVLs" />
     <Folder Include="POUs\Motion\Piezo" />
-    <Folder Include="POUs\Motion\Piezo\Apps" />
+    <Folder Include="POUs\Motion\Piezo\Helpers" />
     <Folder Include="POUs\Motion\Piezo\DS402" />
     <Folder Include="POUs\Motion\Piezo\DS402\helpers" />
     <Folder Include="POUs\Motion\PMPS" />
@@ -63,7 +66,6 @@
     <Folder Include="tc_mca_std_lib\POUs\Motion" />
     <Folder Include="tc_mca_std_lib\POUs\Motion\Homing" />
     <Folder Include="Tests\Helpers" />
-    <Folder Include="Version" />
     <Folder Include="tc_mca_std_lib\DUTs" />
     <Folder Include="tc_mca_std_lib\POUs" />
     <Folder Include="tc_mca_std_lib\GVLs" />
@@ -313,34 +315,19 @@
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Motion\Piezo\Apps\FB_PiezoDriveCluster.TcPOU">
+    <Compile Include="POUs\Motion\Piezo\DS402\FB_DS402DriveCSP.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\Piezo\DS402\FB_PiezoDriveDS402.TcPOU">
+    <Compile Include="POUs\Motion\Piezo\DS402\I_DS402PiezoDrive.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\Piezo\DS402\FB_PiezoDriveDS402CSP.TcPOU">
+    <Compile Include="POUs\Motion\Piezo\DS402\FB_DS402Drive.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\Piezo\DS402\FB_PiezoDriveDS402PP.TcPOU">
+    <Compile Include="POUs\Motion\Piezo\DS402\FB_DS402DrivePP.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\Piezo\DS402\helpers\DS402_AXIS.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\Piezo\FB_MotionErrorLogger.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\Piezo\FB_PiezoDrive.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\Piezo\FB_PiezoDriveNC.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\Piezo\I_Logger.TcIO">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\Piezo\I_PiezoDrive.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\PMPS\FB_EncErrorFFO.TcPOU">
@@ -694,9 +681,6 @@
     <Compile Include="Tests\PRG_TEST.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Version\Global_Version.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <PlaceholderReference Include="LCLS General">
@@ -790,7 +774,71 @@
             <v>Rules</v>
             <o>
               <v n="Name">"Rules"</v>
-              <d n="SubKeys" t="Hashtable" />
+              <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
+                <v>167</v>
+                <o>
+                  <v n="Name">"167"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>175</v>
+                <o>
+                  <v n="Name">"175"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>27</v>
+                <o>
+                  <v n="Name">"27"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>28</v>
+                <o>
+                  <v n="Name">"28"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>33</v>
+                <o>
+                  <v n="Name">"33"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>4</v>
+                <o>
+                  <v n="Name">"4"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+                <v>6</v>
+                <o>
+                  <v n="Name">"6"</v>
+                  <d n="SubKeys" t="Hashtable" />
+                  <d n="Values" t="Hashtable" ckt="String" cvt="Boolean">
+                    <v>bActive</v>
+                    <v>False</v>
+                  </d>
+                </o>
+              </d>
               <d n="Values" t="Hashtable" />
             </o>
           </d>

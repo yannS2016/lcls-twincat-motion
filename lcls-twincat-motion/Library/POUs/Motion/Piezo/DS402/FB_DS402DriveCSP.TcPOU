@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_DS402DriveCSP" Id="{040ef492-7146-48c0-93e4-0ac5dec2d90a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DS402DriveCSP EXTENDS FB_DS402Drive
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="Brake" Id="{95fbe001-f4c7-4279-a7e0-0cb29dfca4d4}">
+      <Declaration><![CDATA[METHOD Brake
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EncSaveRestore" Id="{bfd8d571-c5f5-45b6-b804-3decd4a370e7}">
+      <Declaration><![CDATA[METHOD EncSaveRestore
+VAR_INPUT
+	bEnable	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EncValue" Id="{756fef2b-abd0-4ea6-a086-c6a4b4fde2ba}">
+      <Declaration><![CDATA[METHOD EncValue
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.EncValue();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Halt" Id="{80ebc76d-a0d6-4aeb-9553-bcbdc8add6fe}">
+      <Declaration><![CDATA[METHOD Halt : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Halt();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="HandleMoveRequest" Id="{1795147a-9aa0-450a-a77b-fe9516570119}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD HandleMoveRequest
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{879bbb12-9560-4f3a-a7e5-35aa410df12c}">
+      <Declaration><![CDATA[METHOD Home : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Home();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Interlock" Id="{865c7dcc-697a-462b-bf51-9a475527ddcc}">
+      <Declaration><![CDATA[METHOD Interlock
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Interlock();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Logger" Id="{14be7a94-da7c-4ae2-99d2-5034bb688728}">
+      <Declaration><![CDATA[METHOD Logger
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MotionParams" Id="{fe16c5bc-93e8-4071-a5cf-50df00e57f42}">
+      <Declaration><![CDATA[METHOD MotionParams
+VAR_INPUT
+	tRefreshDelay	: TIME;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.MotionParams(tRefreshDelay);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveAbsolute" Id="{d147d73b-e496-4b31-b3e7-2402213adc5f}">
+      <Declaration><![CDATA[METHOD MoveAbsolute
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveRelative" Id="{fe7d57b1-7f2d-4e14-a039-e0f04841a280}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD MoveRelative
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MoveVelocity" Id="{46388d51-f1ca-4f11-8dbb-b37a8dbbec7d}">
+      <Declaration><![CDATA[METHOD MoveVelocity
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Power" Id="{ab76c67e-c99c-4e68-9186-e3ddad829c25}">
+      <Declaration><![CDATA[METHOD Power : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Power();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Reset" Id="{3557eb7d-0afa-44ca-a231-88fb6b234dd4}">
+      <Declaration><![CDATA[METHOD Reset : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Reset();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetEnables" Id="{81b61160-451b-4f54-a147-9d969a192621}">
+      <Declaration><![CDATA[METHOD SetEnables
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.SetEnables();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{ed91f64e-16df-4e75-87be-b9a709e99da3}">
+      <Declaration><![CDATA[METHOD StateMachine
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

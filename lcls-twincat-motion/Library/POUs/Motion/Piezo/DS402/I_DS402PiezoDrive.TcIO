@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <Itf Name="I_PiezoDrive" Id="{49729736-8717-4a13-800f-a53162ccda84}">
-    <Declaration><![CDATA[INTERFACE I_PiezoDrive
+  <Itf Name="I_DS402PiezoDrive" Id="{49729736-8717-4a13-800f-a53162ccda84}">
+    <Declaration><![CDATA[INTERFACE I_DS402PiezoDrive
 ]]></Declaration>
     <Method Name="Brake" Id="{e0529470-e1a2-408b-acaa-cacbe414aa6e}">
       <Declaration><![CDATA[METHOD Brake
