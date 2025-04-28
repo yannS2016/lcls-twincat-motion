@@ -19,16 +19,6 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="EncSaveRestore" Id="{bfd8d571-c5f5-45b6-b804-3decd4a370e7}">
-      <Declaration><![CDATA[METHOD EncSaveRestore
-VAR_INPUT
-	bEnable	: BOOL;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="EncValue" Id="{756fef2b-abd0-4ea6-a086-c6a4b4fde2ba}">
       <Declaration><![CDATA[METHOD EncValue
 ]]></Declaration>
