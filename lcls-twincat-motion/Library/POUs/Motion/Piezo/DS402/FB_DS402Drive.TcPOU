@@ -1,8 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_DS402Drive" Id="{062edea9-cfc5-43cf-98da-5ad9b4d99528}" SpecialFunc="None">
-    <Declaration><![CDATA[{attribute 'call_after_init'}
-FUNCTION_BLOCK PUBLIC ABSTRACT FB_DS402Drive IMPLEMENTS I_DS402PiezoDrive
+    <Declaration><![CDATA[FUNCTION_BLOCK ABSTRACT FB_DS402Drive IMPLEMENTS I_DS402PiezoDrive
 VAR_INPUT
 
 END_VAR
@@ -29,6 +28,15 @@ VAR
     bMoveDone			: BOOL;
     bMoveBusy			: BOOL;
 	bHalted				: BOOL;
+	bAborted			: BOOL;
+	bStopped			: BOOL;
+	bServoOffTrans	: BOOL;
+	bServoOnTrans : BOOL;
+	bServoOffMode		:	BOOL ;
+	bServoOnMode		: BOOL;
+	bDiscreteMotionAct  : BOOL;
+
+
     bError				: BOOL:=FALSE;
     // use this for motion time axis states
     bExecute			: BOOL;
@@ -40,9 +48,10 @@ VAR
     bInit				: BOOL;
     bLoad				: BOOL;
     bEncError			: BOOL;
-
+	bSaveDone			: BOOL;
+	bAbortDone			: BOOL;
     // axis status -- emulating some NC axis
-    bOperational		:	BOOL;
+    bClosedLoopMode		:	BOOL;
     bPositiveDirection	:  	BOOL;
     bNegativeDirection 	:  	BOOL;
     bInTargetPosition 	:  	BOOL;
@@ -51,7 +60,9 @@ VAR
 	bFault				: 	BOOL;
     bDiscreteMotion 	:  	BOOL;
     bContinuousMotion 	:  	BOOL;
+
     bSlowParamReadTimer	: 	BOOL := TRUE;
+	
     // Drive calibrated motion params
     nCalibratedVelocity			: DINT;
     nCalibratedAcceleration		: DINT;
@@ -60,34 +71,41 @@ VAR
     nCalibratedMaxAcceleration	: DINT;
     nCalibratedHomeVelocity 	: DINT;
     nCalibratedHomeAcceleration	: DINT;
+
+
     // Calibrated motion params : nanometer operation by default.
     fCalibratedStandStillPos	: REAL;
     fOverride					: REAL;
 	fDefaultScalingFactor 		: REAL:=0.000001;
     fCalibratedActPos			: REAL;
-
-
-
+	rtHaltedDone	: R_TRIG;
+	rtTargetReached	: R_TRIG;
+	ftAbortDone: F_TRIG;
 	rtFault			: R_TRIG;
     rtHomed			: R_TRIG;
-    ftExec			: F_TRIG;
-    rtTarget		: R_TRIG;
-	ftAmsNetId 		: F_TRIG;
-    rtEnableDrive	: R_TRIG;
-	ftErrorSdoRead	: F_TRIG;
-    ftDisbaleDrive	: F_TRIG;
-	
     rtMoveCmdShortcut	: R_TRIG;
     rtHomeCmdShortcut	: R_TRIG;
     rtEnableMode		: R_TRIG;
     rtUserExec			: R_TRIG;
+    rtTarget		: R_TRIG;
+	rtServoOnMode	: R_TRIG;
+    rtEnableDrive	: R_TRIG;
+	rtServoOnTrans	: R_TRIG;
+	rtNotClState 	: R_TRIG;
+	rtNotOlState 	: R_TRIG;
+	rtNewMoveReq	: R_TRIG;
 
-	rtNewMoveReq		: R_TRIG;
+	ftServoOffTrans	: F_TRIG;
+	rtServoOffMode	: R_TRIG;
+	ftAmsNetId 		: F_TRIG;
+    ftExec			: F_TRIG;
+	ftErrorSdoRead	: F_TRIG;
+    ftEnableDrive	: F_TRIG;
 	ftForwardEnabled	: F_TRIG;
 	ftBackwardEnabled	: F_TRIG;
-	rtMotionErrorEvent	: R_TRIG;
-	rtNotOperational 	: R_TRIG;
-
+	ftServo				: F_TRIG;
+	
+	
     tonSyncHoming 		: TON;
 	tonHoldTime			: TON;
     tonSlowParamReadTimer: TON;
@@ -98,6 +116,11 @@ VAR
     // Diagnotics data from the drive, mainly Error codes
 	tRefreshDelay   : TIME := T#1S;
 
+	// Open Loop Operations
+    fbSdoOlStep		: 	FB_EcCoESdoWrite;
+    fbSdoOlStepFreq	: 	FB_EcCoESdoWrite;
+    fbSdoOlStepAmp	: 	FB_EcCoESdoWrite;
+	
     fbErrorSdoRead			: FB_EcCoESdoRead;
     fbFollowWinSdoRead		: FB_EcCoESdoRead;
     fbSoftLimMaxSdoRead		: FB_EcCoESdoRead;
@@ -108,25 +131,42 @@ VAR
     sAmsNetId 				: T_AmsNetId;
     nSubIndex  				: BYTE := 0;
 
-  	nChanFollowErrorWinIndex	: WORD;
-  	nChanSoftwareLimIndex 		: WORD;
-  	nChanMotorLoadIndex			: WORD;
-	nChanErrorCodeIndex			: WORD;
+  	nChanFErrWinIdx		: WORD;
+  	nChanSoftwareLimIdx	: WORD;
+  	nChanMotorLoadIdx	: WORD;
+	nChanErrorCodeIdx	: WORD;
+    nChanOlStepIdx		: WORD;
+    nChanOlStepFreqIdx	: WORD;
+    nChanOlStepAmpIdx	: WORD;
+
+    nChanPrevOlStep			: DINT;
+    nChanPrevOlStepFreq		: UINT;
+    nChanPrevOlStepAmp		: UINT;
+
+	
 END_VAR
 
 
 VAR CONSTANT
-    nScaleOffsetIndex	: WORD := 16#2007;
-    nScaleInvIndex		: WORD := 16#2008;
-	nMotorLoadIndex		: WORD := 16#200d;
-    nSoftLimIndex		: WORD := 16#200e;
-	nHomeOffsetIndex	: WORD := 16#607c;
-	nHomingSpeedIndex	: WORD := 16#6099;
-	nhomingAccIndex		: WORD := 16#609a;
-	nErrorCodeIndex		: WORD := 16#603f;
-	nFollowErrorWinIdex	: WORD := 16#6065;
-	nModuleOffsetIndex	: WORD := 16#800;
+    nScaleOffsetBase	: WORD := 16#2007;
+    nScaleInvBase		: WORD := 16#2008;
+	nMotorLoadbase		: WORD := 16#200d;
+    nSoftLimBase		: WORD := 16#200e;
+	nHomeOffsetBase		: WORD := 16#607C;
+	nHomingSpeedBase	: WORD := 16#6099;
+	nhomingAccBase		: WORD := 16#609a;
+	nErrorCodeBase		: WORD := 16#603f;
+	nFErrWinBase		: WORD := 16#6065;
+	nOlStepBase		: WORD := 16#2022;
+	nOlStepAmpBase		: WORD := 16#2023;
+	nOlStepFreqBase	: WORD := 16#2024;
+	// this true for SmartAct MCS2 and E-727.
+	nChanOfsBase	: WORD := 16#800;
+	// DS 402 Motor encoder defective code : this is needed for save and restore.
+	nEncErrorCode	: WORD := 16#7300;
+
 END_VAR
+
 
 VAR PERSISTENT
     bSaved: BOOL;
@@ -136,30 +176,68 @@ END_VAR
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
+    <Property Name="AbortDone" Id="{784ddc4a-64d1-4d90-874b-4cd96de2c7ff}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY AbortDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{6999c219-a1cd-49cb-894a-c97e03b5a02c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[AbortDone:=bAbortDone;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{9ef94df7-19a3-4100-9562-779a33e78842}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bAbortDone := AbortDone;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="Aborted" Id="{3fe65c2b-824e-4981-9c1c-69f25158ffa6}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY Aborted : BOOL]]></Declaration>
+      <Get Name="Get" Id="{b5738d0e-f4d1-4805-85b8-287b01d2eb55}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Aborted := bAborted;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{9d75ef58-86dd-47b9-85ee-3172ec9e9c5a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bAborted := Aborted;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="AmsNetIdToString" Id="{7c03e2af-a3ad-4f9f-ae86-d47bb3a86f54}">
-      <Declaration><![CDATA[METHOD AmsNetIdToString : BOOL
+      <Declaration><![CDATA[METHOD AmsNetIdToString
 VAR_INPUT
 
 END_VAR
 
 VAR
 	nCounter: UINT;
-	nAmsNetIdLen : UINT;
-	sTmp	: STRING;
+	sAmsNetTmp: STRING(255);
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[sAmsNetId := '';
-nAmsNetIdLen := (SIZEOF(stPiezoStage.arNetId)-1);
-FOR nCounter := 0 TO nAmsNetIdLen BY 1 DO
-	IF nCounter <= (nAmsNetIdLen -1) THEN
-			sTmp := CONCAT(BYTE_TO_STRING(stPiezoStage.arNetId[nCounter]),'.');
-	ELSE
-			sTmp := BYTE_TO_STRING(stPiezoStage.arNetId[nCounter]);
-	END_IF
-	sAmsNetId := CONCAT(sAmsNetId, sTmp);
-END_FOR
-
-AmsNetIdToString := (sAmsNetId <> '');]]></ST>
+        <ST><![CDATA[IF sAmsNetId = '' THEN
+	FOR nCounter := 0 TO (SIZEOF(stPiezoStage.arNetId)-1) BY 1 DO
+		IF nCounter <= ((SIZEOF(stPiezoStage.arNetId)-1) -1) THEN
+			sAmsNetTmp := CONCAT(BYTE_TO_STRING(stPiezoStage.arNetId[nCounter]),'.');
+		ELSE
+			sAmsNetTmp := BYTE_TO_STRING(stPiezoStage.arNetId[nCounter]);
+		END_IF
+		sAmsNetId := CONCAT(sAmsNetId, sAmsNetTmp);
+	END_FOR	
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="Brake" Id="{c6b36a48-c7b1-4cfe-936b-d492d651f479}">
@@ -281,43 +359,40 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="ConfigureDriveParams" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
-      <Declaration><![CDATA[METHOD ConfigureDriveParams : BOOL
-VAR_INPUT
-    bExecute	:	BOOL:=FALSE;
-    nIndex     	: 	WORD ; 		   (* CoE Object Index *)
-    nSubIndex  	: 	BYTE ; 			   (* Subindex of CoE Object *)
-    nValue		: 	DINT;
-    fbSdoWrite	: 	FB_EcCoESdoWrite;
-END_VAR
-
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF NOT fbSdoWrite.bBusy THEN
-    bExecute:=FALSE;
-    IF NOT fbSdoWrite.bError THEN
-        (* write successful *)
-        Error:=FALSE;
-        ErrorCode:=0;
-    ELSE
-        (* write failed *)
-        Error:=fbSdoWrite.bError;
-        ErrorCode:=fbSdoWrite.nErrId;
-
-    END_IF
-
-    fbSdoWrite(bExecute:=FALSE);
-END_IF]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="EncSaveRestore" Id="{62326dfa-915c-4ff5-a6ba-aedff0abd839}">
-      <Declaration><![CDATA[METHOD PUBLIC ABSTRACT EncSaveRestore
+      <Declaration><![CDATA[METHOD EncSaveRestore
 VAR_INPUT
 	bEnable	: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[IF bEnable THEN
+    // Trigger a load if anything was saved at all
+    IF NOT bInit THEN
+        bInit := TRUE;
+        bLoad S= bSaved;
+    END_IF
+
+    // Set our position if bLoad is true
+	IF bLoad THEN
+		stPiezoStage.fPosition:=fPosition;
+		bSaveDone := TRUE;
+	END_IF
+
+    // Only load once, at startup
+    bLoad R= bSaveDone;
+
+    // Check ST_PiezoStage for an encoder error
+    bEncError := stPiezoStage.bError AND (stPiezoStage.nErrorId = nEncErrorCode);
+
+    // Do not save if we're currently loading or if there is an encoder error
+    IF NOT bLoad AND NOT bEncError THEN
+        fPosition := stPiezoStage.stAxisStatus.fActPosition;
+        // This persistent variable lets us check if anything was saved
+        // It will be TRUE at startup if we have saved values
+        bSaved := TRUE;
+    END_IF
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="EncValue" Id="{f460e6f3-54f0-4341-b7f0-33fb3e421551}">
@@ -447,9 +522,13 @@ END_IF
       <Declaration><![CDATA[METHOD Halt : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[(* Stop condition: User stopped and either Absolute/Relative move or Homing busy? 
-  Halt the move by setting bit 8 of the Control Word *)
- stPiezoStage.nPiezoDriveControl.8 := NOT stPiezoStage.bExecute;]]></ST>
+        <ST><![CDATA[
+
+Stopped S= NOT stPiezoStage.bDone AND (stPiezoStage.bHalt OR ftExec.Q);
+
+stPiezoStage.nPiezoDriveControl.8 := Stopped; 
+
+]]></ST>
       </Implementation>
     </Method>
     <Property Name="Halted" Id="{e29ce96f-0218-49b1-9df6-38964ec70373}">
@@ -489,8 +568,8 @@ END_VAR
 (* IMPORTANT: Homing options and parameters must be configured either via the COE online tab or via the service tool *)
 CASE eHomingState OF
     E_DS402Homing.INIT_HOMING :;
-        stPiezoStage.nModeOfOperation:=E_DS402OperationMode.HOMING;
-        IF stPiezoStage.nModeOfOperationDisplay = E_DS402OperationMode.HOMING THEN
+        stPiezoStage.nModeOfOperation:=E_DS402OpMode.HOMING;
+        IF stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.HOMING THEN
 			HomeDone := FALSE;
 			tonSyncHoming.IN := TRUE;
             stPiezoStage.nPiezoDriveControl.4:=TRUE;
@@ -527,7 +606,7 @@ CASE eHomingState OF
 		stPiezoStage.fPosition := 0.0;
 		//prepare next move
 		stPiezoStage.nPiezoDriveControl.4:=FALSE;
-		stPiezoStage.nModeOfOperation:=E_DS402OperationMode.PROFILE_POSITION;
+		stPiezoStage.nModeOfOperation:=E_DS402OpMode.PROFILE_POSITION;
 		
     E_DS402Homing.HOMING_INTERRUPTED :;
         HomingBusy:=FALSE;
@@ -650,7 +729,7 @@ END_IF
 
 // Handle main execs .  Rising on bMoved should be the ntry point
 // bu this is not the case in production its a rising on bExecute.
-rtUserExec(CLK:=stPiezoStage.bExecute (*AND bOverrideExternalExec*));
+rtUserExec(CLK:=stPiezoStage.bExecute);
 // if a Move/Home Goal is comfirmed and there is no persistant 
 // error conditions, then we have a valid move request.
 bNewMoveReq S= NOT stPiezoStage.stAxisStatus.bBusy AND rtUserExec.Q AND NOT stPiezoStage.bError;
@@ -712,16 +791,17 @@ CASE McAxisState OF
     // We are not enabled if there is an issue
     MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
         stPiezoStage.bEnableDone:=FALSE;
-				//ntest := ntest +1;
     ELSE
-
         stPiezoStage.bEnableDone:=TRUE;
 END_CASE
 
 bExecute:= NOT stPiezoStage.bError AND stPiezoStage.bExecute AND stPiezoStage.bAllEnable AND stPiezoStage.bEnableDone AND stPiezoStage.bSafetyReady;
 // 
 bExecHome:=bExecute AND stPiezoStage.nCommand = 10;
-bExecMove:=bExecute AND NOT bExecHome;]]></ST>
+bExecMove:=bExecute AND NOT bExecHome;
+
+(*  *)
+ftExec(CLK:=stPiezoStage.bExecute);]]></ST>
       </Implementation>
     </Method>
     <Method Name="Logger" Id="{7fb0d460-52d2-4ae2-accf-52e93bd858b3}">
@@ -842,6 +922,73 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Method Name="OpenLoopMotion" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
+      <Declaration><![CDATA[METHOD OpenLoopMotion : BOOL
+VAR_INPUT
+
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.bServoOffMode THEN
+AmsNetIdToString();
+fbSdoOlStep(
+    sNetId     := sAmsNetId,
+    nSlaveAddr := stPiezoStage.nSlaveAddr,
+    nIndex     := nChanOlStepIdx,
+    nSubIndex  := 0,
+    pSrcBuf    := ADR(stPiezoStage.nChanOlStep),
+    cbBufLen   := SIZEOF(stPiezoStage.nChanOlStep),
+    bExecute   := (stPiezoStage.nChanOlStep <> nChanPrevOlStep)
+);
+
+fbSdoOlStepAmp(
+    sNetId     := sAmsNetId,
+    nSlaveAddr := stPiezoStage.nSlaveAddr,
+    nIndex     := nChanOlStepAmpIdx,
+    nSubIndex  := 0,
+    pSrcBuf    := ADR(stPiezoStage.nChanOlStepAmp),
+    cbBufLen   := SIZEOF(stPiezoStage.nChanOlStepAmp),
+    bExecute   := (stPiezoStage.nChanOlStepAmp <> nChanPrevOlStepAmp)
+);
+
+fbSdoOlStepFreq(
+    sNetId     := sAmsNetId,
+    nSlaveAddr := stPiezoStage.nSlaveAddr,
+    nIndex     := nChanOlStepFreqIdx,
+    nSubIndex  := 0,
+    pSrcBuf    := ADR(stPiezoStage.nChanOlStepFreq),
+    cbBufLen   := SIZEOF(stPiezoStage.nChanOlStepFreq),
+    bExecute   := (stPiezoStage.nChanOlStepFreq <> nChanPrevOlStepFreq)
+);
+
+IF NOT fbSdoOlStep.bBusy AND NOT fbSdoOlStepAmp.bBusy AND NOT fbSdoOlStepFreq.bBusy THEN
+
+	IF 	fbSdoOlStep.bError THEN
+		// this will be logged as a warning
+		Error := FALSE;
+		PiezoErrorCode := fbSdoOlStep.nErrId;
+		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
+	ELSIF fbSdoOlStepAmp.bError THEN
+		// this will be logged as a warning
+		Error := FALSE;
+		PiezoErrorCode := fbSdoOlStepAmp.nErrId;
+		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
+	ELSIF fbSdoOlStepFreq.bError THEN
+		// this will be logged as a warning
+		Error := FALSE;
+		PiezoErrorCode := fbSdoOlStepFreq.nErrId;
+		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
+	END_IF
+	stPiezoStage.bError := Error;
+	stPiezoStage.nErrorId := PiezoErrorCode;
+END_IF
+
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="PiezoErrorCode" Id="{6909d919-bde9-446f-9642-d6b8f1850cfe}">
       <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY PiezoErrorCode : UDINT]]></Declaration>
@@ -863,7 +1010,7 @@ END_VAR
       </Set>
     </Property>
     <Method Name="PostInterlocks" Id="{0f2de4be-a2d5-40b5-bf2e-f13c48bf1447}">
-      <Declaration><![CDATA[METHOD PostInterlocks : BOOL
+      <Declaration><![CDATA[METHOD PostInterlocks
 VAR_INPUT
 END_VAR
 ]]></Declaration>
@@ -871,16 +1018,18 @@ END_VAR
         <ST><![CDATA[// user override aka stop from EPICS ?
 // Check done moving via user stop, fbDriveVirtual and Target Position Monitoring, or from homing.
 // set/reset stPiezoStage.bDone after move absolute/Relative
-ftExec(CLK:=stPiezoStage.bExecute);
+
+// need to catch this as soon as it happen and must be seen by every call after intelock()
+// within the sma ecycle
+ftAbortDone(CLK:=AbortDone);
 rtTarget(CLK:=(InTargetPosition AND MoveDone AND bExecMove));
 rtHomed(CLK:=HomeDone AND bExecHome);
-
-IF ftExec.Q OR rtTarget.Q OR rtHomed.Q THEN
+IF ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
     IF NOT stPiezoStage.bDone THEN
 		MoveBusy:=FALSE;
-		tonHoldTime.IN:=FALSE;
 		stPiezoStage.bDone := MoveDone OR HomeDone;
 		stPiezoStage.bHomed := HomeDone;
+		AbortDone := FALSE;
         IF NOT Error THEN
             bExecute:=FALSE;
             stPiezoStage.bExecute:=FALSE;
@@ -941,21 +1090,66 @@ fbLogError( stMotionStage:=stPiezoStage, bEnable:=bLogReady);
       <Declaration><![CDATA[METHOD Power : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[rtEnableDrive(CLK:=stPiezoStage.bAllEnable);
-ftDisbaleDrive(CLK:=stPiezoStage.bAllEnable);
+        <ST><![CDATA[// No transition while the drive is in motion
+// transition from close to open loop. while moving
+
+//rtEnableDrive(CLK:=stPiezoStage.bAllEnable);
+ftEnableDrive(CLK:=stPiezoStage.bAllEnable);
+
+ftServoOffTrans(CLK:=(NOT bFault AND stPiezoStage.bServo));
+rtServoOnTrans(CLK:=(NOT bFault AND stPiezoStage.bServo));
+
+rtServoOffMode(CLK:=bServoOffMode);
+rtServoOnMode(CLK:=stPiezoStage.bAllEnable AND bServoOnMode);
 // Enabled the drive: the client code must wait for state transition.
-IF rtEnableDrive.Q THEN
+IF rtServoOnMode.Q THEN
     // Voltage on, close loop operations
     stPiezoStage.nPiezoDriveControl:=16#0F;
     fOverride:=100.0;
-END_IF
-
-IF ftDisbaleDrive.Q THEN
+	
+ELSIF ftEnableDrive.Q OR rtServoOffMode.Q THEN
 	//  inhibit motion functions! keep amplifier enable
 	stPiezoStage.nPiezoDriveControl:=16#07;
     fOverride:=0.0;
+ELSE
+	;
 END_IF
 
+IF bServoOffTrans AND ( stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.MCS2_OL_SM ) THEN
+	// ready for open loop operation
+	bServoOffTrans := FALSE;
+	bServoOffMode := TRUE;
+	bServoOnMode := FALSE;
+ELSIF bServoOnTrans AND ( stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.PROFILE_POSITION ) THEN
+	// ready for closed loop operation
+	bServoOnTrans := FALSE;
+	bServoOffMode := FALSE;
+	bServoOnMode := TRUE;
+	
+ELSIF ftServoOffTrans.Q THEN
+	bServoOffTrans := TRUE;
+	bServoOnTrans := FALSE;
+	stPiezoStage.nModeOfOperation := E_DS402OpMode.MCS2_OL_SM;
+	
+// transition to close loop mode
+ELSIF rtServoOnTrans.Q THEN
+	bServoOffTrans := FALSE;
+	bServoOnTrans := TRUE;
+	stPiezoStage.nModeOfOperation := E_DS402OpMode.PROFILE_POSITION;
+END_IF
+
+
+
+// rtNotClState(CLK:=(eDriveState <> E_DS402DriveState.OPERATION_ENABLED));
+// rtNotOlState(CLK:=(eDriveState <> E_DS402DriveState.SWITCH_ON));
+// 
+// IF rtNotClState.Q THEN
+// 	bClosedLoopMode := FALSE;
+// ELSIF rtNotOlState.Q THEN 
+// 	bOpenLoopMode := FALSE;
+// ELSIF rtNotClState.Q AND rtNotOlState.Q THEN
+// 	McAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
+// END_IF
 ]]></ST>
       </Implementation>
     </Method>
@@ -970,13 +1164,13 @@ VAR
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[AmsNetIdToString();
+        <ST><![CDATA[//AmsNetIdToString();
 
 ftErrorSdoRead(CLK:=fbErrorSdoRead.bBusy);
 
 fbErrorSdoRead( sNetId:= sAmsNetId, 
 				nSlaveAddr:=stPiezoStage.nSlaveAddr, 
-				nIndex:=nChanErrorCodeIndex, 
+				nIndex:=nChanErrorCodeIdx, 
 				nSubIndex :=nSubIndex, 
 				pDstBuf:= ADR(nPiezoErrorCode), 
 				cbBufLen:=SIZEOF(nPiezoErrorCode),
@@ -1015,34 +1209,34 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[tonSlowParamReadTimer( IN:=bSlowParamReadTimer, PT:=tRefreshDelay );
-// Get the Master Ams Net Into into correct format
 AmsNetIdToString();
+
 // Get the following Error
 fbFollowWinSdoRead(	sNetId:= sAmsNetId, 
 				nSlaveAddr:=stPiezoStage.nSlaveAddr, 
-				nIndex:=nChanFollowErrorWinIndex, 
+				nIndex:=nChanFErrWinIdx, 
 				nSubIndex:=0, 
-				pDstBuf:= ADR(stPiezoStage.nfollowErrorWin), 
-				cbBufLen:=SIZEOF(stPiezoStage.nfollowErrorWin),
+				pDstBuf:= ADR(stPiezoStage.nfErrWin), 
+				cbBufLen:=SIZEOF(stPiezoStage.nfErrWin),
 				bExecute:=tonSlowParamReadTimer.Q
 			  );
 // Read the Upper software limit
 fbSoftLimMaxSdoRead( sNetId:= sAmsNetId, 
 				nSlaveAddr:=stPiezoStage.nSlaveAddr, 
-				nIndex:=nChanSoftwareLimIndex, 
+				nIndex:=nChanSoftwareLimIdx, 
 				nSubIndex:=1, 
-				pDstBuf:= ADR(stPiezoStage.nSoftwareLimMax), 
-				cbBufLen:=SIZEOF(stPiezoStage.nSoftwareLimMax),
+				pDstBuf:= ADR(stPiezoStage.nSoftLimMax), 
+				cbBufLen:=SIZEOF(stPiezoStage.nSoftLimMax),
 				bExecute:=tonSlowParamReadTimer.Q
 			  );
 		  
 // Read the Lower software limit		  
 fbSoftLimMinSdoRead( sNetId:= sAmsNetId, 
 				nSlaveAddr:=stPiezoStage.nSlaveAddr, 
-				nIndex:=nChanSoftwareLimIndex, 
+				nIndex:=nChanSoftwareLimIdx, 
 				nSubIndex:=2, 
-				pDstBuf:= ADR(stPiezoStage.nSoftwareLimMin), 
-				cbBufLen:=SIZEOF(stPiezoStage.nSoftwareLimMin),
+				pDstBuf:= ADR(stPiezoStage.nSoftLimMin), 
+				cbBufLen:=SIZEOF(stPiezoStage.nSoftLimMin),
 				bExecute:=tonSlowParamReadTimer.Q
 			  );
 
@@ -1076,16 +1270,16 @@ END_IF
 
 stPiezoStage.stAxisParameters.sAxisName := stPiezoStage.sName;
 stPiezoStage.stAxisParameters.AxisId := stPiezoStage.nMotionAxisID;
-stPiezoStage.stAxisParameters.bCtrlEnablePosDiffControl   := BOOL_TO_WORD(stPiezoStage.nfollowErrorWin > 0);
-stPiezoStage.stAxisParameters.bEncEnableSoftEndMaxControl := BOOL_TO_WORD(stPiezoStage.nSoftwareLimMax > stPiezoStage.nSoftwareLimMin);
-stPiezoStage.stAxisParameters.bEncEnableSoftEndMinControl := BOOL_TO_WORD(stPiezoStage.nSoftwareLimMin < stPiezoStage.nSoftwareLimMax);
+stPiezoStage.stAxisParameters.bCtrlEnablePosDiffControl   := BOOL_TO_WORD(stPiezoStage.nfErrWin > 0);
+stPiezoStage.stAxisParameters.bEncEnableSoftEndMaxControl := BOOL_TO_WORD(stPiezoStage.nSoftLimMax > stPiezoStage.nSoftLimMin);
+stPiezoStage.stAxisParameters.bEncEnableSoftEndMinControl := BOOL_TO_WORD(stPiezoStage.nSoftLimMin < stPiezoStage.nSoftLimMax);
 stPiezoStage.stAxisParameters.fAccelerationMax := stPiezoStage.fMaxAcceleration;
-stPiezoStage.stAxisParameters.fCtrlPosDiffMax := stPiezoStage.nfollowErrorWin;
+stPiezoStage.stAxisParameters.fCtrlPosDiffMax := stPiezoStage.nfErrWin;
 // this info is not provided by the drive we keep it 0
 stPiezoStage.stAxisParameters.fCtrlPosDiffMaxTime := 0.0;
 stPiezoStage.stAxisParameters.fDecelerationMax := stPiezoStage.fMaxAcceleration;
-stPiezoStage.stAxisParameters.fEncSoftEndMax := LINT_TO_LREAL(stPiezoStage.nSoftwareLimMax);
-stPiezoStage.stAxisParameters.fEncSoftEndMin := LINT_TO_LREAL(stPiezoStage.nSoftwareLimMin);
+stPiezoStage.stAxisParameters.fEncSoftEndMax := LINT_TO_LREAL(stPiezoStage.nSoftLimMax);
+stPiezoStage.stAxisParameters.fEncSoftEndMin := LINT_TO_LREAL(stPiezoStage.nSoftLimMin);
 stPiezoStage.stAxisParameters.fVeloMaximum := stPiezoStage.fMaxVelocity;
 stPiezoStage.stAxisParameters.fEncOffset := 0.0;
 // this info is not provided by the driver we keep it 0
@@ -1114,6 +1308,7 @@ IF stPiezoStage.bReset THEN
     bExecute:=FALSE;
 	bLogReady := FALSE;
 	HomeDone := FALSE;
+	//bFault := FALSE;
 END_IF
 ]]></ST>
       </Implementation>
@@ -1137,32 +1332,39 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[(*switch on disable*)
+        <ST><![CDATA[rtFault(CLK:=bFault	);
+
+(*switch on disable*)
 IF NOT stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoDriveStatus.SwitchedOn
     AND NOT stPiezoStage.stPiezoDriveStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoDriveStatus.Fault
+    AND stPiezoStage.stPiezoDriveStatus.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoDriveStatus.QuickStopActive
     AND  stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
 
     eDriveState :=E_DS402DriveState.SWITCH_ON_DISABLED;
 END_IF
 
 (*Ready to switch*)
-IF  stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+IF stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoDriveStatus.SwitchedOn
     AND NOT stPiezoStage.stPiezoDriveStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoDriveStatus.Fault
+    AND stPiezoStage.stPiezoDriveStatus.VoltageEnabled
     AND stPiezoStage.stPiezoDriveStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+	
 	bFault := FALSE;
     eDriveState :=E_DS402DriveState.SWITCH_ON_READY;
 END_IF
 
 (*Switch on*)
-IF  stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND stPiezoStage.stPiezoDriveStatus.SwitchedOn
+IF stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND  stPiezoStage.stPiezoDriveStatus.SwitchedOn
     AND NOT stPiezoStage.stPiezoDriveStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoDriveStatus.Fault
+    AND stPiezoStage.stPiezoDriveStatus.VoltageEnabled
     AND stPiezoStage.stPiezoDriveStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
 
@@ -1170,37 +1372,19 @@ IF  stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
 END_IF
 
 (*Operation enbaled*)
-IF    stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+IF stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoDriveStatus.SwitchedOn
     AND stPiezoStage.stPiezoDriveStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoDriveStatus.Fault
+    AND stPiezoStage.stPiezoDriveStatus.VoltageEnabled
     AND stPiezoStage.stPiezoDriveStatus.QuickStopActive
     AND NOT stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
 
     eDriveState :=E_DS402DriveState.OPERATION_ENABLED;
 END_IF
 
-(*Fault*)
-IF  NOT  stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND NOT stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND NOT stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND stPiezoStage.stPiezoDriveStatus.Fault
-    AND NOT stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-	bFault := TRUE;
-    eDriveState :=E_DS402DriveState.FAULT;
-END_IF
-
-(*Fault reaction active*)
-IF    stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
-    AND stPiezoStage.stPiezoDriveStatus.SwitchedOn
-    AND stPiezoStage.stPiezoDriveStatus.OperationEnabled
-    AND stPiezoStage.stPiezoDriveStatus.Fault
-    AND NOT stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
-    eDriveState :=E_DS402DriveState.FAULT_ACTIVE;
-END_IF
-
-(*Quick Stop*)
-IF    stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+(*Quick Stop: Note used for MCS2*) 
+IF stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
     AND stPiezoStage.stPiezoDriveStatus.SwitchedOn
     AND stPiezoStage.stPiezoDriveStatus.OperationEnabled
     AND NOT stPiezoStage.stPiezoDriveStatus.Fault
@@ -1211,47 +1395,74 @@ IF    stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
     eDriveState :=E_DS402DriveState.QUICK_STOP_ACTIVE;
 END_IF
 
+(*Fault*)
+IF  NOT stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
+    AND NOT stPiezoStage.stPiezoDriveStatus.SwitchedOn
+    AND NOT stPiezoStage.stPiezoDriveStatus.OperationEnabled
+    AND stPiezoStage.stPiezoDriveStatus.Fault
+    AND stPiezoStage.stPiezoDriveStatus.VoltageEnabled
+    AND NOT stPiezoStage.stPiezoDriveStatus.QuickStopActive
+    AND NOT stPiezoStage.stPiezoDriveStatus.SwitchOnDisabled THEN
+	bFault := TRUE;
+    eDriveState :=E_DS402DriveState.FAULT;
+END_IF
 
-rtFault(CLK:=bFault	);
-rtMotionErrorEvent(CLK:=Error);
+
 
 CASE eDriveState  OF
 
     E_DS402DriveState.SWITCH_ON_DISABLED:;
-
+		bFault := FALSE;
     E_DS402DriveState.SWITCH_ON_READY:;
-
+		bFault := FALSE;
     E_DS402DriveState.SWITCH_ON:;
-
+// 		IF bServoOffMode AND NOT THIS^.MoveBusy THEN
+// 			McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+// 		END_IF
+		
     E_DS402DriveState.OPERATION_ENABLED:;
-		IF NOT bOperational THEN
-			bOperational := TRUE;
+		IF bServoOnMode AND NOT THIS^.MoveBusy THEN
 			McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 		END_IF
+		
     E_DS402DriveState.FAULT:;
         (* This is not a motion fault but rather a hardware, lost of enabled, wc or loss of calibration issue
 			The condition will set bit 3 'fault' but not bit 13 'error' so waiting in the error state would won't  clear this condition *)
 		IF rtFault.Q THEN
 			Error := TRUE;
+			McAxisState:=MC_AxisStates.MC_AXISSTATE_UNDEFINED;
 		END_IF
 		// Catch the drive errors code
 		ReadDriveErrors();
-		McAxisState:=MC_AxisStates.MC_AXISSTATE_UNDEFINED;
-		
+
     E_DS402DriveState.QUICK_STOP_ACTIVE:;
 
 
 END_CASE
 
-rtNotOperational(CLK:= eDriveState <> E_DS402DriveState.OPERATION_ENABLED);
-IF rtNotOperational.Q THEN
-	bOperational := FALSE;
-	McAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
-END_IF
-
 ]]></ST>
       </Implementation>
     </Method>
+    <Property Name="Stopped" Id="{d635cf6b-14dd-4bd9-916c-3698b86d0796}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY Stopped : BOOL]]></Declaration>
+      <Get Name="Get" Id="{3dc0eca2-a01a-4678-8002-deb2233ad3a3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Stopped:=bStopped;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{2a6dd676-a5db-4528-b3bd-d2f30f5c848e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bStopped := Stopped;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Property Name="stPzStage" Id="{9f92815a-2a54-4642-bace-23982d7df851}">
       <Declaration><![CDATA[PROPERTY PUBLIC stPzStage : REFERENCE TO ST_PiezoStage]]></Declaration>
       <Set Name="Set" Id="{c8f7e1d0-f544-4543-a5ce-d8889c56fbb7}">

@@ -31,17 +31,63 @@ STRUCT
     fMaxVelocity					: 	REAL := 100000.0; // um/s
     fMaxAcceleration 				: 	REAL := 10000.0; // um/s2
 	// This can be written to the drive via WriteDriveParams or just configure in Online COE
-    nHomingSpeed					: 	DINT :=	100;
-    nHomingAcceleration				:	DINT := 1000;
-	nSoftwareLimMin					: 	LINT;
-	nSoftwareLimMax 				: 	LINT;
-	nfollowErrorWin 				: 	UDINT;
+    nHomingSpeed		: DINT := 100;
+    nHomingAcceleration	: DINT := 1000;
+	nSoftLimMin			: LINT;
+	nSoftLimMax			: LINT;
+	nfErrWin			: UDINT;
+	
     // These will be read via SDO read periodically or via event in status words.
-	nLogicalScaleOffset 			: LINT;
-	nLogicalScaleInversion 			: BOOL;
-	nMotorLoad						: USINT;
-	// timeout for holding actual position in close loop mode 
-	ptHoldTime						: TIME := T#10S;
+	nLogicalScaleOfs	: LINT;
+	nLogicalScaleInv	: BOOL;
+	nMotorLoad			: USINT;
+    {attribute 'pytmc' := '
+        pv: PLC:nChanOlStep
+        io: io
+		field: DESC SmartAct: Open Loop Step Count
+    '}
+    nChanOlStep			: DINT;
+	
+    {attribute 'pytmc' := '
+        pv: PLC:nChanOlStep
+        io: io
+		field: DESC SmartAct: Open Loop Step Freq
+    '}
+    nChanOlStepFreq		: UINT;
+	
+    {attribute 'pytmc' := '
+        pv: PLC:nChanOlStep
+        io: io
+		field: DESC SmartAct: Open Loop Step Amp
+    '}
+    nChanOlStepAmp		: UINT;
+	
+	// timeout for holding actual position in close loop mode
+    {attribute 'pytmc' := '
+        pv: PLC:tHoldTime
+        io: io
+		field: DESC SmartAct: Set servo mode hold time
+    '}
+	tHoldTime						: TIME := T#10S;
+	
+    {attribute 'pytmc' := '
+        pv: PLC:bServo
+        io: io
+        field: ZNAM DISABLE
+        field: ONAM ENABLE
+        field: DESC Used to disable close loop mode
+    '}
+	bServo							: BOOL := TRUE;
+
+    {attribute 'pytmc' := '
+        pv: PLC:bHalt
+        io: io
+        field: ZNAM HALTED
+        field: ONAM NOT_HALTED
+        field: DESC Used to halt current move
+    '}
+	bHalt: BOOL;
+
 	eModule							: 	E_Module;
 	(* NetId of EtherCAT Master *)
     arNetId  				AT %I*	: 	AMSNETID; 

@@ -113,6 +113,9 @@
     <Compile Include="DUTs\Deprecated\ENUM_StatePMPSStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DUTs\Piezo\DS402\DS402Device.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DUTs\Piezo\DS402\E_DS402EGU.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -125,7 +128,7 @@
     <Compile Include="DUTs\Piezo\DS402\E_DS402MoveMode.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\Piezo\DS402\E_DS402OperationMode.TcDUT">
+    <Compile Include="DUTs\Piezo\DS402\E_DS402OpMode.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\Piezo\DS402\E_DS402MotionMode.TcDUT">
@@ -771,6 +774,12 @@
         <o>
           <v n="Name">"{29BD8D0C-3586-4548-BB48-497B9A01693F}"</v>
           <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
+            <v>NamingConventions</v>
+            <o>
+              <v n="Name">"NamingConventions"</v>
+              <d n="SubKeys" t="Hashtable" />
+              <d n="Values" t="Hashtable" />
+            </o>
             <v>Rules</v>
             <o>
               <v n="Name">"Rules"</v>
