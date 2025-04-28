@@ -46,21 +46,21 @@ STRUCT
         io: io
 		field: DESC SmartAct: Open Loop Step Count
     '}
-    nChanOlStep			: DINT;
+    nChanStep			: DINT;
 	
     {attribute 'pytmc' := '
         pv: PLC:nChanOlStep
         io: io
 		field: DESC SmartAct: Open Loop Step Freq
     '}
-    nChanOlStepFreq		: UINT;
+    nChanStepFreq		: UINT;
 	
     {attribute 'pytmc' := '
         pv: PLC:nChanOlStep
         io: io
 		field: DESC SmartAct: Open Loop Step Amp
     '}
-    nChanOlStepAmp		: UINT;
+    nChanStepAmp		: UINT;
 	
 	// timeout for holding actual position in close loop mode
     {attribute 'pytmc' := '

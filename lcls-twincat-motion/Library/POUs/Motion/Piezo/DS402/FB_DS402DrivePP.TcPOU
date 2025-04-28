@@ -32,7 +32,7 @@ THIS^.Halt();
 THIS^.StateMachine();
 THIS^.HandleMoveRequest();
 THIS^.Reset();
-SUPER^.OpenLoopMotion();]]></ST>
+SUPER^.SetServoOffParams();]]></ST>
     </Implementation>
     <Method Name="Brake" Id="{22a77937-1757-472e-8a24-02f41806a6fb}">
       <Declaration><![CDATA[METHOD Brake
@@ -59,50 +59,79 @@ END_VAR
         <ST><![CDATA[CASE eMotionState OF
     E_DS402MotionState.PREPARE_MOTION_PARAMS:
         // Activate soft limit to avoid bumping hard on the end stops
-        SUPER^.CalibratedMotionParams();
-		SUPER^.stPiezoStage.nTargetPosition:=SUPER^.CalibratedTargetPosition;
-        SUPER^.stPiezoStage.nProfilVelocity:=SUPER^.CalibratedVelocity;
-        SUPER^.stPiezoStage.nProfilAcceleration:=SUPER^.CalibratedAcceleration;
-        SUPER^.stPiezoStage.nProfilDecceleration:=SUPER^.CalibratedAcceleration;
+		IF SUPER^.bServoOnMode AND NOT SUPER^.bDiscreteInit THEN
+			SUPER^.CalibratedServoOnParams();
+			SUPER^.stPiezoStage.nTargetPosition:=SUPER^.CalibratedTargetPosition;
+			SUPER^.stPiezoStage.nProfilVelocity:=SUPER^.CalibratedVelocity;
+			SUPER^.stPiezoStage.nProfilAcceleration:=SUPER^.CalibratedAcceleration;
+			SUPER^.stPiezoStage.nProfilDecceleration:=SUPER^.CalibratedAcceleration;
+			// bit 5: change set immediately set
+			SUPER^.stPiezoStage.nPiezoDriveControl.5:=0;
+			SUPER^.bDiscreteInit := TRUE;
+			//SUPER^.stPiezoStage.nModeOfOperation:=E_DS402OpMode.PROFILE_POSITION;
+			eMotionState:=E_DS402MotionState.INITIATE_MOTION;
+			
+		ELSIF SUPER^.bServoOffMode THEN
+			IF NOT SUPER^.bDiscreteInit THEN
+				// do this once as we'll stay in this state in OL mode till SDO wrting is done.
+				CalibrateServoOffParams();
+				bServoOffparamsSet := TRUE;
+				bServoOffparamsSetDone := FALSE;
+				SUPER^.bDiscreteInit := TRUE;
+			END_IF
+
+			IF SetServoOffParams() THEN
+				eMotionState:=E_DS402MotionState.INITIATE_MOTION;
+			ELSE
+				IF Error THEN
+					eMotionState:=E_DS402MotionState.ERROR;
+				END_IF
+
+			END_IF
+		END_IF
+
 		SUPER^.bContinuousMotion:=FALSE;
 		SUPER^.bDiscreteMotion:=TRUE;
-		// bit 5: change set immediately set
-    	SUPER^.stPiezoStage.nPiezoDriveControl.5:=0;
-        SUPER^.stPiezoStage.nModeOfOperation:=E_DS402OpMode.PROFILE_POSITION;
-        eMotionState:=E_DS402MotionState.INITIATE_MOTION;
 
     E_DS402MotionState.INITIATE_MOTION:;
-        IF SUPER^.stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.PROFILE_POSITION THEN
-
-            // No running Job : only true for discrete motion
-            IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-                // drive dependent, it seems PI drive only support absolute motion.
-                IF SUPER^.stPiezoStage.eMoveMode = E_EpicsMotorCmd.MOVE_ABSOLUTE THEN
-                    // Absolute move
-					SUPER^.stPiezoStage.nCommand:=3;
-                    THIS^.MoveAbsolute();
-                ELSE
-                    // Relative move: Not implemented
-					SUPER^.stPiezoStage.nCommand:=2;
-                    THIS^.MoveRelative();
-                END_IF
+        IF SUPER^.bServoOnMode THEN
+            // drive dependent, it seems PI drive only support absolute motion.
+            IF SUPER^.stPiezoStage.eMoveMode = E_EpicsMotorCmd.MOVE_ABSOLUTE THEN
+                // Absolute move
+				SUPER^.stPiezoStage.nCommand:=3;
+                THIS^.MoveAbsolute(); // this will set control.4
             ELSE
-                //Now: we have the set point acknowledgement from the drive
-                eMotionState:=E_DS402MotionState.DRIVE_IN_MOTION;
+                // Relative move: Not yet implemented
+				SUPER^.stPiezoStage.nCommand:=2;
+                THIS^.MoveRelative(); // this will set control.4
             END_IF
-        ELSE
+			
+        ELSIF SUPER^.bServoOffMode THEN
+			SUPER^.stPiezoStage.nPiezoDriveControl.4:=TRUE;
+			tonServoOffSync.IN:=TRUE;
+		ELSE
             // Exit this state machine gracefully.
             eMotionState:=E_DS402MotionState.DONE;
         END_IF
-
+		// implicit plc cycle delay after setting control.4
+        eMotionState:=E_DS402MotionState.DRIVE_IN_MOTION;
+		
     E_DS402MotionState.DRIVE_IN_MOTION:;
-	
-        IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-			SUPER^.MoveBusy:=TRUE;
-			SUPER^.bDiscreteMotionAct:=TRUE;
-			eMotionState:=E_DS402MotionState.TARGET_REACHED;
+		SUPER^.MoveBusy:=TRUE;
+		IF SUPER^.bServoOnMode THEN
+			IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
+			   AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+				SUPER^.bDiscreteMotionAct:=TRUE;
+				eMotionState:=E_DS402MotionState.TARGET_REACHED; 
+			END_IF
+		ELSIF SUPER^.bServoOffMode THEN
+			IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
+			   AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+				SUPER^.bDiscreteMotionAct:=TRUE;
+				eMotionState:=E_DS402MotionState.TARGET_REACHED;    
+			END_IF
+		END_IF
 
-        END_IF
 
     E_DS402MotionState.TARGET_REACHED:
 
@@ -115,41 +144,51 @@ END_VAR
 		IF Stopped AND NOT SUPER^.stPiezoStage.bExecute THEN
 			eMotionState:=E_DS402MotionState.ABORTED;
 		END_IF
-		
 		// error bit set ?
 		IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
 			SUPER^.Error := TRUE;
-			SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
+			eMotionState:=E_DS402MotionState.ERROR;
 		END_IF
 		
 		// Reached ?
-        IF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
-           AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-			SUPER^.Halted := FALSE;
-			SUPER^.InTargetPosition:=TRUE;
-            // exit this state machine gracefully
+        IF 	SUPER^.bServoOnMode 
+			AND SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached
+           	AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
             eMotionState:=E_DS402MotionState.DONE;
+		ELSIF 	SUPER^.bServoOffMode 
+				AND SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached
+				AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+				 eMotionState:=E_DS402MotionState.DONE;
         END_IF
 
     E_DS402MotionState.INTERRUPTED:
-			SUPER^.Halted := TRUE;
-			SUPER^.InTargetPosition:=FALSE;
-			//SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
-			SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
+		SUPER^.Halted := TRUE;
+		SUPER^.InTargetPosition:=FALSE;
+		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
 			
     E_DS402MotionState.Aborted:
-			SUPER^.Aborted := TRUE;
-			SUPER^.InTargetPosition:=FALSE;
-			SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
-			SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
+		SUPER^.Aborted := TRUE;
+		SUPER^.InTargetPosition:=FALSE;
+		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
 
-    E_DS402MotionState.DONE:;
+    E_DS402MotionState.DONE:
 		THIS^.PositionHoldReady := TRUE;
 		SUPER^.bDiscreteMotionAct:=FALSE;
 		SUPER^.tonHoldTime.IN:=TRUE;
-		// the axis will reset bit 12 after a fallign edge on this bit to signal readiness for new set point
+		SUPER^.bDiscreteInit := FALSE;
+		// the axis will reset bit 12 after a neg edge on this bit to signal readiness for new set point
 		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
         SUPER^.eAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
+		
+    E_DS402MotionState.ERROR:
+		SUPER^.Error:= TRUE;
+		SUPER^.MoveBusy:=FALSE;
+		SUPER^.MoveDone:=FALSE;
+		SUPER^.HomingBusy:= FALSE;
+		SUPER^.InTargetPosition:=FALSE;
+		SUPER^.bDiscreteMotionAct:=FALSE;
+		SUPER^.bDiscreteInit := FALSE;
+		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
 END_CASE]]></ST>
       </Implementation>
     </Method>
@@ -204,13 +243,6 @@ MC_AxisStates.MC_AXISSTATE_STANDSTILL:
 
 MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
 	// Force everything off in case of error
-	SUPER^.Error:= TRUE;
-    SUPER^.MoveBusy:=FALSE;
-    SUPER^.MoveDone:=FALSE;
-	SUPER^.HomingBusy:= FALSE;
-    SUPER^.InTargetPosition:=FALSE;
-	SUPER^.bDiscreteMotionAct:=FALSE;
-
 	// resetting this flag will take the drive away from operation enable
 	// which will set this state machine to a disable state.
 	// we need to wait for the read error sdo function to complete.

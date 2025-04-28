@@ -34,8 +34,10 @@ VAR
 	bServoOnTrans : BOOL;
 	bServoOffMode		:	BOOL ;
 	bServoOnMode		: BOOL;
+	bDiscreteInit		: BOOL;
 	bDiscreteMotionAct  : BOOL;
-
+	bServoOffparamsSet  : BOOL;
+	bServoOffparamsSetDone : BOOL;
 
     bError				: BOOL:=FALSE;
     // use this for motion time axis states
@@ -72,6 +74,10 @@ VAR
     nCalibratedHomeVelocity 	: DINT;
     nCalibratedHomeAcceleration	: DINT;
 
+	// Open Loop Motion paramters
+    nCalibratedSteps			: DINT;
+    nCalibratedStepAmp			: UINT;
+    nCalibratedStepFreq 		: UINT;
 
     // Calibrated motion params : nanometer operation by default.
     fCalibratedStandStillPos	: REAL;
@@ -105,9 +111,13 @@ VAR
 	ftBackwardEnabled	: F_TRIG;
 	ftServo				: F_TRIG;
 	
+    ftSdoStep		: 	F_TRIG;
+    ftSdoStepFreq	: 	F_TRIG;
+    ftSdoStepAmp	: 	F_TRIG;
 	
     tonSyncHoming 		: TON;
 	tonHoldTime			: TON;
+	tonServoOffSync		: TON;
     tonSlowParamReadTimer: TON;
 	// fast changing paramter timer -- wwe could have used PDO for this params
 	// but the Piezo ESC have fixed PDO list.
@@ -117,9 +127,9 @@ VAR
 	tRefreshDelay   : TIME := T#1S;
 
 	// Open Loop Operations
-    fbSdoOlStep		: 	FB_EcCoESdoWrite;
-    fbSdoOlStepFreq	: 	FB_EcCoESdoWrite;
-    fbSdoOlStepAmp	: 	FB_EcCoESdoWrite;
+    fbSdoStep		: 	FB_EcCoESdoWrite;
+    fbSdoStepFreq	: 	FB_EcCoESdoWrite;
+    fbSdoStepAmp	: 	FB_EcCoESdoWrite;
 	
     fbErrorSdoRead			: FB_EcCoESdoRead;
     fbFollowWinSdoRead		: FB_EcCoESdoRead;
@@ -139,9 +149,9 @@ VAR
     nChanOlStepFreqIdx	: WORD;
     nChanOlStepAmpIdx	: WORD;
 
-    nChanPrevOlStep			: DINT;
-    nChanPrevOlStepFreq		: UINT;
-    nChanPrevOlStepAmp		: UINT;
+    nChanPrevStep			: DINT;
+    nChanPrevStepFreq		: UINT;
+    nChanPrevStepAmp		: UINT;
 
 	
 END_VAR
@@ -313,8 +323,8 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="CalibratedMotionParams" Id="{ac17b7c4-a540-4db8-be71-88c2b2fc9fb9}">
-      <Declaration><![CDATA[METHOD CalibratedMotionParams
+    <Method Name="CalibratedServoOnParams" Id="{ac17b7c4-a540-4db8-be71-88c2b2fc9fb9}">
+      <Declaration><![CDATA[METHOD CalibratedServoOnParams
 VAR_INPUT
 END_VAR
 VAR
@@ -334,6 +344,8 @@ nCalibratedTargetPosition:=LREAL_TO_DINT (stPiezoStage.fPosition / MAX(stPiezoSt
 // set soft limit on drive params to avoid bumping hard on the end stops
 nCalibratedVelocity:=LIMIT(0, LREAL_TO_DINT (stPiezoStage.fVelocity / MAX(stPiezoStage.fscalingFactor, fDefaultScalingFactor)), nCalibratedMaxVelocity);
 nCalibratedAcceleration:=LIMIT(0, LREAL_TO_DINT (stPiezoStage.fAcceleration / MAX(stPiezoStage.fscalingFactor, fDefaultScalingFactor)), nCalibratedMaxAcceleration) ;
+
+
 ]]></ST>
       </Implementation>
     </Method>
@@ -359,6 +371,19 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
+    <Method Name="CalibrateServoOffParams" Id="{c9ba05b5-4e10-4360-a86f-570163826c05}">
+      <Declaration><![CDATA[METHOD CalibrateServoOffParams
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Open Loop Step Mode parameters
+nCalibratedSteps:=LIMIT(-100000, stPiezoStage.nChanStep, 100000);
+nCalibratedStepAmp:=REAL_TO_UINT(LIMIT(1, stPiezoStage.nChanStepAmp, 100) * 655.35);
+nCalibratedStepFreq:=REAL_TO_UINT(LIMIT(1.0, stPiezoStage.nChanStepFreq, 1000.0));
+]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="EncSaveRestore" Id="{62326dfa-915c-4ff5-a6ba-aedff0abd839}">
       <Declaration><![CDATA[METHOD EncSaveRestore
 VAR_INPUT
@@ -922,73 +947,6 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="OpenLoopMotion" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
-      <Declaration><![CDATA[METHOD OpenLoopMotion : BOOL
-VAR_INPUT
-
-END_VAR
-
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF THIS^.bServoOffMode THEN
-AmsNetIdToString();
-fbSdoOlStep(
-    sNetId     := sAmsNetId,
-    nSlaveAddr := stPiezoStage.nSlaveAddr,
-    nIndex     := nChanOlStepIdx,
-    nSubIndex  := 0,
-    pSrcBuf    := ADR(stPiezoStage.nChanOlStep),
-    cbBufLen   := SIZEOF(stPiezoStage.nChanOlStep),
-    bExecute   := (stPiezoStage.nChanOlStep <> nChanPrevOlStep)
-);
-
-fbSdoOlStepAmp(
-    sNetId     := sAmsNetId,
-    nSlaveAddr := stPiezoStage.nSlaveAddr,
-    nIndex     := nChanOlStepAmpIdx,
-    nSubIndex  := 0,
-    pSrcBuf    := ADR(stPiezoStage.nChanOlStepAmp),
-    cbBufLen   := SIZEOF(stPiezoStage.nChanOlStepAmp),
-    bExecute   := (stPiezoStage.nChanOlStepAmp <> nChanPrevOlStepAmp)
-);
-
-fbSdoOlStepFreq(
-    sNetId     := sAmsNetId,
-    nSlaveAddr := stPiezoStage.nSlaveAddr,
-    nIndex     := nChanOlStepFreqIdx,
-    nSubIndex  := 0,
-    pSrcBuf    := ADR(stPiezoStage.nChanOlStepFreq),
-    cbBufLen   := SIZEOF(stPiezoStage.nChanOlStepFreq),
-    bExecute   := (stPiezoStage.nChanOlStepFreq <> nChanPrevOlStepFreq)
-);
-
-IF NOT fbSdoOlStep.bBusy AND NOT fbSdoOlStepAmp.bBusy AND NOT fbSdoOlStepFreq.bBusy THEN
-
-	IF 	fbSdoOlStep.bError THEN
-		// this will be logged as a warning
-		Error := FALSE;
-		PiezoErrorCode := fbSdoOlStep.nErrId;
-		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
-	ELSIF fbSdoOlStepAmp.bError THEN
-		// this will be logged as a warning
-		Error := FALSE;
-		PiezoErrorCode := fbSdoOlStepAmp.nErrId;
-		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
-	ELSIF fbSdoOlStepFreq.bError THEN
-		// this will be logged as a warning
-		Error := FALSE;
-		PiezoErrorCode := fbSdoOlStepFreq.nErrId;
-		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
-	END_IF
-	stPiezoStage.bError := Error;
-	stPiezoStage.nErrorId := PiezoErrorCode;
-END_IF
-
-END_IF
-
-]]></ST>
-      </Implementation>
-    </Method>
     <Property Name="PiezoErrorCode" Id="{6909d919-bde9-446f-9642-d6b8f1850cfe}">
       <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY PiezoErrorCode : UDINT]]></Declaration>
@@ -1093,21 +1051,21 @@ fbLogError( stMotionStage:=stPiezoStage, bEnable:=bLogReady);
         <ST><![CDATA[// No transition while the drive is in motion
 // transition from close to open loop. while moving
 
-//rtEnableDrive(CLK:=stPiezoStage.bAllEnable);
+rtEnableDrive(CLK:=stPiezoStage.bAllEnable);
 ftEnableDrive(CLK:=stPiezoStage.bAllEnable);
 
 ftServoOffTrans(CLK:=(NOT bFault AND stPiezoStage.bServo));
 rtServoOnTrans(CLK:=(NOT bFault AND stPiezoStage.bServo));
 
-rtServoOffMode(CLK:=bServoOffMode);
-rtServoOnMode(CLK:=stPiezoStage.bAllEnable AND bServoOnMode);
+//rtServoOffMode(CLK:=bServoOffMode);
+//rtServoOnMode(CLK:=stPiezoStage.bAllEnable AND bServoOnMode);
 // Enabled the drive: the client code must wait for state transition.
-IF rtServoOnMode.Q THEN
+IF (bServoOffMode OR bServoOnMode) AND rtEnableDrive.Q THEN
     // Voltage on, close loop operations
     stPiezoStage.nPiezoDriveControl:=16#0F;
     fOverride:=100.0;
 	
-ELSIF ftEnableDrive.Q OR rtServoOffMode.Q THEN
+ELSIF ftEnableDrive.Q (*OR rtServoOffMode.Q*) THEN
 	//  inhibit motion functions! keep amplifier enable
 	stPiezoStage.nPiezoDriveControl:=16#07;
     fOverride:=0.0;
@@ -1326,6 +1284,86 @@ stPiezoStage.bAllEnable:=stPiezoStage.bEnable AND stPiezoStage.bHardwareEnable A
 stPiezoStage.bAllEnable R= NOT stPiezoStage.bUserEnable;]]></ST>
       </Implementation>
     </Method>
+    <Method Name="SetServoOffParams" Id="{a28d7e11-f485-4a60-bdef-9b0d673cfb42}">
+      <Declaration><![CDATA[METHOD SetServoOffParams : BOOL
+VAR_INPUT
+
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.bServoOffMode THEN
+AmsNetIdToString();
+
+fbSdoStep(
+    sNetId     := sAmsNetId,
+    nSlaveAddr := stPiezoStage.nSlaveAddr,
+    nIndex     := nChanOlStepIdx,
+    nSubIndex  := 0,
+    pSrcBuf    := ADR(nCalibratedSteps),
+    cbBufLen   := SIZEOF(stPiezoStage.nChanStep),
+    bExecute   := bServoOffparamsSet
+);
+
+fbSdoStepAmp(
+    sNetId     := sAmsNetId,
+    nSlaveAddr := stPiezoStage.nSlaveAddr,
+    nIndex     := nChanOlStepAmpIdx,
+    nSubIndex  := 0,
+    pSrcBuf    := ADR(nCalibratedStepAmp),
+    cbBufLen   := SIZEOF(stPiezoStage.nChanStepAmp),
+    bExecute   := bServoOffparamsSet
+);
+
+fbSdoStepFreq(
+    sNetId     := sAmsNetId,
+    nSlaveAddr := stPiezoStage.nSlaveAddr,
+    nIndex     := nChanOlStepFreqIdx,
+    nSubIndex  := 0,
+    pSrcBuf    := ADR(nCalibratedStepFreq),
+    cbBufLen   := SIZEOF(stPiezoStage.nChanStepFreq),
+    bExecute   := bServoOffparamsSet
+);
+
+// ftSdoStep(CLK:=fbSdoStep.bBusy);
+// ftSdoStepFreq(CLK:=fbSdoStepAmp.bBusy);
+// ftSdoStepAmp(CLK:=fbSdoStepFreq.bBusy);
+// 
+// IF ftSdoStep.Q AND ftSdoStepFreq.Q AND ftSdoStepAmp.Q THEN
+IF NOT fbSdoStep.bBusy AND NOT fbSdoStepAmp.bBusy AND NOT fbSdoStepFreq.bBusy THEN
+	IF 	fbSdoStep.bError THEN
+		// this will be logged as a warning
+		Error := FALSE;
+		PiezoErrorCode := fbSdoStep.nErrId;
+		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
+	ELSIF fbSdoStepAmp.bError THEN
+		// this will be logged as a warning
+		Error := FALSE;
+		PiezoErrorCode := fbSdoStepAmp.nErrId;
+		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
+	ELSIF fbSdoStepFreq.bError THEN
+		// this will be logged as a warning
+		Error := FALSE;
+		PiezoErrorCode := fbSdoStepFreq.nErrId;
+		//fbMotionErrorLogger.AddMsg(PiezoErrorCode, '');
+	END_IF
+	stPiezoStage.bError := Error;
+	stPiezoStage.nErrorId := PiezoErrorCode;
+	IF Error THEN
+		bServoOffparamsSetDone := FALSE;
+	END_IF
+	bServoOffparamsSet := FALSE;
+	bServoOffparamsSetDone := TRUE;
+	nChanPrevStep := stPiezoStage.nChanStep;
+	nChanPrevStepAmp := stPiezoStage.nChanStepAmp;
+	nChanPrevStepFreq := stPiezoStage.nChanStepFreq;
+END_IF
+
+END_IF
+SetServoOffParams := bServoOffparamsSetDone;
+]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="StateMachine" Id="{d963b9d7-d9e1-4a33-bb79-0f8a7e20b1de}">
       <Declaration><![CDATA[METHOD StateMachine
 VAR_INPUT
@@ -1421,7 +1459,7 @@ CASE eDriveState  OF
 // 		END_IF
 		
     E_DS402DriveState.OPERATION_ENABLED:;
-		IF bServoOnMode AND NOT THIS^.MoveBusy THEN
+		IF (bServoOffMode OR bServoOnMode) AND NOT THIS^.MoveBusy THEN
 			McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 		END_IF
 		
