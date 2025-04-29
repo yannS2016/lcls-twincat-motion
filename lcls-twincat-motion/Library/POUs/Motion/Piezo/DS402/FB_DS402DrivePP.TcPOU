@@ -114,14 +114,16 @@ END_VAR
             eMotionState:=E_DS402MotionState.DONE;
         END_IF
 		// implicit plc cycle delay after setting control.4
+		SUPER^.MoveBusy:=TRUE;
         eMotionState:=E_DS402MotionState.DRIVE_IN_MOTION;
 		
     E_DS402MotionState.DRIVE_IN_MOTION:;
-		SUPER^.MoveBusy:=TRUE;
+
 		IF SUPER^.bServoOnMode THEN
 			IF NOT SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
 			   AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
 				SUPER^.bDiscreteMotionAct:=TRUE;
+
 				eMotionState:=E_DS402MotionState.TARGET_REACHED; 
 			END_IF
 		ELSIF SUPER^.bServoOffMode THEN
@@ -134,31 +136,31 @@ END_VAR
 
 
     E_DS402MotionState.TARGET_REACHED:
-
+		 // Release the endstop override
+		 bLimOverride := FALSE;
 		// interrupted ?
 		IF Stopped AND SUPER^.stPiezoStage.bHalt THEN
 			eMotionState:=E_DS402MotionState.INTERRUPTED;
-		END_IF
-		
+			
 		// Aborting
-		IF Stopped AND NOT SUPER^.stPiezoStage.bExecute THEN
+		ELSIF Stopped AND NOT SUPER^.stPiezoStage.bExecute THEN
 			eMotionState:=E_DS402MotionState.ABORTED;
-		END_IF
-		// error bit set ?
-		IF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+		
+		// Genral Motion error i.e Following error ?
+		ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
 			SUPER^.Error := TRUE;
 			eMotionState:=E_DS402MotionState.ERROR;
-		END_IF
-		
-		// Reached ?
-        IF 	SUPER^.bServoOnMode 
-			AND SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached
-           	AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-            eMotionState:=E_DS402MotionState.DONE;
-		ELSIF 	SUPER^.bServoOffMode 
+		ELSE
+			// Reached ?
+			IF 	SUPER^.bServoOnMode 
 				AND SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached
-				AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
-				 eMotionState:=E_DS402MotionState.DONE;
+				AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+				eMotionState:=E_DS402MotionState.DONE;
+			ELSIF 	SUPER^.bServoOffMode 
+					AND SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached
+					AND NOT SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+					 eMotionState:=E_DS402MotionState.DONE;
+			END_IF
         END_IF
 
     E_DS402MotionState.INTERRUPTED:
@@ -174,6 +176,7 @@ END_VAR
     E_DS402MotionState.DONE:
 		THIS^.PositionHoldReady := TRUE;
 		SUPER^.bDiscreteMotionAct:=FALSE;
+		SUPER^.MoveBusy:=FALSE;
 		SUPER^.tonHoldTime.IN:=TRUE;
 		SUPER^.bDiscreteInit := FALSE;
 		// the axis will reset bit 12 after a neg edge on this bit to signal readiness for new set point
@@ -233,6 +236,8 @@ MC_AxisStates.MC_AXISSTATE_STANDSTILL:
 		SUPER^.MoveDone := FALSE;
 		SUPER^.InTargetPosition:=FALSE;
 		SUPER^.stPiezoStage.bDone:=FALSE;
+		SUPER^.bDiscreteInit := FALSE;
+		//Stopped := FALSE;
         // we supporting only discrete motion for now
         SUPER^.stPiezoStage.nPiezoDriveControl.5:=FALSE;
         SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
@@ -242,20 +247,16 @@ MC_AxisStates.MC_AXISSTATE_STANDSTILL:
     END_IF
 
 MC_AxisStates.MC_AXISSTATE_ERRORSTOP:;
-	// Force everything off in case of error
-	// resetting this flag will take the drive away from operation enable
-	// which will set this state machine to a disable state.
-	// we need to wait for the read error sdo function to complete.
-	// Catch the drive errors code
-	IF SUPER^.ReadDriveErrors() THEN
-		SUPER^.bReadDone := FALSE;
-		// motion error do not disabled the drive ctrl word will  still be 31.
-		// thus we're explicitely turn off power.
-		SUPER^.stPiezoStage.bEnable:=FALSE;
-	ELSE
-		SUPER^.bLogReady := FALSE;
+	(* When motion error occured immediatelly stop motion 
+	  by placing the drive in switched on state
+      we need to send to visit this state till the error is cleared 
+    *)
+	IF NOT SUPER^.bLogReady AND SUPER^.ReadDriveErrors() THEN
+		//SUPER^.bReadErrDone := FALSE;
+		SUPER^.bLogReady := TRUE;
 	END_IF
-
+	bErrorStop := TRUE;
+	
 MC_AxisStates.MC_AXISSTATE_STOPPING:;
 	// after the current move is halted, remain in this state till
  	// a falling edge on bHalt an 
@@ -358,7 +359,30 @@ SUPER^.SyncEpicsStatus();
       <Declaration><![CDATA[METHOD Interlock
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// For SmartAct MCS2 these limit are range and enstop limits. however a single bit in the status 
+        <ST><![CDATA[// notifies on the condition. it maybe more effcieint to use he position following error sign instead
+IF SUPER^.MoveBusy THEN
+    // Positive or Negative direction
+    IF  SUPER^.CalibratedActPos > SUPER^.fCalibratedStandStillPos THEN
+        SUPER^.bPositiveDirection:=TRUE;
+        SUPER^.bNegativeDirection:=FALSE;
+    ELSE
+        SUPER^.bPositiveDirection:=FALSE;
+        SUPER^.bNegativeDirection:=TRUE;
+    END_IF
+ELSE
+    // store idle Position
+    SUPER^.fCalibratedStandStillPos:=SUPER^.CalibratedActPos;
+END_IF
+
+// For SmartAct MCS2 these limit are range and enstop limits. however a single bit in the status
+// bLimEngaged: act as an override after limit was hit to allow reverse movement 
+SUPER^.stPiezoStage.bLimitForwardEnable :=  bLimOverride OR NOT( SUPER^.bPositiveDirection AND 
+											   ( SUPER^.stPiezoStage.stPiezoDriveStatus.InternalLimitActive
+											  	OR SUPER^.stPiezoStage.stPiezoDriveStatus.WarningCondition ));
+SUPER^.stPiezoStage.bLimitBackwardEnable := bLimOverride OR NOT( SUPER^.bNegativeDirection AND 
+											   ( SUPER^.stPiezoStage.stPiezoDriveStatus.InternalLimitActive 
+												 OR SUPER^.stPiezoStage.stPiezoDriveStatus.WarningCondition ));
+
 SUPER^.Interlock();
 ]]></ST>
       </Implementation>

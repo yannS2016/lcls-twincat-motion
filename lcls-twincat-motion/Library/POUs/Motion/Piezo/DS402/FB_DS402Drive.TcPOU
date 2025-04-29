@@ -38,8 +38,10 @@ VAR
 	bDiscreteMotionAct  : BOOL;
 	bServoOffparamsSet  : BOOL;
 	bServoOffparamsSetDone : BOOL;
+	bLimOverride				: BOOL;
 
     bError				: BOOL:=FALSE;
+	bErrorStop			: BOOL;
     // use this for motion time axis states
     bExecute			: BOOL;
 	// This prevent unexpected logical 1 on stMotionStage.bExecute 
@@ -57,7 +59,7 @@ VAR
     bPositiveDirection	:  	BOOL;
     bNegativeDirection 	:  	BOOL;
     bInTargetPosition 	:  	BOOL;
-	bReadDone			: 	BOOL;
+	bReadErrDone			: 	BOOL;
 	bLogReady			: 	BOOL;
 	bFault				: 	BOOL;
     bDiscreteMotion 	:  	BOOL;
@@ -93,6 +95,7 @@ VAR
     rtHomeCmdShortcut	: R_TRIG;
     rtEnableMode		: R_TRIG;
     rtUserExec			: R_TRIG;
+	rtErrorStop			: R_TRIG;
     rtTarget		: R_TRIG;
 	rtServoOnMode	: R_TRIG;
     rtEnableDrive	: R_TRIG;
@@ -125,7 +128,7 @@ VAR
 	//bInitiated	: BOOL;
     // Diagnotics data from the drive, mainly Error codes
 	tRefreshDelay   : TIME := T#1S;
-
+	tSavedholtime	: TIME;
 	// Open Loop Operations
     fbSdoStep		: 	FB_EcCoESdoWrite;
     fbSdoStepFreq	: 	FB_EcCoESdoWrite;
@@ -549,7 +552,7 @@ END_IF
       <Implementation>
         <ST><![CDATA[
 
-Stopped S= NOT stPiezoStage.bDone AND (stPiezoStage.bHalt OR ftExec.Q);
+Stopped S= NOT Error AND MoveBusy AND (stPiezoStage.bHalt OR NOT stPiezoStage.bExecute);
 
 stPiezoStage.nPiezoDriveControl.8 := Stopped; 
 
@@ -710,26 +713,7 @@ END_VAR
 VAR
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// notifies on the condition. it maybe more effcieint to use he position following error sign instead
-IF MoveBusy THEN
-    // Positive or Negative direction
-    IF  CalibratedActPos > fCalibratedStandStillPos THEN
-        bPositiveDirection:=TRUE;
-        bNegativeDirection:=FALSE;
-    ELSE
-        bPositiveDirection:=FALSE;
-        bNegativeDirection:=TRUE;
-    END_IF
-ELSE
-    // store idle Position
-    fCalibratedStandStillPos:=CalibratedActPos;
-END_IF
-
-stPiezoStage.bLimitForwardEnable :=  NOT(bPositiveDirection AND stPiezoStage.stPiezoDriveStatus.InternalLimitActive);
-stPiezoStage.bLimitBackwardEnable := NOT (bNegativeDirection AND stPiezoStage.stPiezoDriveStatus.InternalLimitActive);
-// call common interlocks checker
-
-// Check for the plc shortcut commands
+        <ST><![CDATA[// Check for the plc shortcut commands
 // Used for testing or to circumvent motor record issues
 rtMoveCmdShortcut(CLK:=stPiezoStage.bMoveCmd);
 rtHomeCmdShortcut(CLK:=stPiezoStage.bHomeCmd);
@@ -794,12 +778,14 @@ ftBackwardEnabled(CLK:=stPiezoStage.bAllBackwardEnable);
 IF  NOT HomingBusy AND ftForwardEnabled.Q THEN
 	// Not an error, just a warning
 	stPiezoStage.sErrorMessage:='Cannot move past positive limit.';
+	bLimOverride := TRUE;
 	stPiezoStage.bExecute:=FALSE;
 END_IF
 	
 IF NOT HomingBusy AND ftBackwardEnabled.Q THEN
 	// Not an error, just a warning
 	stPiezoStage.sErrorMessage:='Cannot move past Negative limit.';
+	bLimOverride := TRUE;
 	stPiezoStage.bExecute:=FALSE;
 END_IF
 
@@ -980,14 +966,17 @@ END_VAR
 // need to catch this as soon as it happen and must be seen by every call after intelock()
 // within the sma ecycle
 ftAbortDone(CLK:=AbortDone);
+//rtErrorStop(CLK:=bErrorStop);
+
 rtTarget(CLK:=(InTargetPosition AND MoveDone AND bExecMove));
 rtHomed(CLK:=HomeDone AND bExecHome);
-IF ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
+IF (*rtErrorStop.Q OR*) ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
     IF NOT stPiezoStage.bDone THEN
 		MoveBusy:=FALSE;
 		stPiezoStage.bDone := MoveDone OR HomeDone;
 		stPiezoStage.bHomed := HomeDone;
 		AbortDone := FALSE;
+		bErrorStop:=FALSE;
         IF NOT Error THEN
             bExecute:=FALSE;
             stPiezoStage.bExecute:=FALSE;
@@ -1141,18 +1130,16 @@ IF ftErrorSdoRead.Q THEN
 	ELSE
 		// Update Motion Error code;
 		ErrorCode := PiezoErrorCode;
-
-		// Error is general error status from the output of each motion fucntion called
 		stPiezoStage.bError := Error;
 		stPiezoStage.nErrorId := ErrorCode;	
 		bLogReady := TRUE;
 	END_IF
-	bReadDone := TRUE;
+	ReadDriveErrors := TRUE;
 ELSE
-	bReadDone := FALSE;
+	ReadDriveErrors := FALSE;
 END_IF
 
-ReadDriveErrors := bReadDone;]]></ST>
+//ReadDriveErrors := bReadErrDone;]]></ST>
       </Implementation>
     </Method>
     <Method Name="ReadDriveParams" Id="{91ee2260-ec1c-4238-9b91-9438ac703127}">
@@ -1266,7 +1253,8 @@ IF stPiezoStage.bReset THEN
     bExecute:=FALSE;
 	bLogReady := FALSE;
 	HomeDone := FALSE;
-	//bFault := FALSE;
+	// Need to clear this when htting endstop
+	MoveBusy := FALSE;
 END_IF
 ]]></ST>
       </Implementation>
@@ -1454,9 +1442,10 @@ CASE eDriveState  OF
     E_DS402DriveState.SWITCH_ON_READY:;
 		bFault := FALSE;
     E_DS402DriveState.SWITCH_ON:;
-// 		IF bServoOffMode AND NOT THIS^.MoveBusy THEN
-// 			McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
-// 		END_IF
+		// catch most recent motion error
+		IF Error THEN
+			McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
+		END_IF
 		
     E_DS402DriveState.OPERATION_ENABLED:;
 		IF (bServoOffMode OR bServoOnMode) AND NOT THIS^.MoveBusy THEN
