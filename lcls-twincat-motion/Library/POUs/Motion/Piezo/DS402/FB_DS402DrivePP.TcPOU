@@ -28,12 +28,34 @@ END_IF
 
 THIS^.Interlock();
 THIS^.Power();
-THIS^.Halt();
+SUPER^.Halt();
 THIS^.StateMachine();
 THIS^.HandleMoveRequest();
 THIS^.Reset();
-SUPER^.SetServoOffParams();]]></ST>
+// SUPER^.SetServoOffParams();]]></ST>
     </Implementation>
+    <Method Name="Abort" Id="{97360b03-d1d8-4e11-957a-268250c0031a}">
+      <Declaration><![CDATA[METHOD Abort
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF  rtTargetReached.Q THEN
+	SUPER^.stPiezoStage.nPiezoDriveControl.5 := 1;
+	SUPER^.stPiezoStage.nPiezoDriveControl.4 := 1;
+		
+ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
+		AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+	SUPER^.stPiezoStage.nPiezoDriveControl.5 := 0;
+	SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
+	SUPER^.stPiezoStage.nPiezoDriveControl.8 := 0;		
+	SUPER^.tonHoldTime.IN:=TRUE;
+	SUPER^.PositionHolding := TRUE;
+	SUPER^.Aborted := FALSE;
+	SUPER^.AbortDone := TRUE;
+	SUPER^.MoveBusy:=FALSE;
+	SUPER^.Stopped := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="Brake" Id="{22a77937-1757-472e-8a24-02f41806a6fb}">
       <Declaration><![CDATA[METHOD Brake
 ]]></Declaration>
@@ -171,17 +193,16 @@ END_VAR
     E_DS402MotionState.Aborted:
 		SUPER^.Aborted := TRUE;
 		SUPER^.InTargetPosition:=FALSE;
+
+		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
 		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
 
     E_DS402MotionState.DONE:
-		THIS^.PositionHoldReady := TRUE;
+		SUPER^.PositionHolding := TRUE;
 		SUPER^.bDiscreteMotionAct:=FALSE;
 		SUPER^.MoveBusy:=FALSE;
 		SUPER^.tonHoldTime.IN:=TRUE;
 		SUPER^.bDiscreteInit := FALSE;
-		// the axis will reset bit 12 after a neg edge on this bit to signal readiness for new set point
-		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
-        SUPER^.eAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 		
     E_DS402MotionState.ERROR:
 		SUPER^.Error:= TRUE;
@@ -199,7 +220,14 @@ END_CASE]]></ST>
       <Declaration><![CDATA[METHOD Halt : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.Halt();]]></ST>
+        <ST><![CDATA[IF NOT SUPER^.stPiezoStage.bHalt THEN
+	SUPER^.Stopped := FALSE;
+	IF rtTargetReached.Q THEN
+		//THIS^.PositionHoldReady := TRUE;
+		SUPER^.tonHoldTime.IN:=TRUE;
+		SUPER^.Halted := FALSE;
+	END_IF
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="HandleMoveRequest" Id="{6f021476-362f-4001-9f7a-3364b0ed4a04}">
@@ -224,12 +252,13 @@ MC_AxisStates.MC_AXISSTATE_DISABLED:
 MC_AxisStates.MC_AXISSTATE_STANDSTILL:
 
     IF rtExecHomeCmd.Q (*OR SUPER^.Halted*) THEN
-		SUPER^.eHomingState := E_DS402Homing.INIT_HOMING;
-		SUPER^.HomeDone := FALSE;
 		SUPER^.MoveBusy := TRUE;
+		SUPER^.HomeDone := FALSE;
 		SUPER^.InTargetPosition:=FALSE;
 		SUPER^.stPiezoStage.bDone:=FALSE;
 		SUPER^.tonSyncHoming.IN := FALSE;
+		SUPER^.eHomingState := E_DS402Homing.INIT_HOMING;
+		stPiezoStage.nModeOfOperation:=E_DS402OpMode.HOMING;
         SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_HOMING;
     ELSIF rtExecMoveCmd.Q (*OR SUPER^.Halted*) THEN
         // enter move discrete or continous here:
@@ -238,7 +267,6 @@ MC_AxisStates.MC_AXISSTATE_STANDSTILL:
 		SUPER^.InTargetPosition:=FALSE;
 		SUPER^.stPiezoStage.bDone:=FALSE;
 		SUPER^.bDiscreteInit := FALSE;
-		//Stopped := FALSE;
         // we supporting only discrete motion for now
         SUPER^.stPiezoStage.nPiezoDriveControl.5:=FALSE;
         SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION;
@@ -264,50 +292,14 @@ MC_AxisStates.MC_AXISSTATE_STOPPING:;
 	rtTargetReached(CLK:=SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached);
 
 	IF SUPER^.Aborted THEN
-		IF  rtTargetReached.Q THEN
- 			SUPER^.stPiezoStage.nPiezoDriveControl.5 := 1;
- 			SUPER^.stPiezoStage.nPiezoDriveControl.4 := 1;
-		END_IF
-		
-		IF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
-        AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
- 			SUPER^.stPiezoStage.nPiezoDriveControl.5 := 0;
- 			SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
-			SUPER^.stPiezoStage.nPiezoDriveControl.8 := 0;		
-			THIS^.PositionHoldReady := TRUE;
-			SUPER^.tonHoldTime.IN:=TRUE;
-			SUPER^.Aborted := FALSE;
-			SUPER^.AbortDone := TRUE;
-			Stopped := FALSE;
-		END_IF
+		THIS^.Abort();
 
 	ELSIF SUPER^.Halted THEN
-		IF NOT SUPER^.stPiezoStage.bHalt THEN
-				Stopped := FALSE;
-			IF rtTargetReached.Q THEN
-				THIS^.PositionHoldReady := TRUE;
-				SUPER^.tonHoldTime.IN:=TRUE;
-				 SUPER^.Halted := FALSE;
-			END_IF
-		 END_IF
+		THIS^.Halt();
 	END_IF
 
 MC_AxisStates.MC_AXISSTATE_HOMING:;
-	// stopping
-	IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
-		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
-	// error bit set ?
-	ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-		SUPER^.Error := TRUE;
-		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
-	ELSE
-		IF NOT SUPER^.HomeDone THEN
-			THIS^.Home();
-		ELSE
-			SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
-		END_IF
-	END_IF
-	
+	THIS^.Home();
 
 MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
 		THIS^.DiscreteMove();
@@ -315,23 +307,27 @@ MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
 END_CASE
 
 (* hold position with closed loop operation active before timeout *)
-tonHoldTime(PT:=SUPER^.stPiezoStage.tHoldTime);
+tonHoldTime(PT:=SUPER^.Holdtime);
 
-IF tonHoldTime.Q AND THIS^.PositionHoldReady THEN
+IF tonHoldTime.Q (*AND THIS^.PositionHoldReady*) THEN
 	(*
 		when the move is halted or completed hold the position for sometime before transitioning the drive 
 		to 'switched on' state, power is only removed to the drive after the axis reached 'standstill state'.
 		This will keep the close loop on to ensure the accuracy of the move 
 	*)
-	THIS^.PositionHoldReady := FALSE;
+	THIS^.PositionHolding := FALSE;
 	
 	IF SUPER^.AbortDone THEN
 		SUPER^.AbortDone := FALSE;
-	ELSE
+	ELSIF SUPER^.bExecMove THEN
 		SUPER^.MoveDone:=TRUE;
-	    SUPER^.InTargetPosition:=TRUE;	
+	    SUPER^.InTargetPosition:=TRUE;
+	ELSIF SUPER^.bExecHome THEN
+		// we want the the final postion after homing to settle before to set it as home position
+ 	    SUPER^.HomeDone:=TRUE;
+ 		SUPER^.stPiezoStage.fPosition:=0.0;
 	END_IF
-	tonHoldTime.IN:=FALSE;
+	SUPER^.tonHoldTime.IN:=FALSE;
 	SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 END_IF
 
@@ -425,26 +421,6 @@ SUPER^.stPiezoStage.nPiezoDriveControl.4:=TRUE;]]></ST>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="PositionHoldReady" Id="{e226e4b0-8acf-4778-a7f2-5563386decdf}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY PositionHoldReady : BOOL]]></Declaration>
-      <Get Name="Get" Id="{fa1e74e1-69bd-4c78-9656-8f0f118f5bf5}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[PositionHoldReady:=bReadyToHold;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{251de8c0-a49b-4b24-abe6-27ac9dc8ffe4}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bReadyToHold:=PositionHoldReady;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Method Name="PostInit" Id="{d833fbe7-e9ac-4353-bb5f-2247f06bb205}">
       <Declaration><![CDATA[{attribute 'call_after_init'}
 METHOD PostInit
@@ -516,5 +492,68 @@ END_VAR
         <ST><![CDATA[SUPER^.StateMachine();]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_DS402DrivePP">
+      <LineId Id="3" Count="10" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Abort">
+      <LineId Id="3" Count="14" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Brake">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.ContinousMove">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.DiscreteMove">
+      <LineId Id="3" Count="134" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Halt">
+      <LineId Id="3" Count="6" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.HandleMoveRequest">
+      <LineId Id="3" Count="108" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Home">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Interlock">
+      <LineId Id="3" Count="24" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Logger">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.MoveAbsolute">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.MoveRelative">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.MoveVelocity">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.PostInit">
+      <LineId Id="3" Count="28" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.PostInterlocks">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.PostMoveInterlocks">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Power">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.StateMachine">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>
