@@ -171,6 +171,8 @@ END_VAR
     E_DS402MotionState.Aborted:
 		SUPER^.Aborted := TRUE;
 		SUPER^.InTargetPosition:=FALSE;
+
+		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
 		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
 
     E_DS402MotionState.DONE:
@@ -267,9 +269,8 @@ MC_AxisStates.MC_AXISSTATE_STOPPING:;
 		IF  rtTargetReached.Q THEN
  			SUPER^.stPiezoStage.nPiezoDriveControl.5 := 1;
  			SUPER^.stPiezoStage.nPiezoDriveControl.4 := 1;
-		END_IF
 		
-		IF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
+		ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
         AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
  			SUPER^.stPiezoStage.nPiezoDriveControl.5 := 0;
  			SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
@@ -278,12 +279,13 @@ MC_AxisStates.MC_AXISSTATE_STOPPING:;
 			SUPER^.tonHoldTime.IN:=TRUE;
 			SUPER^.Aborted := FALSE;
 			SUPER^.AbortDone := TRUE;
-			Stopped := FALSE;
+			SUPER^.MoveBusy:=FALSE;
+			SUPER^.Stopped := FALSE;
 		END_IF
 
 	ELSIF SUPER^.Halted THEN
 		IF NOT SUPER^.stPiezoStage.bHalt THEN
-				Stopped := FALSE;
+				SUPER^.Stopped := FALSE;
 			IF rtTargetReached.Q THEN
 				THIS^.PositionHoldReady := TRUE;
 				SUPER^.tonHoldTime.IN:=TRUE;
