@@ -552,7 +552,7 @@ END_IF
       <Implementation>
         <ST><![CDATA[
 
-Stopped S= NOT Error AND MoveBusy AND (stPiezoStage.bHalt OR NOT stPiezoStage.bExecute);
+Stopped S= NOT Error AND MoveBusy AND (stPiezoStage.bHalt OR ftExec.Q);
 
 stPiezoStage.nPiezoDriveControl.8 := Stopped; 
 
@@ -966,8 +966,6 @@ END_VAR
 // need to catch this as soon as it happen and must be seen by every call after intelock()
 // within the sma ecycle
 ftAbortDone(CLK:=AbortDone);
-//rtErrorStop(CLK:=bErrorStop);
-
 rtTarget(CLK:=(InTargetPosition AND MoveDone AND bExecMove));
 rtHomed(CLK:=HomeDone AND bExecHome);
 IF (*rtErrorStop.Q OR*) ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
@@ -976,7 +974,6 @@ IF (*rtErrorStop.Q OR*) ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
 		stPiezoStage.bDone := MoveDone OR HomeDone;
 		stPiezoStage.bHomed := HomeDone;
 		AbortDone := FALSE;
-		bErrorStop:=FALSE;
         IF NOT Error THEN
             bExecute:=FALSE;
             stPiezoStage.bExecute:=FALSE;
