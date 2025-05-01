@@ -12,6 +12,13 @@ END_VAR
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
+    <Method Name="Abort" Id="{3395396f-7b35-48b5-92b0-2832ec86a6ea}">
+      <Declaration><![CDATA[METHOD Abort
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="Brake" Id="{95fbe001-f4c7-4279-a7e0-0cb29dfca4d4}">
       <Declaration><![CDATA[METHOD Brake
 ]]></Declaration>

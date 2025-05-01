@@ -39,7 +39,7 @@ VAR
 	bServoOffparamsSet  : BOOL;
 	bServoOffparamsSetDone : BOOL;
 	bLimOverride				: BOOL;
-
+	bPositionHolding		: BOOL;
     bError				: BOOL:=FALSE;
 	bErrorStop			: BOOL;
     // use this for motion time axis states
@@ -103,7 +103,7 @@ VAR
 	rtNotClState 	: R_TRIG;
 	rtNotOlState 	: R_TRIG;
 	rtNewMoveReq	: R_TRIG;
-
+	rtNewHoldTime	: R_TRIG;
 	ftServoOffTrans	: F_TRIG;
 	rtServoOffMode	: R_TRIG;
 	ftAmsNetId 		: F_TRIG;
@@ -128,7 +128,8 @@ VAR
 	//bInitiated	: BOOL;
     // Diagnotics data from the drive, mainly Error codes
 	tRefreshDelay   : TIME := T#1S;
-	tSavedholtime	: TIME := T#10S;
+	nSavedholtime	: UDINT;
+	tholtime		: TIME := T#10S;
 	// Open Loop Operations
     fbSdoStep		: 	FB_EcCoESdoWrite;
     fbSdoStepFreq	: 	FB_EcCoESdoWrite;
@@ -597,6 +598,26 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Property Name="HoldTime" Id="{079e7990-0faf-4cab-bcbf-4b972aacc68a}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HoldTime : TIME]]></Declaration>
+      <Get Name="Get" Id="{b501c107-5d23-4dd1-9227-28c389a6438b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Holdtime := tholtime;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{f8965514-e7bd-481c-923b-73a150ee5586}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[tholtime := Holdtime;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="Home" Id="{2fdfc142-a2a6-49f0-950a-d0e52b5408ca}">
       <Declaration><![CDATA[METHOD PUBLIC Home : BOOL
 
@@ -650,6 +671,7 @@ CASE eHomingState OF
         HomingBusy:=FALSE;
 		tonSyncHoming.IN := FALSE;
 		tonHoldTime.IN := TRUE;
+		PositionHolding := TRUE;
 		eHomingState:=E_DS402Homing.HOMING_DONE;
 
     E_DS402Homing.HOMING_DONE:;
@@ -973,6 +995,26 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="PositionHolding" Id="{e226e4b0-8acf-4778-a7f2-5563386decdf}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PositionHolding : BOOL]]></Declaration>
+      <Get Name="Get" Id="{fa1e74e1-69bd-4c78-9656-8f0f118f5bf5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[PositionHolding:=bPositionHolding;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{251de8c0-a49b-4b24-abe6-27ac9dc8ffe4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bPositionHolding:=PositionHolding;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="PostInterlocks" Id="{0f2de4be-a2d5-40b5-bf2e-f13c48bf1447}">
       <Declaration><![CDATA[METHOD PostInterlocks
 VAR_INPUT
@@ -1085,15 +1127,15 @@ IF bServoOffTrans AND ( stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.MCS
 	// ready for open loop operation
 	bServoOffTrans := FALSE;
 	bServoOffMode := TRUE;
-	tSavedholtime := stPiezoStage.tHoldTime;
-	stPiezoStage.tHoldTime := T#1S;
+	nSavedholtime := TIME_TO_UDINT(Holdtime);
+	Holdtime := T#1S;
 	bServoOnMode := FALSE;
 ELSIF bServoOnTrans AND ( stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.PROFILE_POSITION ) THEN
 	// ready for closed loop operation
 	bServoOnTrans := FALSE;
 	bServoOffMode := FALSE;
 	bServoOnMode := TRUE;
-	stPiezoStage.tHoldTime := tSavedholtime;
+	Holdtime := UDINT_TO_TIME(nSavedholtime);
 ELSIF ftServoOffTrans.Q THEN
 	bServoOffTrans := TRUE;
 	bServoOnTrans := FALSE;
@@ -1106,18 +1148,12 @@ ELSIF rtServoOnTrans.Q THEN
 	stPiezoStage.nModeOfOperation := E_DS402OpMode.PROFILE_POSITION;
 END_IF
 
-
-
-// rtNotClState(CLK:=(eDriveState <> E_DS402DriveState.OPERATION_ENABLED));
-// rtNotOlState(CLK:=(eDriveState <> E_DS402DriveState.SWITCH_ON));
-// 
-// IF rtNotClState.Q THEN
-// 	bClosedLoopMode := FALSE;
-// ELSIF rtNotOlState.Q THEN 
-// 	bOpenLoopMode := FALSE;
-// ELSIF rtNotClState.Q AND rtNotOlState.Q THEN
-// 	McAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
-// END_IF
+//change holdtime only if not moving moving and not holding
+rtNewHoldTime( CLK:=(stPiezoStage.nHoldTime <> nSavedholtime));
+IF rtNewHoldTime.Q AND NOT MoveBusy AND NOT PositionHolding THEN
+	nSavedholtime := stPiezoStage.nHoldTime;
+	Holdtime := UDINT_TO_TIME(stPiezoStage.nHoldTime);
+END_IF
 ]]></ST>
       </Implementation>
     </Method>

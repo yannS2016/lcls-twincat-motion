@@ -48,6 +48,7 @@ ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached
 	SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
 	SUPER^.stPiezoStage.nPiezoDriveControl.8 := 0;		
 	SUPER^.tonHoldTime.IN:=TRUE;
+	SUPER^.PositionHolding := TRUE;
 	SUPER^.Aborted := FALSE;
 	SUPER^.AbortDone := TRUE;
 	SUPER^.MoveBusy:=FALSE;
@@ -197,7 +198,7 @@ END_VAR
 		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
 
     E_DS402MotionState.DONE:
-		//THIS^.PositionHoldReady := TRUE;
+		SUPER^.PositionHolding := TRUE;
 		SUPER^.bDiscreteMotionAct:=FALSE;
 		SUPER^.MoveBusy:=FALSE;
 		SUPER^.tonHoldTime.IN:=TRUE;
@@ -309,7 +310,7 @@ MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
 END_CASE
 
 (* hold position with closed loop operation active before timeout *)
-tonHoldTime(PT:=SUPER^.stPiezoStage.tHoldTime);
+tonHoldTime(PT:=SUPER^.Holdtime);
 
 IF tonHoldTime.Q (*AND THIS^.PositionHoldReady*) THEN
 	(*
@@ -317,7 +318,7 @@ IF tonHoldTime.Q (*AND THIS^.PositionHoldReady*) THEN
 		to 'switched on' state, power is only removed to the drive after the axis reached 'standstill state'.
 		This will keep the close loop on to ensure the accuracy of the move 
 	*)
-	THIS^.PositionHoldReady := FALSE;
+	THIS^.PositionHolding := FALSE;
 	
 	IF SUPER^.AbortDone THEN
 		SUPER^.AbortDone := FALSE;
@@ -423,26 +424,6 @@ SUPER^.stPiezoStage.nPiezoDriveControl.4:=TRUE;]]></ST>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="PositionHoldReady" Id="{e226e4b0-8acf-4778-a7f2-5563386decdf}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY PositionHoldReady : BOOL]]></Declaration>
-      <Get Name="Get" Id="{fa1e74e1-69bd-4c78-9656-8f0f118f5bf5}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[PositionHoldReady:=bReadyToHold;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{251de8c0-a49b-4b24-abe6-27ac9dc8ffe4}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bReadyToHold:=PositionHoldReady;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Method Name="PostInit" Id="{d833fbe7-e9ac-4353-bb5f-2247f06bb205}">
       <Declaration><![CDATA[{attribute 'call_after_init'}
 METHOD PostInit
