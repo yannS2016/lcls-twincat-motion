@@ -28,12 +28,33 @@ END_IF
 
 THIS^.Interlock();
 THIS^.Power();
-THIS^.Halt();
+SUPER^.Halt();
 THIS^.StateMachine();
 THIS^.HandleMoveRequest();
 THIS^.Reset();
 SUPER^.SetServoOffParams();]]></ST>
     </Implementation>
+    <Method Name="Abort" Id="{97360b03-d1d8-4e11-957a-268250c0031a}">
+      <Declaration><![CDATA[METHOD Abort
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF  rtTargetReached.Q THEN
+	SUPER^.stPiezoStage.nPiezoDriveControl.5 := 1;
+	SUPER^.stPiezoStage.nPiezoDriveControl.4 := 1;
+		
+ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
+		AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+	SUPER^.stPiezoStage.nPiezoDriveControl.5 := 0;
+	SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
+	SUPER^.stPiezoStage.nPiezoDriveControl.8 := 0;		
+	SUPER^.tonHoldTime.IN:=TRUE;
+	SUPER^.Aborted := FALSE;
+	SUPER^.AbortDone := TRUE;
+	SUPER^.MoveBusy:=FALSE;
+	SUPER^.Stopped := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="Brake" Id="{22a77937-1757-472e-8a24-02f41806a6fb}">
       <Declaration><![CDATA[METHOD Brake
 ]]></Declaration>
@@ -176,7 +197,7 @@ END_VAR
 		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
 
     E_DS402MotionState.DONE:
-		THIS^.PositionHoldReady := TRUE;
+		//THIS^.PositionHoldReady := TRUE;
 		SUPER^.bDiscreteMotionAct:=FALSE;
 		SUPER^.MoveBusy:=FALSE;
 		SUPER^.tonHoldTime.IN:=TRUE;
@@ -201,7 +222,14 @@ END_CASE]]></ST>
       <Declaration><![CDATA[METHOD Halt : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.Halt();]]></ST>
+        <ST><![CDATA[IF NOT SUPER^.stPiezoStage.bHalt THEN
+	SUPER^.Stopped := FALSE;
+	IF rtTargetReached.Q THEN
+		//THIS^.PositionHoldReady := TRUE;
+		SUPER^.tonHoldTime.IN:=TRUE;
+		SUPER^.Halted := FALSE;
+	END_IF
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="HandleMoveRequest" Id="{6f021476-362f-4001-9f7a-3364b0ed4a04}">
@@ -266,50 +294,14 @@ MC_AxisStates.MC_AXISSTATE_STOPPING:;
 	rtTargetReached(CLK:=SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached);
 
 	IF SUPER^.Aborted THEN
-		IF  rtTargetReached.Q THEN
- 			SUPER^.stPiezoStage.nPiezoDriveControl.5 := 1;
- 			SUPER^.stPiezoStage.nPiezoDriveControl.4 := 1;
-		
-		ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.TargetReached 
-        AND SUPER^.stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
- 			SUPER^.stPiezoStage.nPiezoDriveControl.5 := 0;
- 			SUPER^.stPiezoStage.nPiezoDriveControl.4 := 0;
-			SUPER^.stPiezoStage.nPiezoDriveControl.8 := 0;		
-			THIS^.PositionHoldReady := TRUE;
-			SUPER^.tonHoldTime.IN:=TRUE;
-			SUPER^.Aborted := FALSE;
-			SUPER^.AbortDone := TRUE;
-			SUPER^.MoveBusy:=FALSE;
-			SUPER^.Stopped := FALSE;
-		END_IF
+		THIS^.Abort();
 
 	ELSIF SUPER^.Halted THEN
-		IF NOT SUPER^.stPiezoStage.bHalt THEN
-				SUPER^.Stopped := FALSE;
-			IF rtTargetReached.Q THEN
-				THIS^.PositionHoldReady := TRUE;
-				SUPER^.tonHoldTime.IN:=TRUE;
-				 SUPER^.Halted := FALSE;
-			END_IF
-		 END_IF
+		THIS^.Halt();
 	END_IF
 
 MC_AxisStates.MC_AXISSTATE_HOMING:;
-	// stopping
-	IF SUPER^.stPiezoStage.nPiezoDriveControl.8 THEN
-		SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
-	// error bit set ?
-	ELSIF SUPER^.stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-		SUPER^.Error := TRUE;
-		SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
-	ELSE
-		IF NOT SUPER^.HomeDone THEN
-			THIS^.Home();
-		ELSE
-			SUPER^.McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
-		END_IF
-	END_IF
-	
+	THIS^.Home();
 
 MC_AxisStates.MC_AXISSTATE_DISCRETEMOTION:
 		THIS^.DiscreteMove();
@@ -319,7 +311,7 @@ END_CASE
 (* hold position with closed loop operation active before timeout *)
 tonHoldTime(PT:=SUPER^.stPiezoStage.tHoldTime);
 
-IF tonHoldTime.Q AND THIS^.PositionHoldReady THEN
+IF tonHoldTime.Q (*AND THIS^.PositionHoldReady*) THEN
 	(*
 		when the move is halted or completed hold the position for sometime before transitioning the drive 
 		to 'switched on' state, power is only removed to the drive after the axis reached 'standstill state'.
@@ -329,11 +321,15 @@ IF tonHoldTime.Q AND THIS^.PositionHoldReady THEN
 	
 	IF SUPER^.AbortDone THEN
 		SUPER^.AbortDone := FALSE;
-	ELSE
+	ELSIF SUPER^.bExecMove THEN
 		SUPER^.MoveDone:=TRUE;
-	    SUPER^.InTargetPosition:=TRUE;	
+	    SUPER^.InTargetPosition:=TRUE;
+	ELSIF SUPER^.bExecHome THEN
+		// we want the the final postion after homing to settle before to set it as home position
+ 	    SUPER^.HomeDone:=TRUE;
+ 		SUPER^.stPiezoStage.fPosition:=0.0;
 	END_IF
-	tonHoldTime.IN:=FALSE;
+	SUPER^.tonHoldTime.IN:=FALSE;
 	SUPER^.McAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 END_IF
 
