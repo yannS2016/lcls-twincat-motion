@@ -11,7 +11,9 @@ TYPE E_DS402Homing :
     HOMING_ATTAINED 		:= 20,
     HOMING_POSITION_REACHED:=30,
     HOMING_INTERRUPTED:=40,
+    HOMING_DONE			:= 50,
     HOMING_ERROR			:= -99
+
 );
 END_TYPE
 ]]></Declaration>

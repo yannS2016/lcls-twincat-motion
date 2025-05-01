@@ -128,7 +128,7 @@ VAR
 	//bInitiated	: BOOL;
     // Diagnotics data from the drive, mainly Error codes
 	tRefreshDelay   : TIME := T#1S;
-	tSavedholtime	: TIME;
+	tSavedholtime	: TIME := T#10S;
 	// Open Loop Operations
     fbSdoStep		: 	FB_EcCoESdoWrite;
     fbSdoStepFreq	: 	FB_EcCoESdoWrite;
@@ -189,6 +189,15 @@ END_VAR
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
+    <Method Name="Abort" Id="{3e48947d-2096-4df4-8d39-6d25a4247f59}">
+      <Declaration><![CDATA[METHOD ABSTRACT Abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="AbortDone" Id="{784ddc4a-64d1-4d90-874b-4cd96de2c7ff}">
       <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY AbortDone : BOOL]]></Declaration>
@@ -590,7 +599,10 @@ END_VAR
     </Method>
     <Method Name="Home" Id="{2fdfc142-a2a6-49f0-950a-d0e52b5408ca}">
       <Declaration><![CDATA[METHOD PUBLIC Home : BOOL
-]]></Declaration>
+
+VAR
+	Halted: BOOL;
+END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[tonSyncHoming(PT:=T#1000MS);
 (* IMPORTANT: Homing options and parameters must be configured either via the COE online tab or via the service tool *)
@@ -611,37 +623,45 @@ CASE eHomingState OF
            AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
                 HomingBusy:=TRUE;
                 HomeDone:=FALSE;
-        END_IF
-		
+				
         // Interrupted
-        IF stPiezoStage.stPiezoDriveStatus.TargetReached 
-			AND NOT stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific THEN
+        ELSIF Stopped AND stPiezoStage.bHalt THEN
             eHomingState:=E_DS402Homing.HOMING_INTERRUPTED;
-        END_IF
+			
+		// Genral Motion error i.e Following error ?	
+		ELSIF stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
+			eHomingState:=E_DS402Homing.HOMING_ERROR;
 
         // Reached
-        IF stPiezoStage.stPiezoDriveStatus.TargetReached
+        ELSIF stPiezoStage.stPiezoDriveStatus.TargetReached
             AND stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific
             AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
             eHomingState:=E_DS402Homing.HOMING_ATTAINED;
         END_IF
 
-    E_DS402Homing.HOMING_ATTAINED:;
-        HomingBusy:=FALSE;
-        HomeDone:=TRUE;
-        Error:=FALSE;
-		tonSyncHoming.IN := FALSE;
-		stPiezoStage.fPosition := 0.0;
-		//prepare next move
-		stPiezoStage.nPiezoDriveControl.4:=FALSE;
-		stPiezoStage.nModeOfOperation:=E_DS402OpMode.PROFILE_POSITION;
 		
     E_DS402Homing.HOMING_INTERRUPTED :;
         HomingBusy:=FALSE;
         HomeDone:=FALSE;
-        ErrorMessage:='Warning: Halt interrupted homing sequence';
-        Error:=FALSE;
-        ErrorCode:=99; 
+		Halted := TRUE;
+		McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
+		
+    E_DS402Homing.HOMING_ATTAINED:;
+        HomingBusy:=FALSE;
+		tonSyncHoming.IN := FALSE;
+		tonHoldTime.IN := TRUE;
+		eHomingState:=E_DS402Homing.HOMING_DONE;
+
+    E_DS402Homing.HOMING_DONE:;
+		//prepare next move
+		stPiezoStage.nPiezoDriveControl.4:=FALSE;
+		
+    E_DS402Homing.HOMING_ERROR :;
+		Error:= TRUE;
+		MoveBusy:=FALSE;
+		MoveDone:=FALSE;
+		HomingBusy:= FALSE;
+		McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
 
 END_CASE
 ]]></ST>
@@ -962,22 +982,24 @@ END_VAR
         <ST><![CDATA[// user override aka stop from EPICS ?
 // Check done moving via user stop, fbDriveVirtual and Target Position Monitoring, or from homing.
 // set/reset stPiezoStage.bDone after move absolute/Relative
-
-// need to catch this as soon as it happen and must be seen by every call after intelock()
-// within the sma ecycle
 ftAbortDone(CLK:=AbortDone);
 rtTarget(CLK:=(InTargetPosition AND MoveDone AND bExecMove));
 rtHomed(CLK:=HomeDone AND bExecHome);
 IF (*rtErrorStop.Q OR*) ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
     IF NOT stPiezoStage.bDone THEN
 		MoveBusy:=FALSE;
-		stPiezoStage.bDone := MoveDone OR HomeDone;
-		stPiezoStage.bHomed := HomeDone;
-		AbortDone := FALSE;
+		IF HomeDone THEN
+			//stPiezoStage.fPosition:=0.0;
+			stPiezoStage.nModeOfOperation:=E_DS402OpMode.PROFILE_POSITION;
+			stPiezoStage.bHomed := HomeDone;
+		END_IF
         IF NOT Error THEN
             bExecute:=FALSE;
             stPiezoStage.bExecute:=FALSE;
         END_IF
+		
+		AbortDone := FALSE;
+		stPiezoStage.bDone := MoveDone OR HomeDone;
     END_IF
 END_IF
 
@@ -1063,13 +1085,15 @@ IF bServoOffTrans AND ( stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.MCS
 	// ready for open loop operation
 	bServoOffTrans := FALSE;
 	bServoOffMode := TRUE;
+	tSavedholtime := stPiezoStage.tHoldTime;
+	stPiezoStage.tHoldTime := T#1S;
 	bServoOnMode := FALSE;
 ELSIF bServoOnTrans AND ( stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.PROFILE_POSITION ) THEN
 	// ready for closed loop operation
 	bServoOnTrans := FALSE;
 	bServoOffMode := FALSE;
 	bServoOnMode := TRUE;
-	
+	stPiezoStage.tHoldTime := tSavedholtime;
 ELSIF ftServoOffTrans.Q THEN
 	bServoOffTrans := TRUE;
 	bServoOnTrans := FALSE;
