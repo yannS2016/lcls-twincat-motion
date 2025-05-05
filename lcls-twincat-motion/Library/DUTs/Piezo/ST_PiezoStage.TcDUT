@@ -42,21 +42,21 @@ STRUCT
 	nLogicalScaleInv	: BOOL;
 	nMotorLoad			: USINT;
     {attribute 'pytmc' := '
-        pv: PLC:nChanOlStep
+        pv: PLC:nChanStep
         io: io
 		field: DESC SmartAct: Open Loop Step Count
     '}
     nChanStep			: DINT;
 	
     {attribute 'pytmc' := '
-        pv: PLC:nChanOlStep
+        pv: PLC:nChanStepFreq
         io: io
 		field: DESC SmartAct: Open Loop Step Freq
     '}
     nChanStepFreq		: UINT;
 	
     {attribute 'pytmc' := '
-        pv: PLC:nChanOlStep
+        pv: PLC:nChanStepAmp
         io: io
 		field: DESC SmartAct: Open Loop Step Amp
     '}

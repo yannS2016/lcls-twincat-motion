@@ -30,6 +30,7 @@ VAR
 	bHalted				: BOOL;
 	bAborted			: BOOL;
 	bStopped			: BOOL;
+	bOperational		: BOOL;
 	bServoOffTrans	: BOOL;
 	bServoOnTrans : BOOL;
 	bServoOffMode		:	BOOL ;
@@ -95,7 +96,7 @@ VAR
     rtHomeCmdShortcut	: R_TRIG;
     rtEnableMode		: R_TRIG;
     rtUserExec			: R_TRIG;
-	rtErrorStop			: R_TRIG;
+	rtModeChange			: R_TRIG;
     rtTarget		: R_TRIG;
 	rtServoOnMode	: R_TRIG;
     rtEnableDrive	: R_TRIG;
@@ -625,20 +626,18 @@ VAR
 	Halted: BOOL;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[tonSyncHoming(PT:=T#1000MS);
+        <ST><![CDATA[tonSyncHoming(PT:=T#500MS);
 (* IMPORTANT: Homing options and parameters must be configured either via the COE online tab or via the service tool *)
 CASE eHomingState OF
     E_DS402Homing.INIT_HOMING :;
-        stPiezoStage.nModeOfOperation:=E_DS402OpMode.HOMING;
-        IF stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.HOMING THEN
-			HomeDone := FALSE;
+		rtModeChange (CLK:=(stPiezoStage.nModeOfOperationDisplay = E_DS402OpMode.HOMING));
+        IF rtModeChange.Q THEN
 			tonSyncHoming.IN := TRUE;
             stPiezoStage.nPiezoDriveControl.4:=TRUE;
-			IF tonSyncHoming.Q THEN
-				eHomingState:=E_DS402Homing.HOMING_IN_PROGRESS;
-			END_IF
         END_IF
-
+		IF tonSyncHoming.Q THEN
+			eHomingState:=E_DS402Homing.HOMING_IN_PROGRESS;
+		END_IF
     E_DS402Homing.HOMING_IN_PROGRESS:
         IF NOT stPiezoStage.stPiezoDriveStatus.TargetReached
            AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
@@ -677,11 +676,11 @@ CASE eHomingState OF
     E_DS402Homing.HOMING_DONE:;
 		//prepare next move
 		stPiezoStage.nPiezoDriveControl.4:=FALSE;
+		stPiezoStage.nModeOfOperation:=E_DS402OpMode.PROFILE_POSITION;
 		
     E_DS402Homing.HOMING_ERROR :;
 		Error:= TRUE;
-		MoveBusy:=FALSE;
-		MoveDone:=FALSE;
+		HomeDone:=FALSE;
 		HomingBusy:= FALSE;
 		McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
 
@@ -848,7 +847,7 @@ CASE McAxisState OF
         stPiezoStage.bEnableDone:=TRUE;
 END_CASE
 
-bExecute:= NOT stPiezoStage.bError AND stPiezoStage.bExecute AND stPiezoStage.bAllEnable AND stPiezoStage.bEnableDone AND stPiezoStage.bSafetyReady;
+bExecute:= bOperational AND NOT stPiezoStage.bError AND stPiezoStage.bExecute AND stPiezoStage.bAllEnable AND stPiezoStage.bEnableDone AND stPiezoStage.bSafetyReady;
 // 
 bExecHome:=bExecute AND stPiezoStage.nCommand = 10;
 bExecMove:=bExecute AND NOT bExecHome;
@@ -1031,7 +1030,6 @@ IF (*rtErrorStop.Q OR*) ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
     IF NOT stPiezoStage.bDone THEN
 		MoveBusy:=FALSE;
 		IF HomeDone THEN
-			//stPiezoStage.fPosition:=0.0;
 			stPiezoStage.nModeOfOperation:=E_DS402OpMode.PROFILE_POSITION;
 			stPiezoStage.bHomed := HomeDone;
 		END_IF
@@ -1039,7 +1037,7 @@ IF (*rtErrorStop.Q OR*) ftAbortDone.Q OR  rtTarget.Q OR rtHomed.Q THEN
             bExecute:=FALSE;
             stPiezoStage.bExecute:=FALSE;
         END_IF
-		
+		stPiezoStage.nPiezoDriveControl.4:=FALSE;
 		AbortDone := FALSE;
 		stPiezoStage.bDone := MoveDone OR HomeDone;
     END_IF
@@ -1098,17 +1096,12 @@ fbLogError( stMotionStage:=stPiezoStage, bEnable:=bLogReady);
       <Declaration><![CDATA[METHOD Power : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// No transition while the drive is in motion
-// transition from close to open loop. while moving
-
-rtEnableDrive(CLK:=stPiezoStage.bAllEnable);
+        <ST><![CDATA[rtEnableDrive(CLK:=stPiezoStage.bAllEnable);
 ftEnableDrive(CLK:=stPiezoStage.bAllEnable);
 
 ftServoOffTrans(CLK:=(NOT bFault AND stPiezoStage.bServo));
 rtServoOnTrans(CLK:=(NOT bFault AND stPiezoStage.bServo));
 
-//rtServoOffMode(CLK:=bServoOffMode);
-//rtServoOnMode(CLK:=stPiezoStage.bAllEnable AND bServoOnMode);
 // Enabled the drive: the client code must wait for state transition.
 IF (bServoOffMode OR bServoOnMode) AND rtEnableDrive.Q THEN
     // Voltage on, close loop operations
@@ -1118,6 +1111,7 @@ IF (bServoOffMode OR bServoOnMode) AND rtEnableDrive.Q THEN
 ELSIF ftEnableDrive.Q (*OR rtServoOffMode.Q*) THEN
 	//  inhibit motion functions! keep amplifier enable
 	stPiezoStage.nPiezoDriveControl:=16#07;
+	bOperational := FALSE;
     fOverride:=0.0;
 ELSE
 	;
@@ -1417,6 +1411,10 @@ END_VAR
       <Implementation>
         <ST><![CDATA[rtFault(CLK:=bFault	);
 
+IF eDriveState<>E_DS402DriveState.OPERATION_ENABLED THEN
+	bOperational:=FALSE;
+END_IF
+
 (*switch on disable*)
 IF NOT stPiezoStage.stPiezoDriveStatus.ReadyToSwitchOn
     AND NOT stPiezoStage.stPiezoDriveStatus.SwitchedOn
@@ -1502,10 +1500,13 @@ CASE eDriveState  OF
 		// catch most recent motion error
 		IF Error THEN
 			McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
+		ELSE
+			McAxisState:=MC_AxisStates.MC_AXISSTATE_DISABLED;
 		END_IF
 		
     E_DS402DriveState.OPERATION_ENABLED:;
 		IF (bServoOffMode OR bServoOnMode) AND NOT THIS^.MoveBusy THEN
+			bOperational := TRUE;
 			McAxisState:=MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 		END_IF
 		
