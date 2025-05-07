@@ -11,6 +11,7 @@ VAR
     stMotionEpicsInterface : ST_MotionEpicsInterface;
 
     iMotionAxis : I_MotionAxis;
+    iMotionAxisCommon : I_MotionAxisCommon;
     iBrake :I_Brake;
     iMotionInterlocks: I_MotionInterlocks;
     iMotionLogger : I_MotionLogger;
@@ -74,17 +75,20 @@ VAR_INPUT
     bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
     //Declaration
     iMotionAxis: I_MotionAxis;
+    iMotionAxisCommon : I_MotionAxisCommon;
     iBrake : I_Brake;
     iMotionInterlocks : I_MotionInterlocks;
     iMotionLogger : I_MotionLogger;
     iPersistantDataStorage: I_PersistantDataStorage;
+
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Body
 THIS^.iMotionAxis:=iMotionAxis;
 THIS^.iBrake:=iBrake;
 THIS^.iMotionInterlocks:=iMotionInterlocks;
-THIS^.iPersistantDataStorage:=iPersistantDataStorage;]]></ST>
+THIS^.iPersistantDataStorage:=iPersistantDataStorage;
+THIS^.iMotionAxisCommon := iMotionAxisCommon;]]></ST>
       </Implementation>
     </Method>
     <Method Name="GetInterlocksRef" Id="{519cf572-57b6-4265-8a35-8e40f4725969}">
@@ -153,26 +157,14 @@ METHOD MoveCmd
       </Implementation>
     </Method>
     <Method Name="NCParamsExposed" Id="{a32b8f9b-a550-4cf6-9dc3-5c1e587d0657}">
-      <Declaration><![CDATA[METHOD PROTECTED NCParamsExposed
+      <Declaration><![CDATA[METHOD  NCParamsExposed
 VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Copy axis parameters that we want to expose to the EPICS layer.
-stMotionEpicsInterface.stAxisParametersExposed.bCtrlEnablePosDiffControl     := iMotionAxis.CtrlEnablePosDiffControl;
-stMotionEpicsInterface.stAxisParametersExposed.bEncEnableSoftEndMaxControl   := iMotionAxis.EncEnableSoftEndMaxControl;
-stMotionEpicsInterface.stAxisParametersExposed.bEncEnableSoftEndMinControl   := iMotionAxis.EncEnableSoftEndMinControl;
-stMotionEpicsInterface.stAxisParametersExposed.fAccelerationMax              := iMotionAxis.AccelerationMax;
-stMotionEpicsInterface.stAxisParametersExposed.fCtrlPosDiffMax               := iMotionAxis.CtrlPosDiffMax;
-stMotionEpicsInterface.stAxisParametersExposed.fCtrlPosDiffMaxTime           := iMotionAxis.CtrlPosDiffMaxTime;
-stMotionEpicsInterface.stAxisParametersExposed.fDecelerationMax              := iMotionAxis.DecelerationMax;
-stMotionEpicsInterface.stAxisParametersExposed.fEncSoftEndMax                := iMotionAxis.EncSoftEndMax;
-stMotionEpicsInterface.stAxisParametersExposed.fEncSoftEndMin                := iMotionAxis.EncSoftEndMin;
-stMotionEpicsInterface.stAxisParametersExposed.fVeloMaximum                  := iMotionAxis.VeloMaximum;
-stMotionEpicsInterface.stAxisParametersExposed.fEncOffset               	 := iMotionAxis.EncOffset;
-stMotionEpicsInterface.stAxisParametersExposed.fEncScaleFactorInternal       := iMotionAxis.EncScaleFactorInternal;
-
-stMotionDrive.bAxisParamsInit S= iMotionAxis.NCParamsReadDone;]]></ST>
+stMotionEpicsInterface.stAxisParametersExposed := iMotionAxisCommon.AxisParameterSetExposed;
+stMotionDrive.bAxisParamsInit := iMotionAxisCommon.NCParamsReadDone;]]></ST>
       </Implementation>
     </Method>
     <Method Name="ProcessMoveReq" Id="{1da2dc9d-4406-4cb4-be2e-a29a35f201c7}">

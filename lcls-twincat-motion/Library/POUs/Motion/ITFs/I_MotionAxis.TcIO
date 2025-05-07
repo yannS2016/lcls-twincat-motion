@@ -12,15 +12,6 @@ INTERFACE I_MotionAxis]]></Declaration>
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="AxisParameters" Id="{3d36c621-1f34-4747-ac5f-827d9974fa78}">
-      <Declaration><![CDATA[PROPERTY AxisParameters : ST_AxisParameterSet]]></Declaration>
-      <Get Name="Get" Id="{656274a5-5e49-45a6-bda9-ff2eead07ae7}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{78bad410-c06a-439c-8bb8-da3d0b8ff2a5}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
     <Method Name="CalibrateEncValue" Id="{7e7a9c8a-616b-43af-87bc-3e56ad4286f3}">
       <Declaration><![CDATA[METHOD CalibrateEncValue
 VAR_INPUT
@@ -345,15 +336,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Get>
       <Set Name="Set" Id="{e7d8401e-252d-4bd7-b1cf-f060629874cd}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="NCParamsReadDone" Id="{3248c80c-8758-4861-b3d8-5b5c24fd4ef1}">
-      <Declaration><![CDATA[PROPERTY NCParamsReadDone : BOOL]]></Declaration>
-      <Get Name="Get" Id="{8ce27683-5340-4087-b5f2-7f2c830e269b}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{f27ee146-dfa2-4818-bc72-81e159c5dc22}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>

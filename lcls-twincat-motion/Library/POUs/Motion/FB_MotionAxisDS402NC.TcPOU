@@ -9,16 +9,11 @@ END_VAR
 VAR
     {attribute 'no_copy'}
     AxisRef : REFERENCE TO AXIS_REF;
-
-    eDriveState			:	E_DS402DriveState;
-    eHomingState		: 	E_DS402Homing;
+    iMotionAxisCommon : I_MotionAxisCommon;
     // NC Blocks
     fbSetPos		:	MC_SetPosition;
      bClearPositionLag : BOOL := TRUE;
-    mcReadParams: MC_ReadParameterSet;
-    // MC_ReadParameterSet Output
-    stAxisParameters: ST_AxisParameterSet;
-    bNcParamsReadDone : BOOL;
+
     // create a property for some of these
     bExecMove			: BOOL;
     bExecHome			: BOOL;
@@ -172,7 +167,7 @@ VAR CONSTANT
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[THIS^.NCParams(TRUE, tRefreshDelay:=T#1S);]]></ST>
+      <ST><![CDATA[]]></ST>
     </Implementation>
     <Property Name="AccelerationMax" Id="{1f07c339-8806-45cb-a82b-6af469420615}">
       <Declaration><![CDATA[PROPERTY AccelerationMax : LREAL]]></Declaration>
@@ -190,25 +185,6 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[fAccelerationMax := AccelerationMax;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="AxisParameters" Id="{c2c1f2de-aeff-4c9b-8076-701a3c8c97c1}">
-      <Declaration><![CDATA[PROPERTY AxisParameters : ST_AxisParameterSet]]></Declaration>
-      <Get Name="Get" Id="{183bc959-45b6-4af3-b70a-097c7d6fe2a3}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[AxisParameters := stAxisParameters;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{b502d651-9c28-4de8-91cd-7f60946a1758}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[stAxisParameters := AxisParameters;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -301,7 +277,7 @@ END_VAR
       <Declaration><![CDATA[METHOD CyclicCalls
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.NCParams(TRUE, tRefreshDelay:=T#1S);]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Property Name="DecelerationMax" Id="{a776e41d-52dd-4309-b542-2e2ddd861e11}">
@@ -495,9 +471,11 @@ VAR_INPUT
     bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
     bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
     AxisReference : REFERENCE TO AXIS_REF;
+    //iMotionAxisCommon : I_MotionAxisCommon;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[AxisRef REF= AxisReference;]]></ST>
+        <ST><![CDATA[AxisRef REF= AxisReference;
+//iMotionAxisCommon := iMotionAxisCommon;]]></ST>
       </Implementation>
     </Method>
     <Method Name="GearIn" Id="{f2f47c3c-7d99-4ce3-b227-d63c7dadbcd1}">
@@ -994,75 +972,6 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Method Name="NCParams" Id="{0f6873c2-ff77-4d85-bdfb-52a7672785ac}">
-      <Declaration><![CDATA[METHOD PROTECTED NCParams
-VAR_INPUT
-    bEnable: BOOL;
-    tRefreshDelay: TIME;
-END_VAR
-
-VAR_INST
-    timer: TON;
-    bExecute: BOOL := TRUE;
-    nLatchErrId: UDINT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[timer(
-    IN:=bEnable AND NOT bExecute,
-    PT:=tRefreshDelay);
-bExecute S= timer.Q;
-mcReadParams(
-    Parameter:=THIS^.stAxisParameters,
-    Axis:= AxisRef,
-    Execute:=bEnable AND bExecute );
-
-IF mcReadParams.Error THEN
-    Error := TRUE;
-    ErrorCode := mcReadParams.ErrorID;
-    // Log this error
-END_IF
-
-(* IF mcReadParams.ErrorID <> 0 THEN
-    nLatchErrId := 0;
-END_IF *)
-// Copy axis parameters that we want to expose to the EPICS layer.
-THIS^.CtrlEnablePosDiffControl     := THIS^.stAxisParameters.bCtrlEnablePosDiffControl;
-THIS^.EncEnableSoftEndMaxControl   := THIS^.stAxisParameters.bEncEnableSoftEndMaxControl;
-THIS^.EncEnableSoftEndMinControl   := THIS^.stAxisParameters.bEncEnableSoftEndMinControl;
-THIS^.AccelerationMax              := THIS^.stAxisParameters.fAccelerationMax;
-THIS^.CtrlPosDiffMax               := THIS^.stAxisParameters.fCtrlPosDiffMax;
-THIS^.CtrlPosDiffMaxTime           := THIS^.stAxisParameters.fCtrlPosDiffMaxTime;
-THIS^.DecelerationMax              := THIS^.stAxisParameters.fDecelerationMax;
-THIS^.EncSoftEndMax                := THIS^.stAxisParameters.fEncSoftEndMax;
-THIS^.EncSoftEndMin                := THIS^.stAxisParameters.fEncSoftEndMin;
-THIS^.VeloMaximum                  := THIS^.stAxisParameters.fVeloMaximum;
-THIS^.EncOffset               	   := THIS^.stAxisParameters.fEncOffset;
-THIS^.EncScaleFactorInternal       := THIS^.stAxisParameters.fEncScaleFactorInternal;
-
-bExecute R= mcReadParams.Done OR mcReadParams.Error;
-]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="NCParamsReadDone" Id="{c9ee3b2b-38a2-46c8-9824-79922b67f3ce}">
-      <Declaration><![CDATA[PROPERTY NCParamsReadDone : BOOL]]></Declaration>
-      <Get Name="Get" Id="{1db94af7-036a-4033-a639-c4509f37ccfd}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[NCParamsReadDone := bNcParamsReadDone;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{74b5629c-7711-4f5b-9eb7-f3b84fdf65e3}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bNcParamsReadDone := NCParamsReadDone;]]></ST>
         </Implementation>
       </Set>
     </Property>
