@@ -169,25 +169,6 @@ END_VAR
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
-    <Property Name="AccelerationMax" Id="{1f07c339-8806-45cb-a82b-6af469420615}">
-      <Declaration><![CDATA[PROPERTY AccelerationMax : LREAL]]></Declaration>
-      <Get Name="Get" Id="{2bd464b0-f1e5-4321-951d-78bf28389440}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[AccelerationMax := fAccelerationMax;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{4be91231-8f3e-4596-9aba-68fa2c2afb8b}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fAccelerationMax := AccelerationMax;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Method Name="CalibrateEncValue" Id="{91970a26-c709-4b22-9267-b0d1667fe522}">
       <Declaration><![CDATA[{warning 'Add method implementation '}
 METHOD CalibrateEncValue
@@ -215,64 +196,6 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="CtrlEnablePosDiffControl" Id="{695c6910-fdeb-4182-acfe-2e37c6f410ac}">
-      <Declaration><![CDATA[PROPERTY CtrlEnablePosDiffControl : WORD]]></Declaration>
-      <Get Name="Get" Id="{4348122f-0678-4dd8-9bcd-8a60ab5383cf}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[CtrlEnablePosDiffControl := bCtrlEnablePosDiffControl;
-]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{7d2d06c4-68a0-49e8-8a01-611266ad2c61}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bCtrlEnablePosDiffControl := CtrlEnablePosDiffControl;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CtrlPosDiffMax" Id="{95c0370d-ea50-402b-b977-60896d197347}">
-      <Declaration><![CDATA[PROPERTY CtrlPosDiffMax : LREAL]]></Declaration>
-      <Get Name="Get" Id="{10bacbe5-5e0b-4fd7-b75c-b0621788360c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[CtrlPosDiffMax := fCtrlPosDiffMax;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{313494e6-417d-4fdb-bca0-4134a407ad4e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fCtrlPosDiffMax := CtrlPosDiffMax;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CtrlPosDiffMaxTime" Id="{ba3e3aed-08fc-47b6-926d-96f45759f2a2}">
-      <Declaration><![CDATA[PROPERTY CtrlPosDiffMaxTime : LREAL]]></Declaration>
-      <Get Name="Get" Id="{fbbc85b5-a59e-4a89-9c53-609f0a0ba54b}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[CtrlPosDiffMaxTime  := fCtrlPosDiffMaxTime;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{fd0a53ca-34c4-4501-8d10-681be1f3a090}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fCtrlPosDiffMaxTime := CtrlPosDiffMaxTime;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Method Name="CyclicCalls" Id="{4817919d-5e20-4c69-8186-0bdf3efe567b}">
       <Declaration><![CDATA[METHOD CyclicCalls
 ]]></Declaration>
@@ -280,63 +203,6 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="DecelerationMax" Id="{a776e41d-52dd-4309-b542-2e2ddd861e11}">
-      <Declaration><![CDATA[PROPERTY DecelerationMax : LREAL]]></Declaration>
-      <Get Name="Get" Id="{66bafab8-1af4-4b69-b0c6-7df4549cc51e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[DecelerationMax := fDecelerationMax;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{d60e50e4-4d2d-4d7b-a8d8-3dc72f293ac4}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fDecelerationMax := DecelerationMax;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="EncEnableSoftEndMaxControl" Id="{504f27da-66b8-4336-b36a-c2247a045f9f}">
-      <Declaration><![CDATA[PROPERTY EncEnableSoftEndMaxControl : WORD]]></Declaration>
-      <Get Name="Get" Id="{143ab52f-1d29-4528-aabe-b10689f0dd18}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EncEnableSoftEndMaxControl := bEncEnableSoftEndMaxControl;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{967123c6-540c-45f7-b124-7ce6c4751dcf}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bEncEnableSoftEndMaxControl := EncEnableSoftEndMaxControl;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="EncEnableSoftEndMinControl" Id="{35dcf21d-3695-448c-ae46-26f30f45b964}">
-      <Declaration><![CDATA[PROPERTY EncEnableSoftEndMinControl : WORD]]></Declaration>
-      <Get Name="Get" Id="{855f4a5f-7807-40a4-ade8-d748d81dbb5e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EncEnableSoftEndMinControl := bEncEnableSoftEndMinControl;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{447cf319-633e-4136-8deb-5c36c5dd23be}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bEncEnableSoftEndMinControl := EncEnableSoftEndMinControl;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Property Name="EncOffset" Id="{eb27fba9-5a73-44b3-af11-96a7e15e3ee9}">
       <Declaration><![CDATA[PROPERTY EncOffset : LREAL]]></Declaration>
       <Get Name="Get" Id="{4f5f199f-c50e-4b22-b7ed-6508a6417ac4}">
@@ -364,63 +230,6 @@ METHOD EncSaveRestore
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="EncScaleFactorInternal" Id="{3e44ad53-2048-4a16-beeb-503c0d7b9016}">
-      <Declaration><![CDATA[PROPERTY EncScaleFactorInternal : LREAL]]></Declaration>
-      <Get Name="Get" Id="{923f513e-5759-4361-9101-75cc4a9f812b}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EncScaleFactorInternal := fEncScaleFactorInternal;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{65b357e9-5143-49b4-95b2-032059290866}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fEncScaleFactorInternal := EncScaleFactorInternal;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="EncSoftEndMax" Id="{38135d7c-f66e-4fb4-8d04-bba3fec723ad}">
-      <Declaration><![CDATA[PROPERTY EncSoftEndMax : LREAL]]></Declaration>
-      <Get Name="Get" Id="{8f48f61d-0630-4780-ba60-b9ad6844ec6c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EncSoftEndMax := fEncSoftEndMax;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{8ddc42a1-2ee8-4fca-996d-03d058c2ec95}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fEncSoftEndMax := EncSoftEndMax;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="EncSoftEndMin" Id="{a28a2bc2-c8ae-4040-aad6-7c18e425a7ae}">
-      <Declaration><![CDATA[PROPERTY EncSoftEndMin : LREAL]]></Declaration>
-      <Get Name="Get" Id="{87816c1e-ff28-4e89-83c5-70a310036166}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EncSoftEndMin := fEncSoftEndMin;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{fc827f61-bdbf-4427-a791-5289af14b738}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fEncSoftEndMin := EncSoftEndMin;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Property Name="Error" Id="{6591e605-cd47-41e1-b465-f220aaf35b56}">
       <Declaration><![CDATA[PROPERTY Error : BOOL
 ]]></Declaration>
@@ -1096,8 +905,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="PowerStatus" Id="{a1fcac09-eaa5-4dd8-8dbc-d1d1f1c7685d}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY PowerStatus : BOOL
+      <Declaration><![CDATA[PROPERTY PowerStatus : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{2960272a-335f-4434-a3c9-59af96bed5c2}">
         <Declaration><![CDATA[VAR
@@ -1195,24 +1003,5 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="VeloMaximum" Id="{1c209e44-4b86-4c0b-bc62-8e85b20406c9}">
-      <Declaration><![CDATA[PROPERTY VeloMaximum : LREAL]]></Declaration>
-      <Get Name="Get" Id="{c46f1ef8-d3bc-457f-831f-d9b1e44608b1}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[VeloMaximum := fVeloMaximum;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{e1154cd4-929a-43c1-9b86-fcd34bcde2d7}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fVeloMaximum := VeloMaximum;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
   </POU>
 </TcPlcObject>

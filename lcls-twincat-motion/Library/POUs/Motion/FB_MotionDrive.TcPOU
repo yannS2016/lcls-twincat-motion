@@ -88,7 +88,9 @@ THIS^.iMotionAxis:=iMotionAxis;
 THIS^.iBrake:=iBrake;
 THIS^.iMotionInterlocks:=iMotionInterlocks;
 THIS^.iPersistantDataStorage:=iPersistantDataStorage;
-THIS^.iMotionAxisCommon := iMotionAxisCommon;]]></ST>
+THIS^.iMotionAxisCommon := iMotionAxisCommon;
+// Passed Local Drive and Epics Interface structures to common axis
+THIS^.iMotionAxisCommon.GetDriveAndEpicsItfRefs(stMotionDriveRef:=THIS^.stMotionDrive, stMotionEpicsInterfaceRef:=THIS^.stMotionEpicsInterface);]]></ST>
       </Implementation>
     </Method>
     <Method Name="GetInterlocksRef" Id="{519cf572-57b6-4265-8a35-8e40f4725969}">

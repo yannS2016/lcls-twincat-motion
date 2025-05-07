@@ -12,8 +12,8 @@
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="CalibrateEncValue" Id="{5e4dcc38-c938-47b5-ae51-9cd2d1e361c6}">
-      <Declaration><![CDATA[METHOD CalibrateEncValue
+    <Method Name="CalibrateRawEncValue" Id="{5e4dcc38-c938-47b5-ae51-9cd2d1e361c6}">
+      <Declaration><![CDATA[METHOD CalibrateRawEncValue
 VAR_INPUT
 END_VAR
 ]]></Declaration>
@@ -45,6 +45,14 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
+    <Method Name="GetDriveAndEpicsItfRefs" Id="{86758b31-8284-4d4d-a286-01f9545e22ee}">
+      <Declaration><![CDATA[METHOD GetDriveAndEpicsItfRefs
+VAR_INPUT
+    stMotionDriveRef : REFERENCE TO ST_MotionDrive;
+    stMotionEpicsInterfaceRef : REFERENCE TO ST_MotionEpicsInterface;
+END_VAR
+]]></Declaration>
+    </Method>
     <Method Name="NCParams" Id="{6569264a-cd22-4ab9-b718-09a979850303}">
       <Declaration><![CDATA[METHOD NCParams : BOOL;
 VAR_INPUT

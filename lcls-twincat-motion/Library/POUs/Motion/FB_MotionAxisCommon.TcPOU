@@ -10,20 +10,22 @@ VAR
 
     {attribute 'no_copy'}
     AxisRef : REFERENCE TO AXIS_REF;
+    stMotionDriveReference : REFERENCE TO ST_MotionDrive;
+    stMotionEpicsInterfaceReference : REFERENCE TO ST_MotionEpicsInterface;
+
     mcReadParams: MC_ReadParameterSet;
     // MC_ReadParameterSet Output
     stAxisParameters: ST_AxisParameterSet;
-
-       stAxisParameterSetExposed : ST_AxisParameterSetExposed;
-     nEncoderCount : UDINT;
-
+    stAxisParameterSetExposed : ST_AxisParameterSetExposed;
     bNcParamsReadDone   : BOOL;
     bError				: BOOL;
     nErrorCode			: UDINT;
+    nEncoderCount 		: UDINT;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[THIS^.NCParams(TRUE, tRefreshDelay:=T#1S);]]></ST>
+      <ST><![CDATA[THIS^.NCParams(TRUE, tRefreshDelay:=T#1S);
+THIS^.CalibrateRawEncValue();]]></ST>
     </Implementation>
     <Property Name="AxisParameterSetExposed" Id="{bd38f88c-c219-4363-856f-6d4d63c13ec4}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
@@ -46,12 +48,30 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Method Name="CalibrateEncValue" Id="{1731f1b4-fc8d-48cd-81d7-d75b2a571773}">
-      <Declaration><![CDATA[{warning 'Add method implementation '}
-METHOD CalibrateEncValue
+    <Method Name="CalibrateRawEncValue" Id="{1731f1b4-fc8d-48cd-81d7-d75b2a571773}">
+      <Declaration><![CDATA[METHOD CalibrateRawEncValue
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[// IF init failed to get a valid reference then dont proceed here.
+IF NOT __ISVALIDREF(stMotionDriveReference) OR NOT __ISVALIDREF(stMotionEpicsInterfaceReference) THEN
+    RETURN;
+END_IF
+
+IF stMotionDriveReference.nRawEncoderULINT <> 0 THEN
+    IF stMotionDriveReference.nRawEncoderULINT < 4294967296 THEN
+        stMotionEpicsInterfaceReference.nEncoderCount := ULINT_TO_UDINT(stMotionDriveReference.nRawEncoderULINT);
+    ELSE
+        stMotionEpicsInterfaceReference.nEncoderCount := ULINT_TO_UDINT(18446744073709551615 - stMotionDriveReference.nRawEncoderULINT);
+    END_IF
+ELSIF stMotionDriveReference.nRawEncoderUINT <> 0 THEN
+    stMotionEpicsInterfaceReference.nEncoderCount := UINT_TO_UDINT(stMotionDriveReference.nRawEncoderUINT);
+ELSIF stMotionDriveReference.nRawEncoderINT <> 0 THEN
+    stMotionEpicsInterfaceReference.nEncoderCount := INT_TO_UDINT(stMotionDriveReference.nRawEncoderINT);
+ELSIF stMotionDriveReference.nRawEncoderDINT <> 0 THEN
+    stMotionEpicsInterfaceReference.nEncoderCount := DINT_TO_UDINT(stMotionDriveReference.nRawEncoderDINT);
+ELSE
+    stMotionEpicsInterfaceReference.nEncoderCount := 0;
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Property Name="EncoderCount" Id="{5225d004-dac1-4dfa-90f6-2aa283ea59c1}">
@@ -126,6 +146,17 @@ VAR_INPUT
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[AxisRef REF= AxisReference;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="GetDriveAndEpicsItfRefs" Id="{521243a9-080c-4717-80a3-4aef48e01826}">
+      <Declaration><![CDATA[METHOD GetDriveAndEpicsItfRefs
+VAR_INPUT
+    stMotionDriveRef : REFERENCE TO ST_MotionDrive;
+    stMotionEpicsInterfaceRef : REFERENCE TO ST_MotionEpicsInterface;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[    stMotionDriveReference REF= stMotionDriveRef;
+    stMotionEpicsInterfaceReference REF= stMotionEpicsInterfaceRef;]]></ST>
       </Implementation>
     </Method>
     <Method Name="NCParams" Id="{dd5f801a-4004-4e64-a8a8-d3052d398ddb}">
