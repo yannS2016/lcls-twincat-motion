@@ -3,18 +3,132 @@
   <Itf Name="I_MotionAxis" Id="{3c91c589-b429-4766-807e-f17018983211}">
     <Declaration><![CDATA[
 INTERFACE I_MotionAxis]]></Declaration>
+    <Property Name="AccelerationMax" Id="{b78fb8aa-3dc7-4295-9153-a834c4681484}">
+      <Declaration><![CDATA[PROPERTY AccelerationMax : LREAL]]></Declaration>
+      <Get Name="Get" Id="{f4857933-df18-4642-ab8d-94432d78f978}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{c4c0b024-7a1a-4a29-951c-610eca84b665}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="AxisParameters" Id="{3d36c621-1f34-4747-ac5f-827d9974fa78}">
+      <Declaration><![CDATA[PROPERTY AxisParameters : ST_AxisParameterSet]]></Declaration>
+      <Get Name="Get" Id="{656274a5-5e49-45a6-bda9-ff2eead07ae7}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{78bad410-c06a-439c-8bb8-da3d0b8ff2a5}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Method Name="CalibrateEncValue" Id="{7e7a9c8a-616b-43af-87bc-3e56ad4286f3}">
       <Declaration><![CDATA[METHOD CalibrateEncValue
 VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
+    <Property Name="CtrlEnablePosDiffControl" Id="{683c9a6e-b08d-42ec-9e2e-34ac2cb6ee1e}">
+      <Declaration><![CDATA[PROPERTY CtrlEnablePosDiffControl : WORD]]></Declaration>
+      <Get Name="Get" Id="{67d910f0-916b-4f20-8b63-9669273e3c2c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{77db6db2-1a8d-4c5d-91ec-be92490ded50}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="CtrlPosDiffMax" Id="{390d7770-ad85-4d76-9689-a504d5b253ae}">
+      <Declaration><![CDATA[PROPERTY CtrlPosDiffMax : LREAL]]></Declaration>
+      <Get Name="Get" Id="{d84d3ace-d4e9-4411-bc48-fb18d654e66d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{15d616bb-36ce-4fc0-b82c-7ec8855d8ea7}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="CtrlPosDiffMaxTime" Id="{d22edff1-6e61-405b-a69f-7645be284842}">
+      <Declaration><![CDATA[PROPERTY CtrlPosDiffMaxTime : LREAL]]></Declaration>
+      <Get Name="Get" Id="{69756016-79d9-4247-ba6b-dbb34fe4a048}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{a91bf005-2372-485b-bdb7-d2b8e2b995e8}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Method Name="CyclicCalls" Id="{e2101b56-8bf2-4201-b804-13e8918bd54f}">
+      <Declaration><![CDATA[METHOD CyclicCalls
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Property Name="DecelerationMax" Id="{50c921c6-53a1-442a-a3f1-d3a46bc85bd9}">
+      <Declaration><![CDATA[PROPERTY DecelerationMax : LREAL]]></Declaration>
+      <Get Name="Get" Id="{ab784170-c59c-4c72-96a8-9ff3440fae81}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{75a8eb23-bc10-4d39-b76f-18c818ffc8d7}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EncEnableSoftEndMaxControl" Id="{7d6e1672-fc4f-49cb-97f9-85bd3e17dd52}">
+      <Declaration><![CDATA[PROPERTY EncEnableSoftEndMaxControl : WORD]]></Declaration>
+      <Get Name="Get" Id="{4d633911-d859-40f9-8d1a-77f58e22bbe2}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{36b05c5b-8c05-4e0b-b60e-ab6ee5be5f9e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EncEnableSoftEndMinControl" Id="{6d5d86b9-1660-493c-8ee3-4db349cffbca}">
+      <Declaration><![CDATA[PROPERTY EncEnableSoftEndMinControl : WORD]]></Declaration>
+      <Get Name="Get" Id="{1a9b760c-f8e1-4e33-b957-40bfae42ba7f}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{5c9afbc3-70d4-4b1c-96bc-7d07245c7921}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EncOffset" Id="{dc0f2f3f-2346-4667-ab72-00b7da2b7508}">
+      <Declaration><![CDATA[PROPERTY EncOffset : LREAL]]></Declaration>
+      <Get Name="Get" Id="{b42b6dba-e47f-4fb4-8249-97bca67a3181}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{e8f12242-15c2-4bfd-9f6b-c9a829444ee1}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Method Name="EncSaveRestore" Id="{30c2db10-dfde-4ae0-8849-47391b0dee06}">
       <Declaration><![CDATA[METHOD EncSaveRestore
 VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
+    <Property Name="EncScaleFactorInternal" Id="{0d905958-432f-451f-b734-9ed0bc5e1bbf}">
+      <Declaration><![CDATA[PROPERTY EncScaleFactorInternal : LREAL]]></Declaration>
+      <Get Name="Get" Id="{a9661706-9272-40d5-8c66-4989c176bee8}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{5dcf90d4-a0e3-4b1e-b869-e42b463b2536}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EncSoftEndMax" Id="{c87cbac1-c4b1-4433-9be5-b90186566a5e}">
+      <Declaration><![CDATA[PROPERTY EncSoftEndMax : LREAL]]></Declaration>
+      <Get Name="Get" Id="{5e4b4173-f945-4bb4-bcd2-b264278d6d2e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{cca3244f-0c5b-4aef-8ba1-d6f4de26867c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EncSoftEndMin" Id="{b07f8007-1b63-4e95-add7-38b45c1f41cb}">
+      <Declaration><![CDATA[PROPERTY EncSoftEndMin : LREAL]]></Declaration>
+      <Get Name="Get" Id="{75818145-9b80-4474-a86e-24c6ea5d0e87}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{e44f8b2d-0f58-42d1-a0aa-46d5b21e5e82}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Property Name="Error" Id="{223efa57-25d3-457b-bf0b-cb388ddaa592}">
       <Declaration><![CDATA[PROPERTY Error : BOOL]]></Declaration>
       <Get Name="Get" Id="{8b5023d6-5da9-40ec-aa8c-74eb2417a8d2}">
@@ -25,7 +139,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="ErrorCode" Id="{31257e10-34e0-4d20-b970-529353446c30}">
-      <Declaration><![CDATA[PROPERTY ErrorCode : BOOL]]></Declaration>
+      <Declaration><![CDATA[PROPERTY ErrorCode : UDINT]]></Declaration>
       <Get Name="Get" Id="{93a197bc-3e9c-4e36-a6ad-541212bdf062}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
@@ -234,6 +348,15 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
+    <Property Name="NCParamsReadDone" Id="{3248c80c-8758-4861-b3d8-5b5c24fd4ef1}">
+      <Declaration><![CDATA[PROPERTY NCParamsReadDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{8ce27683-5340-4087-b5f2-7f2c830e269b}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{f27ee146-dfa2-4818-bc72-81e159c5dc22}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Property Name="NegativeMotionIsEnabled" Id="{2290676f-06da-4ecf-94a1-0c49597f33bf}">
       <Declaration><![CDATA[PROPERTY NegativeMotionIsEnabled : BOOL]]></Declaration>
       <Get Name="Get" Id="{8d81b380-5837-49d1-80e2-c2f8e6bca2c8}">
@@ -356,5 +479,14 @@ VAR_OUTPUT
 END_VAR
 ]]></Declaration>
     </Method>
+    <Property Name="VeloMaximum" Id="{173f0179-29cf-4ba0-ab26-1457212997be}">
+      <Declaration><![CDATA[PROPERTY VeloMaximum : LREAL]]></Declaration>
+      <Get Name="Get" Id="{20fcd0af-828b-4bc9-a790-3b1f2f07f332}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{fed9b11e-8039-4bf8-9982-5563d1a3f811}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
   </Itf>
 </TcPlcObject>

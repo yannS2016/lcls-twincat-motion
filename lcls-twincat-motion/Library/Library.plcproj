@@ -173,11 +173,18 @@
     <Compile Include="DUTs\ST_StatePMPSPlcToEpics.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ENUM_AxisStates.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GVLs\MOTION_GVL.TcGVL">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
     <Compile Include="GVLs\MotionConstants.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
+    <Compile Include="GVLs\NcAxis_GVL.TcGVL">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
@@ -235,6 +242,9 @@
     <Compile Include="POUs\ImplicitChecks\CheckDivReal.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Motion\FB_Brake.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Motion\FB_EncoderValue.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -262,6 +272,12 @@
     <Compile Include="POUs\Motion\FB_MotionHoming.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Motion\FB_MotionInterlocks.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\FB_MotionLogger.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Motion\FB_MotionRequest.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -278,6 +294,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\FB_MotionVirtualFrame.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\FB_PersistantDataStorage.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\FB_PneumaticAxis.TcPOU">
@@ -423,6 +442,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\MotorTesting\FB_MicroStepCountTest.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ST_PiezoStage.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tc_mca_std_lib\DUTs\DUT_AxisStatus_v0_01.TcDUT">
