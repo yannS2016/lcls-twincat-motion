@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="E_DS402ModuleParams" Id="{72e35238-0ac1-404c-b917-bcf4c3a1dbec}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'to_string'}
+TYPE E_DS402ModuleParams :
+(
+    LOGICAL_SCALE_OFFSET	:= 16#2007,
+    LOGICAL_SCALE_INVERSION	:= 16#2008,
+    MOTOR_LOAD				:= 16#200D,
+    SOFT_LIMITS				:= 16#200E,
+    HOME_OFFSET				:= 16#607C,
+    HOMING_SPEED			:= 16#6099,
+    HOMING_ACCELERATION		:= 16#609A,
+    ERROR_CODE				:= 16#603F,
+    FOLLOWING_ERROR_WIN		:= 16#6065,
+    MODULE_OFFSET			:= 16#800
+) WORD;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

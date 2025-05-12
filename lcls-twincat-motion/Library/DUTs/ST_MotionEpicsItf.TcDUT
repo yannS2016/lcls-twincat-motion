@@ -1,19 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <DUT Name="ST_MotionEpicsInterface" Id="{390b004d-460d-4cb0-a5a0-186b7a61fbf1}">
-    <Declaration><![CDATA[TYPE ST_MotionEpicsInterface :
+  <DUT Name="ST_MotionEpicsItf" Id="{390b004d-460d-4cb0-a5a0-186b7a61fbf1}">
+    <Declaration><![CDATA[TYPE ST_MotionEpicsItf :
     // Defines the EPICS interface to moving a motor in TwinCAT
 STRUCT
-   // NC STO Input: TRUE if ok to move
-    {attribute 'pytmc' := '
-        pv: PLC:bHardwareEnable
-        io: i
-        field: ZNAM FALSE
-        field: ONAM TRUE
-        field: DESC TRUE if STO not hit
-    '}
-    bHardwareEnable AT %I*: BOOL;
-
     // Encoder count summary, if linked above
     {attribute 'pytmc' := '
         pv: PLC:nEncoderCount
@@ -50,8 +40,6 @@ STRUCT
     nEncRef: ULINT:=0;
 
     (* Commands *)
-    // Used internally to request enables
-    bEnable: BOOL;
     // Used internally to reset errors and other state
     {attribute 'pytmc' := '
         pv: PLC:bReset
@@ -96,6 +84,9 @@ STRUCT
     fAcceleration: LREAL;
     // Used internally and by the IOC to pick a move deceleration
     fDeceleration: LREAL;
+    // this keep for legacy State Positioning
+    bBusy : BOOL;
+    bDone : BOOL;
     // Used internally and by the IOC to pick a home position
     {attribute 'pytmc' := '
         pv: PLC:fHomePosition
@@ -103,6 +94,10 @@ STRUCT
         field: DESC Used internally and by the IOC to pick home position
     '}
     fHomePosition: LREAL;
+
+    (* Settings *)
+    // Name to use for log messages, fast faults, etc.
+    sName: STRING;
 
     (* Returns *)
 

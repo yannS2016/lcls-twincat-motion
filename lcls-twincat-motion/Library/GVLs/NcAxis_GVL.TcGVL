@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <GVL Name="NcAxis_GVL" Id="{c2946879-f813-4e4a-acb0-1c588477f389}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+    testAxis : AXIS_REF;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

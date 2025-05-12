@@ -82,12 +82,6 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
-    <Method Name="HandleInterFBCom" Id="{9db29681-ab2b-481a-8dad-3e40513073e7}">
-      <Declaration><![CDATA[METHOD HandleInterFBCom
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Method Name="HomeCmd" Id="{9fdc0c70-7fd4-4e1d-973a-5fd32a2ffa74}">
       <Declaration><![CDATA[METHOD HomeCmd
 VAR_INPUT
@@ -169,12 +163,6 @@ END_VAR
     </Method>
     <Method Name="ProcessMoveReq" Id="{16636825-34ac-44bb-b4de-2566f4d18b17}">
       <Declaration><![CDATA[METHOD ProcessMoveReq
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="Reset" Id="{a712c737-e7e9-419f-a703-1021b8659f40}">
-      <Declaration><![CDATA[METHOD Reset
 VAR_INPUT
 END_VAR
 ]]></Declaration>

@@ -3,15 +3,65 @@
   <Itf Name="I_MotionAxisCommon" Id="{b1c1cc99-bbd0-4f8d-9a2d-7461fbc3f3dd}">
     <Declaration><![CDATA[INTERFACE I_MotionAxisCommon
 ]]></Declaration>
-    <Property Name="AxisParameterSetExposed" Id="{49461c06-4787-4573-b278-a76c32762996}">
-      <Declaration><![CDATA[PROPERTY AxisParameterSetExposed : ST_AxisParameterSetExposed]]></Declaration>
-      <Get Name="Get" Id="{7b1db0b1-2b4d-4d9b-a7d0-a672ad23bd38}">
+    <Property Name="ActDiff" Id="{a128a60a-a920-4188-bb45-6526859d9a05}">
+      <Declaration><![CDATA[PROPERTY ActDiff : LREAL]]></Declaration>
+      <Get Name="Get" Id="{481352c9-4754-426e-8000-92e485830e8d}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{be607496-d3bc-4e31-b2f0-ce53e8e9d0ab}">
+    </Property>
+    <Property Name="ActPosition" Id="{8fb93858-86bd-4516-a1a0-32d720064e8c}">
+      <Declaration><![CDATA[PROPERTY ActPosition : LREAL]]></Declaration>
+      <Get Name="Get" Id="{d8b72a2d-531e-4c85-bd73-25c5ef46c4cb}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="ActVelo" Id="{97eb4ec7-ad5b-4fe9-9e4f-36852e2cfe75}">
+      <Declaration><![CDATA[PROPERTY ActVelo : LREAL]]></Declaration>
+      <Get Name="Get" Id="{981ac5a7-2c38-4a20-a326-5ef0e988cb37}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="AxisError" Id="{aa72e4ab-33e1-452e-8aa6-ece8e77870cd}">
+      <Declaration><![CDATA[PROPERTY AxisError : BOOL]]></Declaration>
+      <Get Name="Get" Id="{d3f4b725-509a-420e-a116-0a0dbee3ca43}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="AxisID" Id="{fe6a651b-8884-4740-8320-0264b621fdf9}">
+      <Declaration><![CDATA[PROPERTY AxisID : UDINT]]></Declaration>
+      <Get Name="Get" Id="{5d190da5-69eb-4237-b921-3ee1856e3f6e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{9d824aa8-12fe-432f-a0ef-13c71c6b1789}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
+    <Property Name="AxisParameterSetExposed" Id="{ce2710af-5680-4946-8dfc-7d33d1c37e2a}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY AxisParameterSetExposed : ST_AxisParameterSetExposed
+]]></Declaration>
+      <Get Name="Get" Id="{77d05b30-3af8-446d-8a8d-9a74479d642d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{d698f196-7934-4bf7-a17a-e4bcdc4f7c8c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="AxisState" Id="{fbced42b-bd0e-4f8b-9d53-090d7101c00b}">
+      <Declaration><![CDATA[PROPERTY AxisState : MC_AxisStates]]></Declaration>
+      <Get Name="Get" Id="{3f69a59a-8937-4e06-aeb3-542997f1671d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{0676ab1a-a7f3-422b-8c06-4e9e6820d1c6}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Method Name="AxisStatus" Id="{46721600-d31e-4bfb-a590-fc0959f1e13b}">
+      <Declaration><![CDATA[METHOD AxisStatus
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
     <Method Name="CalibrateRawEncValue" Id="{5e4dcc38-c938-47b5-ae51-9cd2d1e361c6}">
       <Declaration><![CDATA[METHOD CalibrateRawEncValue
 VAR_INPUT
@@ -45,24 +95,40 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="GetDriveAndEpicsItfRefs" Id="{86758b31-8284-4d4d-a286-01f9545e22ee}">
-      <Declaration><![CDATA[METHOD GetDriveAndEpicsItfRefs
-VAR_INPUT
-    stMotionDriveRef : REFERENCE TO ST_MotionDrive;
-    stMotionEpicsInterfaceRef : REFERENCE TO ST_MotionEpicsInterface;
-END_VAR
-]]></Declaration>
-    </Method>
+    <Property Name="InTargetPosition" Id="{79a34037-a39e-4bee-ab9e-d3c72c400a3c}">
+      <Declaration><![CDATA[PROPERTY InTargetPosition : BOOL]]></Declaration>
+      <Get Name="Get" Id="{c1b81aa3-9460-4489-85a7-c42e28336f83}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{dafeec54-828a-4ebd-972b-b9fbe4a00549}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="MotionDriveRef" Id="{f9c8b47c-23f3-4da1-9b1b-f7d583657704}">
+      <Declaration><![CDATA[PROPERTY MotionDriveRef : REFERENCE TO ST_MotionDrive]]></Declaration>
+      <Get Name="Get" Id="{54cfcebb-f10f-448a-9bf3-82b3cfd48d2e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{c36e46d8-cf3b-43e2-91a3-2fdb02e71471}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="MotionEpicsInterfaceRef" Id="{5ba0503d-d008-4363-a163-22710b0b74fc}">
+      <Declaration><![CDATA[PROPERTY MotionEpicsInterfaceRef : REFERENCE TO ST_MotionEpicsItf]]></Declaration>
+      <Get Name="Get" Id="{a70c109e-7d5b-4baf-9da9-0b4e22e3c26c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{878c7094-7544-4805-8213-5ae5fcb971fb}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Method Name="NCParams" Id="{6569264a-cd22-4ab9-b718-09a979850303}">
       <Declaration><![CDATA[METHOD NCParams : BOOL;
-VAR_INPUT
-    bEnable: BOOL;
-    tRefreshDelay: TIME;
-END_VAR
+
 ]]></Declaration>
     </Method>
-    <Property Name="NCParamsReadDone" Id="{f843168c-ca4c-4733-b6db-f83934f20ac1}">
-      <Declaration><![CDATA[PROPERTY NCParamsReadDone : BOOL]]></Declaration>
+    <Property Name="NCParamsReadInit" Id="{f843168c-ca4c-4733-b6db-f83934f20ac1}">
+      <Declaration><![CDATA[PROPERTY NCParamsReadInit : BOOL]]></Declaration>
       <Get Name="Get" Id="{9c60541a-3e75-4e37-92d5-dc139cd07934}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
@@ -70,5 +136,29 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
+    <Property Name="RefreshDelay" Id="{9a60c61b-0084-4420-be8f-035904aea924}">
+      <Declaration><![CDATA[PROPERTY RefreshDelay : TIME]]></Declaration>
+      <Get Name="Get" Id="{f1806e9b-0dce-4abd-af1d-83272cb8df1e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{24faa0ad-b9ca-4984-a659-ab17c9d097d8}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="Reset" Id="{91fe319e-f002-46c7-9e51-87879b0a2c30}">
+      <Declaration><![CDATA[PROPERTY Reset : BOOL]]></Declaration>
+      <Get Name="Get" Id="{df5ec626-4c45-41db-997c-164fb1fbb5ca}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{d728312e-cf7b-4459-9f31-bc3b2442261a}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Method Name="Resetting" Id="{1bc48cb6-eeee-4219-9602-a8c2a2dcdd0f}">
+      <Declaration><![CDATA[METHOD Resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
   </Itf>
 </TcPlcObject>

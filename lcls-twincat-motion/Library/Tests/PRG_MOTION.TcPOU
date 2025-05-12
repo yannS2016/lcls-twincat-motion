@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="PRG_MOTION" Id="{45826466-de58-43c5-9772-e5796d97b7c8}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_MOTION
+VAR
+// Declaration
+
+    aFbPersistentDataStorage:  ARRAY[0..nBundleStages.nModule] OF FB_PersistentDataStorage;
+    aIPersistentDataStorage:  ARRAY [0..nBundleStages.nModule] OF I_PersistentDataStorage := [aFbPersistentDataStorage[1]];
+
+    fbMotionLogger : FB_MotionLogger;
+    iMotionLogger: I_MotionLogger := fbMotionLogger;
+    // Persistant storage
+    fbPersistentDataStorage: FB_PersistentDataStorage;
+    iPersistentDataStorage:  I_PersistentDataStorage := fbPersistentDataStorage;
+    //Brakes
+    fbBrake : FB_Brake;
+    iBrake : I_Brake := fbBrake;
+
+    // Init with Properties
+    fbMotionInterlocks: FB_MotionInterlocks := ( PowerSelf := TRUE, EnableMode:=ENUM_StageEnableMode.ALWAYS);;
+    iMotionInterlocks: I_MotionInterlocks := fbMotionInterlocks;
+
+    // for DS402 drive
+    fbMotionAxisCommon : FB_MotionAxisNcCommon(AxisReference:=NcAxis_GVL.testAxis);
+    iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisCommon;
+
+    fbMotionAxisDS402NC : FB_MotionAxisDS402NC ( AxisReference:=NcAxis_GVL.testAxis ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE);
+    iMotionAxis: I_MotionAxis := fbMotionAxisDS402NC;
+
+    {attribute 'TcLinkTo' := '.stMotionEpicsItf.nRawEncoderDINT := TIID^Device 3 (EtherCAT)^Box 1 (MCS2)^Module 1 (MCS2M-D-3C)^mode/status/pos/fError TxPDO^Position Actual Value'}
+    fbMotionDrive: FB_MotionDrive ( iMotionAxis:=iMotionAxis,
+                                    iMotionAxisCommon:=iMotionAxisCommon,
+                                    iBrake:=iBrake,
+                                    iMotionInterlocks:=iMotionInterlocks,
+                                    iMotionLogger:=iMotionLogger,
+                                    iPersistentDataStorage :=iPersistentDataStorage ) := (Name := 'TST:MOTION');
+    iMotionDrive: I_MotionDrive := fbMotionDrive;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// iPersistentDataStorage[1].TriggerWriteOfPersistentData := FALSE;
+// iPersistentDataStorage[2].TriggerWriteOfPersistentData := FALSE;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

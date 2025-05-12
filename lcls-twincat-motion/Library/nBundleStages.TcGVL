@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <GVL Name="nBundleStages" Id="{0c986dc4-1677-483e-a0bf-f21be608e84f}" ParameterList="True">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+    nModule : SINT := 1;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

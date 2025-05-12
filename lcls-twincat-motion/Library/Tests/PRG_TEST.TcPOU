@@ -3,33 +3,50 @@
   <POU Name="PRG_TEST" Id="{4ab956a8-55df-43df-b997-1651a293eed5}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM PRG_TEST
 VAR
-    fb_AtPositionState_Test: FB_AtPositionState_Test;
-    fb_AxisParameterSetExposed_Test: FB_AxisParameterSetExposed_Test;
-    fb_MiscStatesErrorFFO_Test: FB_MiscStatesErrorFFO_Test;
-    fb_MotionBPTM_Test: FB_MotionBPTM_Test;
-    fb_MotionClearAsserts_Test: FB_MotionClearAsserts_Test;
-    fb_MotionReadPMPSDBND_Test: FB_MotionReadPMPSDBND_Test;
-    fbMotionVirtualFrameTest: FB_MotionVirtualFrame_Test;
-    fb_TestHelperSetAndMove_Test: FB_TestHelperSetAndMove_Test;
-    fb_PositionStateRead_Test: FB_PositionStateRead_Test;
-    fb_PositionStateReadND_Test: FB_PositionStateReadND_Test;
-    fb_PositionStateMove_Test: FB_PositionStateMove_Test;
-    fb_PositionStateMoveND_Test: FB_PositionStateMoveND_Test;
-    fb_PositionStateND_Test: FB_PositionStateND_Test;
-    fb_NCErrorFFO_Test: FB_NCErrorFFO_Test;
-    fb_StatePMPSEnables_Test: FB_StatePMPSEnables_Test;
-    fb_PerMotorFFOND_Test: FB_PerMotorFFOND_Test;
-    fb_StatePMPSEnablesND_Test: FB_StatePMPSEnablesND_Test;
-    fb_PositionStatePMPSND_Test: FB_PositionStatePMPSND_Test;
-    fb_StateSetupHelper_Test: FB_StateSetupHelper_Test;
-    fb_TestStateInitTiming: FB_TestStateInitTiming;
-    fb_PowerEnableMode_Test: FB_PowerEnableMode_Test;
-    fb_MotionBacklashCompensation_Test: FB_MotionBacklashCompensation_Test;
+    // Declaration
+    fbMotionLogger : FB_MotionLogger;
+    iMotionLogger: I_MotionLogger := fbMotionLogger;
+    // Persistant storage
+     fbPersistentDataStorage: FB_PersistentDataStorage;
+     iPersistentDataStorage:  I_PersistentDataStorage := fbPersistentDataStorage;
+     //Brakes
+     fbBrake : FB_Brake := (BrakeMode := E_StageBrakeMode.IF_MOVING);
+     iBrake : I_Brake := fbBrake;
+
+    {attribute 'TcLinkTo' := '.bLimitForwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 1;
+                              .bLimitBackwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 2' }
+     fbMotionInterlocks: FB_MotionInterlocks := ( PowerSelf := TRUE, EnableMode:=ENUM_StageEnableMode.DURING_MOTION, HardwareEnable:=TRUE);;
+     iMotionInterlocks: I_MotionInterlocks := fbMotionInterlocks;
+
+    // for DS402 drive
+    {attribute 'TcLinkTo' := '.nRawEncoderUINT := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 2 (EL5101)^ENC Status compact^Counter value'}
+     fbMotionAxisCommon : FB_MotionAxisNcCommon(AxisReference:=NcAxis_GVL.testAxis);
+     iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisCommon;
+//
+
+     fbMotionAxisDS402NC : FB_MotionAxisDS402NC ( AxisReference:=NcAxis_GVL.testAxis ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE, Name:= 'Module1');
+     iMotionAxis: I_MotionAxis := fbMotionAxisDS402NC;
+//
+    fbMotionDrive: FB_MotionDrive ( iMotionAxis:=iMotionAxis,
+                                    iMotionAxisCommon:=iMotionAxisCommon,
+                                    iBrake:=iBrake,
+                                    iMotionInterlocks:=iMotionInterlocks,
+                                    iMotionLogger:=iMotionLogger,
+                                    iPersistentDataStorage :=iPersistentDataStorage ) := (Name := 'MCS2');
+    iMotionDrive: I_MotionDrive := fbMotionDrive;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[
-TcUnit.RUN();
+      <ST><![CDATA[fbMotionLogger();
+fbMotionInterlocks();
+
+fbMotionAxisCommon();
+fbMotionAxisDS402NC();
+fbBrake();
+fbPersistentDataStorage();
+fbMotionDrive();
+
+
 ]]></ST>
     </Implementation>
   </POU>

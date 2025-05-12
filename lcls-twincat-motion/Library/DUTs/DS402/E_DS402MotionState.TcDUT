@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="E_DS402MotionState" Id="{c62d474f-9328-4cf8-a11d-ca4c197acefc}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_DS402MotionState :
+(
+    INIT_DRIVE_PARAMS:=0,
+    START_MOVE:=10,
+    MOVE_IN_PROGESS:=20,
+    TARGET_REACHED:=30,
+    MOVE_INTERRUPTED:=40,
+    MOVE_ABORTED:=50,
+    MOVE_DONE:=60,
+    DRIVE_IDLING:=70,
+    MOVE_ERROR:=-99
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

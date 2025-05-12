@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="DS402Device" Id="{1a6efddf-f3ba-4626-8375-287da74845d1}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE DS402Device :
+(
+    SM_MCS2 := 0,
+    PI_E727 := 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_Brake" Id="{35002c1d-e5f8-4ba8-b8af-8bec869e389f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Brake IMPLEMENTS I_Brake
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    nBrakeMode :E_StageBrakeMode := E_StageBrakeMode.NO_BRAKE;
+    bBrakeRelease :BOOL := FALSE;
+    eMotionState : MC_AxisStates;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Handle the brake. TRUE means brake disabled/released
+IF nBrakeMode <> E_StageBrakeMode.NO_BRAKE THEN
+    CASE eMotionState OF
+        MC_AXISSTATE_UNDEFINED,
+        MC_AXISSTATE_DISABLED,
+        MC_AXISSTATE_ERRORSTOP:
+            bBrakeRelease := FALSE;
+        MC_AXISSTATE_STANDSTILL:
+            IF nBrakeMode = E_StageBrakeMode.IF_MOVING THEN
+                bBrakeRelease := FALSE;
+            ELSE
+                bBrakeRelease := TRUE;
+            END_IF
+        ELSE
+            bBrakeRelease := TRUE;
+    END_CASE
+END_IF]]></ST>
+    </Implementation>
+    <Property Name="BrakeMode" Id="{120a74b0-456f-4c96-8249-5d148ac1a0a2}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY BrakeMode : E_StageBrakeMode
+]]></Declaration>
+      <Get Name="Get" Id="{d3d59a8f-8a2b-4b4b-87e9-ff833f07f869}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e2436819-7438-4e6d-91dd-a57a2f713338}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="BrakeRelease" Id="{731d6d5e-ba4c-424c-a478-2f73930b1757}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY BrakeRelease : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{91cb7596-c7da-445f-8229-cf6af5009fe2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{cbce4ef9-323c-44ae-a566-8cfd01f00eea}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="MotionState" Id="{8536b6f3-0115-4fd1-af52-a18435a7da80}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY MotionState : MC_AxisStates
+]]></Declaration>
+      <Get Name="Get" Id="{97b5d752-658d-488d-ad9d-f7218fed114e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MotionState := eMotionState;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{86dd505d-7991-40b0-82bd-91c6f67c709c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[eMotionState := MotionState;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+  </POU>
+</TcPlcObject>
