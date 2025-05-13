@@ -2,17 +2,8 @@
 <TcPlcObject Version="1.1.0.1">
   <Itf Name="I_MotionDrive" Id="{4f84f724-7938-4847-ac53-18866323f75e}">
     <Declaration><![CDATA[INTERFACE I_MotionDrive]]></Declaration>
-    <Property Name="Busy" Id="{d927182d-eff1-4072-9dbb-b154fb0b0384}">
-      <Declaration><![CDATA[PROPERTY Busy : BOOL]]></Declaration>
-      <Get Name="Get" Id="{5caf1a60-abb0-4745-b78d-031d87326f3a}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{6babf4a2-d1a1-4509-8880-abc134803329}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
     <Property Name="CustomErrorMessage" Id="{1f202727-1b36-4e25-b74c-103d33b9d571}">
-      <Declaration><![CDATA[PROPERTY CustomErrorMessage : T_MAXSTRING]]></Declaration>
+      <Declaration><![CDATA[PROPERTY CustomErrorMessage : STRING]]></Declaration>
       <Get Name="Get" Id="{f8e06972-f73d-4bc3-9676-e2259d72e3ee}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
@@ -35,18 +26,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="EncRestore" Id="{2381ad33-db9f-4502-8f18-42d9f37ce4d4}">
-      <Declaration><![CDATA[METHOD EncRestore
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="EncSave" Id="{10587d60-0d31-4f6e-bd02-f4dc5980cb00}">
-      <Declaration><![CDATA[METHOD EncSave
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="Error" Id="{28692bda-2e15-49a9-ae9c-44ee2c225402}">
       <Declaration><![CDATA[PROPERTY Error : BOOL]]></Declaration>
       <Get Name="Get" Id="{e7c06eb5-1986-4004-bdcb-ca18cd302e3f}">
@@ -56,8 +35,8 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="ErrorCode" Id="{415dcb0a-1a80-4f20-a5f6-d07b913efdcb}">
-      <Declaration><![CDATA[PROPERTY ErrorCode : UDINT]]></Declaration>
+    <Property Name="ErrorID" Id="{415dcb0a-1a80-4f20-a5f6-d07b913efdcb}">
+      <Declaration><![CDATA[PROPERTY ErrorID : UDINT]]></Declaration>
       <Get Name="Get" Id="{2080dd72-b57e-4aae-b589-16fc55f2d7f8}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
@@ -65,59 +44,8 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="GetInterlocksRef" Id="{3cfdd636-3485-4b90-82df-1f6314019050}">
-      <Declaration><![CDATA[METHOD GetInterlocksRef
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="GetLoggerRef" Id="{f7a7f054-d0c4-4c97-8fd2-100c34cb6c54}">
-      <Declaration><![CDATA[
-METHOD GetLoggerRef : REFERENCE TO AXIS_REF
-]]></Declaration>
-    </Method>
-    <Method Name="GetPersistantStorageRef" Id="{7e64d835-954c-4a5e-989c-ebb2ac7815a4}">
-      <Declaration><![CDATA[METHOD GetPersistantStorageRef
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Method Name="HandleInterFBCom" Id="{9db29681-ab2b-481a-8dad-3e40513073e7}">
       <Declaration><![CDATA[METHOD HandleInterFBCom
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="HomeCmd" Id="{9fdc0c70-7fd4-4e1d-973a-5fd32a2ffa74}">
-      <Declaration><![CDATA[METHOD HomeCmd
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="MoveAbsolute" Id="{1eeced1d-efd0-4ca8-90ed-573a0f3007ea}">
-      <Declaration><![CDATA[
-METHOD MoveAbsolute
-VAR_INPUT
-    Position : LREAL; 
-    Velocity : LREAL; 
-    Acceleration : LREAL := 0.0; 
-    Deceleration : LREAL := 0.0; 
-    Jerk : LREAL := 0.0;
-    BufferMode : MC_BufferMode := MC_BufferMode.MC_Aborting;
-END_VAR
-VAR_OUTPUT
-    Done : BOOL;
-    Busy : BOOL;
-    Active : BOOL;
-    CommandAborted : BOOL;
-    Error : BOOL;
-    ErrorID : UDINT;
-    ErrorStr : T_MaxString;
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="MoveCmd" Id="{34c1c090-b9ee-44c1-a1e3-f9de462d94e8}">
-      <Declaration><![CDATA[METHOD MoveCmd
 VAR_INPUT
 END_VAR
 ]]></Declaration>
@@ -131,18 +59,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="NCParamsExposed" Id="{abf9dd67-1532-4b48-ba74-a21084aac3ca}">
-      <Declaration><![CDATA[METHOD NCParamsExposed
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="NCStatusExposed" Id="{0fbeb893-2508-4c58-8356-be243474fc34}">
-      <Declaration><![CDATA[METHOD NCStatusExposed
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="NegGoal" Id="{8ca9aaff-70e5-4a7d-a380-f334afbad2d7}">
       <Declaration><![CDATA[PROPERTY NegGoal : BOOL]]></Declaration>
       <Get Name="Get" Id="{dcb0f332-0cee-463b-a760-dfbb09a2481f}">
@@ -161,20 +77,8 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="PostMoveHandling" Id="{da3cb092-448a-4700-855b-582d56530d50}">
-      <Declaration><![CDATA[METHOD PostMoveHandling
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Method Name="ProcessMoveReq" Id="{16636825-34ac-44bb-b4de-2566f4d18b17}">
       <Declaration><![CDATA[METHOD ProcessMoveReq
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="Reset" Id="{a712c737-e7e9-419f-a703-1021b8659f40}">
-      <Declaration><![CDATA[METHOD Reset
 VAR_INPUT
 END_VAR
 ]]></Declaration>

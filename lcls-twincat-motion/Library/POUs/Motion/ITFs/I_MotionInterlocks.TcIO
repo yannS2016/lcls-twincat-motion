@@ -3,21 +3,6 @@
   <Itf Name="I_MotionInterlocks" Id="{7ac89254-d732-4980-b014-871a72f21fa7}">
     <Declaration><![CDATA[INTERFACE I_MotionInterlocks
 ]]></Declaration>
-    <Property Name="Aborted" Id="{a44c7c56-9b32-4b57-bf3e-c3740083aca7}">
-      <Declaration><![CDATA[PROPERTY Aborted : BOOL]]></Declaration>
-      <Get Name="Get" Id="{a14c0481-dbdd-46c7-86f6-b7670502bb3b}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{685d6436-1745-415a-b637-fe2bc102e5d4}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Method Name="AllBackwardEnable" Id="{44573ae7-aabd-4633-985c-7c112cbdee92}">
-      <Declaration><![CDATA[METHOD AllBackwardEnable
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="AllBackwardEnabled" Id="{44fa7548-c01f-4da3-a333-2275934d3112}">
       <Declaration><![CDATA[PROPERTY AllBackwardEnabled : BOOL]]></Declaration>
       <Get Name="Get" Id="{8e243d13-164d-4d5d-8112-387f3a8b0fca}">
@@ -27,12 +12,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="AllEnable" Id="{1dde3686-aa77-40e4-b81f-aca29d2d2e08}">
-      <Declaration><![CDATA[METHOD AllEnable
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="AllEnabled" Id="{4d69c415-64ae-45e5-8741-9ee750fa41cf}">
       <Declaration><![CDATA[PROPERTY AllEnabled : BOOL]]></Declaration>
       <Get Name="Get" Id="{09b8b64d-72b0-467d-b693-fa3e229ceb18}">
@@ -42,12 +21,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="AllForwardEnable" Id="{7a02c267-cfbc-4b75-9c34-ab2f719bd7b8}">
-      <Declaration><![CDATA[METHOD AllForwardEnable
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="AllForwardEnabled" Id="{3ce5ac2e-1c09-4fd1-941c-2cbe06026596}">
       <Declaration><![CDATA[PROPERTY AllForwardEnabled : BOOL]]></Declaration>
       <Get Name="Get" Id="{8ac731aa-4431-4ad2-aad0-76448e67d881}">
@@ -72,6 +45,15 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Get>
       <Set Name="Set" Id="{9a4545ef-44b0-4a74-a1dd-80addb386452}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="CommandReset" Id="{2b172bef-4c6d-4101-98cd-66ec53623cad}">
+      <Declaration><![CDATA[PROPERTY CommandReset : BOOL]]></Declaration>
+      <Get Name="Get" Id="{37738759-2c52-4875-a019-e2e11bc53af5}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{2d1bf663-ca00-4ccd-b8e7-f23b19c37b45}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
@@ -102,48 +84,12 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="EpicsBusy" Id="{14c74e03-57ab-449b-b3e4-bef8f6040b78}">
-      <Declaration><![CDATA[PROPERTY EpicsBusy : BOOL]]></Declaration>
-      <Get Name="Get" Id="{687b496e-0c37-4dce-8f30-ab2d84fd3b32}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{2144df17-2627-40e4-b1a4-ba209de2f5f1}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="EpicsDone" Id="{9a132e44-2ecf-4770-91b2-6c6885033d02}">
-      <Declaration><![CDATA[PROPERTY EpicsDone : BOOL]]></Declaration>
-      <Get Name="Get" Id="{06baccba-d94d-49e2-a9ee-e01a784bed38}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{7e1f5617-e99d-4ea7-9968-1acda405bc6d}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
     <Property Name="EpicsEPSOk" Id="{2ab43de3-0abf-4f29-b1d9-776886efae5d}">
       <Declaration><![CDATA[PROPERTY EpicsEPSOk : BOOL]]></Declaration>
       <Get Name="Get" Id="{963baa30-2ed7-4807-8ba8-e09808456204}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
       <Set Name="Set" Id="{8bc5bd75-07a7-44de-ac8f-1ad8ff551029}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="EpicsError" Id="{6f5e8df3-6a99-431a-85cd-5900de0cb2ed}">
-      <Declaration><![CDATA[PROPERTY EpicsError : BOOL]]></Declaration>
-      <Get Name="Get" Id="{bc47c80a-e6c9-4f1d-a762-6ae7d1a932e9}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{457b72ab-c009-40bc-a96e-195ff378bbbf}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="EpicsErrorMsg" Id="{f879c2e5-500e-49b5-b6d7-b72ee610b675}">
-      <Declaration><![CDATA[PROPERTY EpicsErrorMsg : STRING]]></Declaration>
-      <Get Name="Get" Id="{7ad5bfb5-33da-4ce7-bba2-a670a50edb9a}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{1e29af87-c442-4df8-a027-40b979a10700}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
@@ -165,21 +111,12 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="EpicsWarnID" Id="{70fbcf2c-59a8-4377-9fa9-28588a66bd3b}">
-      <Declaration><![CDATA[PROPERTY EpicsWarnID : UINT;]]></Declaration>
-      <Get Name="Get" Id="{cb9201b8-7abd-4b11-87aa-716730155b0f}">
+    <Property Name="Error" Id="{6f5e8df3-6a99-431a-85cd-5900de0cb2ed}">
+      <Declaration><![CDATA[PROPERTY Error : BOOL]]></Declaration>
+      <Get Name="Get" Id="{bc47c80a-e6c9-4f1d-a762-6ae7d1a932e9}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{3c350488-f0ce-4cc0-b65b-ea3d25a882c3}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="EpicsWarnMsg" Id="{2c43032e-efdc-4767-93de-0540eda99177}">
-      <Declaration><![CDATA[PROPERTY EpicsWarnMsg : STRING]]></Declaration>
-      <Get Name="Get" Id="{73d8ac42-92e5-4038-b9e0-a2702c9d252d}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{aedbef02-5071-4f5f-bab8-9534a8398be8}">
+      <Set Name="Set" Id="{457b72ab-c009-40bc-a96e-195ff378bbbf}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
@@ -189,15 +126,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Get>
       <Set Name="Set" Id="{cfcb02c7-130a-461b-822a-63ddfe845983}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="ExternalItck" Id="{84b462fb-97b6-4df9-b44c-e4fc3600b4a1}">
-      <Declaration><![CDATA[PROPERTY ExternalItck : BOOL]]></Declaration>
-      <Get Name="Get" Id="{4c848c4c-616c-4dea-8b19-c0ad93f2399c}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{7e455863-b97d-4ef2-8c0a-175169e8ec44}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
@@ -228,15 +156,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="Halted" Id="{b5c5f208-105a-4c06-a07f-2dc87db7bc01}">
-      <Declaration><![CDATA[PROPERTY Halted : BOOL]]></Declaration>
-      <Get Name="Get" Id="{811a61f5-458b-4e50-be39-a191e7c46a03}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{cc53ee98-0425-4d96-aa56-5474ff46a730}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
     <Property Name="HardwareEnable" Id="{855c6e4b-bfed-49b3-bdec-eafa65093aa9}">
       <Declaration><![CDATA[PROPERTY HardwareEnable : BOOL]]></Declaration>
       <Get Name="Get" Id="{3bc8c738-8360-4ae7-9ad5-cf8bc24dacf1}">
@@ -255,21 +174,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="HomeDone" Id="{a4bdab16-7d67-4187-b4bf-6395ab612a55}">
-      <Declaration><![CDATA[PROPERTY HomeDone : BOOL]]></Declaration>
-      <Get Name="Get" Id="{3a07d3c2-1d55-4d5f-8cca-58728219ab55}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{2c54bd98-9c2a-49f2-a8e0-12af40dcf7ed}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Method Name="LimHit" Id="{e997d415-48cd-46dc-996d-e046b7cbb3b6}">
-      <Declaration><![CDATA[METHOD LimHit
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="LimitBackwardEnable" Id="{4f071531-664b-43fb-9b98-46ce706701d6}">
       <Declaration><![CDATA[PROPERTY LimitBackwardEnable : BOOL]]></Declaration>
       <Get Name="Get" Id="{9187b4a7-a42c-4364-a237-fe27d1b092b0}">
@@ -285,6 +189,15 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Get>
       <Set Name="Set" Id="{7ad36303-dc71-4d7a-b996-eaec00eed2df}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="LimitHit" Id="{00f31b83-20b0-4e18-bb57-b84a58adcd1b}">
+      <Declaration><![CDATA[PROPERTY LimitHit : BOOL]]></Declaration>
+      <Get Name="Get" Id="{dc48a399-6ef3-4f49-9589-4858181b8029}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{87a9c1c1-9cc9-4987-89cd-0e5e6deaef17}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
@@ -315,15 +228,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="MoveDone" Id="{5b365f3a-4153-4761-bcc6-2adc086f0c81}">
-      <Declaration><![CDATA[PROPERTY MoveDone : BOOL]]></Declaration>
-      <Get Name="Get" Id="{76ec2d98-c573-4a29-bfe3-a2bc7784e4cc}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{3ed431ad-156f-4443-a902-53265e550bfc}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
     <Property Name="NewMoveReq" Id="{482dbe2c-aada-46e4-a4b0-e1927f9c0bd2}">
       <Declaration><![CDATA[PROPERTY NewMoveReq : BOOL]]></Declaration>
       <Get Name="Get" Id="{4c5cc58e-3e8b-4496-a7da-4d638c7f0868}">
@@ -333,17 +237,6 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="PostMoveInterlocks" Id="{4bfc669c-9ddc-4cd2-bb12-00bbc56e11f3}">
-      <Declaration><![CDATA[METHOD PostMoveInterlocks
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="PowerInterlocks" Id="{8dbc3d10-4c01-4ca8-8d68-4593717e917f}">
-      <Declaration><![CDATA[METHOD PowerInterlocks
-
-]]></Declaration>
-    </Method>
     <Property Name="PowerSelf" Id="{af7539d4-48fa-4915-a716-1585614bb150}">
       <Declaration><![CDATA[PROPERTY PowerSelf : BOOL]]></Declaration>
       <Get Name="Get" Id="{832ea85a-44e1-43f2-84fb-a9a7ce8a9a54}">
@@ -353,27 +246,12 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Method Name="PreMoveInterlocks" Id="{5ef0cb46-d24c-4ebf-ad0d-e988b3ab7225}">
-      <Declaration><![CDATA[METHOD PreMoveInterlocks
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="PrepareDisable" Id="{06826ef8-4820-4e0e-99a8-95eabef50bc5}">
       <Declaration><![CDATA[PROPERTY PrepareDisable : BOOL]]></Declaration>
       <Get Name="Get" Id="{1218905d-5cb7-4bcc-84f4-3911642dcd18}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
       <Set Name="Set" Id="{9f5a2141-aab1-453f-b858-a3b60f5bcc24}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="Reset" Id="{2b172bef-4c6d-4101-98cd-66ec53623cad}">
-      <Declaration><![CDATA[PROPERTY Reset : BOOL]]></Declaration>
-      <Get Name="Get" Id="{37738759-2c52-4875-a019-e2e11bc53af5}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{2d1bf663-ca00-4ccd-b8e7-f23b19c37b45}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
@@ -386,12 +264,12 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="TargetReached" Id="{0c1b1ff8-b52d-4de2-8de8-3deb9a3507cc}">
-      <Declaration><![CDATA[PROPERTY TargetReached : BOOL]]></Declaration>
-      <Get Name="Get" Id="{98f90a67-37e6-4e77-a21c-af9414b5ba8c}">
+    <Property Name="SoftInterlock" Id="{84b462fb-97b6-4df9-b44c-e4fc3600b4a1}">
+      <Declaration><![CDATA[PROPERTY SoftInterlock : BOOL]]></Declaration>
+      <Get Name="Get" Id="{4c848c4c-616c-4dea-8b19-c0ad93f2399c}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{78966e01-f335-42ec-951b-db82ef72993c}">
+      <Set Name="Set" Id="{7e455863-b97d-4ef2-8c0a-175169e8ec44}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>

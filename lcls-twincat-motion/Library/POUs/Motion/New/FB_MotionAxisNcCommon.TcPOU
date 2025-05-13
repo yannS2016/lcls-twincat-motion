@@ -25,7 +25,7 @@ VAR
     bInTargetPosition	: BOOL;
     nErrorCode			: UDINT;
     nEncoderCount 		: UDINT;
-    sCustomMessage		: T_MAXSTRING;
+    sErrorMessage		: STRING;
 
     // Axis Status
     nAxisId : UDINT;
@@ -42,8 +42,33 @@ VAR
     // Raw encoder IO for INT (EL5072 LVDT)
     nRawEncoderDINT AT %I*: DINT;
     tRefreshTime : TIME := T#1S;
+	// save and Restore
+    // save and restore position value
+    //fbSetPos: MC_SetPosition;
+    tonSaveRestoreTimer: TON;
+    bInitRestore: BOOL;
+    bRestoreLoad: BOOL;
+    nRestoreLatchErrorID: UDINT;
+
+    //bPosGoal: BOOL;
+    //bNegGoal : BOOL;
+    nRestoreCurrTries: UINT := 0;
+    bRestoreWaitRetry: BOOL;
+        bRestoreDone : BOOL;
+        bRestoreError : BOOL;
+        bRestoreErrorID : UDINT;
+   tRefreshDelay   : TIME := T#1S;
+    nSavedholtime	: UDINT;
+	bEncError : BOOL;
 END_VAR
-]]></Declaration>
+
+
+
+
+VAR PERSISTENT
+    bSaved: BOOL;
+    fSavedPosition: LREAL;
+END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT __ISVALIDREF( AxisRef )THEN
     RETURN;
@@ -164,7 +189,9 @@ END_VAR
       <Declaration><![CDATA[METHOD AxisStatus
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[(*Axis id in motion "motor"*)
+        <ST><![CDATA[THIS^.AxisRef.ReadStatus();
+
+(*Axis id in motion "motor"*)
 nAxisId:=AxisRef.NcToPlc.AxisId;
 
 (*Actual Velocity*)
@@ -208,6 +235,19 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
+    <Method Name="EncErrorCheck" Id="{7c7bd705-a252-45ea-8394-e497101ce9be}">
+      <Declaration><![CDATA[METHOD EncErrorCheck : BOOL
+VAR_INPUT
+    EncError : BOOL;
+    EncErrorCode : UDINT;
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Maybe different for some DS402 NC based drives. if so adjust or derive.
+EncErrorCheck := EncError AND EncErrorCode >= 16#4400 AND EncErrorCode <= 16#44FF;]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="EncoderCount" Id="{5225d004-dac1-4dfa-90f6-2aa283ea59c1}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY EncoderCount : UDINT
@@ -229,6 +269,75 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Method Name="EncRestore" Id="{f9f7cdfc-d8df-423b-8c50-6f118d29a052}">
+      <Declaration><![CDATA[METHOD EncRestore
+VAR
+    tRetryDelay: TIME := T#1S;
+    nMaxRetries: UINT := 10;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT bRestoreDone THEN
+// Trigger a load if anything was saved at all
+    IF NOT bInitRestore THEN
+       bInitRestore := TRUE;
+       bRestoreLoad S= bSaved;
+        // this belongs to iMotionAxis.SetRestorePosition()
+        // fbSetPos.Options.ClearPositionLag := TRUE;
+    END_IF
+
+    // Set our position if bLoad is true
+    SetRestorePosition( bRestoreLoad, fSavedPosition );
+
+    // Only load once, at startup
+    bRestoreLoad R= bRestoreDone OR bRestoreError;
+
+    IF bRestoreError THEN
+        // Keep the error latched, it can disappear if Execute is set to FALSE
+        nRestoreLatchErrorID :=  nRestoreLatchErrorID;
+        nRestoreCurrTries := nRestoreCurrTries + 1;
+        IF nRestoreCurrTries >= nMaxRetries THEN
+            // Alert the user that something has gone wrong
+            Error := TRUE;
+            ErrorID := nRestoreLatchErrorID;
+            sErrorMessage := 'Error loading previously saved position.';
+        ELSE
+            // Reset the FB for the next retry
+             SetRestorePosition( bRestoreLoad, fSavedPosition );
+            // Try again
+            bRestoreWaitRetry := TRUE;
+        END_IF
+    END_IF
+
+END_IF
+
+tonSaveRestoreTimer( IN := bRestoreWaitRetry, PT := tRetryDelay );
+bRestoreLoad S= tonSaveRestoreTimer.Q;
+bRestoreWaitRetry R= tonSaveRestoreTimer.Q;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="EncSave" Id="{3648ae53-29b9-44bf-a321-1effe30ac004}">
+      <Declaration><![CDATA[METHOD EncSave
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Check ST_MotionStage for an encoder error (range 0x44nn)
+bEncError:= AxisRef.Status.Error AND  ( AxisRef.Status.ErrorID  >= 16#4400  AND AxisRef.Status.ErrorID <= 16#44FF );
+
+// Do not save if we're currently loading or if there is an encoder error
+IF NOT bRestoreLoad AND NOT bEncError AND NOT bRestoreWaitRetry THEN
+    fSavedPosition := fActPosition;
+    // This persistent variable lets us check if anything was saved
+    // It will be TRUE at startup if we have saved values
+    bSaved := TRUE;
+    (*
+        use this with a timer of a change threshold on the fActPosition
+        to trigger a save from this PLC program. otherwise this will be a spamming
+        persistence, filling up the disk.
+    *)
+    // iPersistantDataStorage.TriggerWriteOfPersistentData := TRUE;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="Error" Id="{2819c2f0-b6fd-42b1-b42d-175038209c48}">
       <Declaration><![CDATA[PROPERTY Error : BOOL]]></Declaration>
       <Get Name="Get" Id="{c757a456-f781-4926-9229-39a5572ee16c}">
@@ -248,14 +357,14 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="ErrorCode" Id="{b7569608-1ea8-4914-a3b4-543b15f7c860}">
-      <Declaration><![CDATA[PROPERTY ErrorCode : UDINT]]></Declaration>
+    <Property Name="ErrorID" Id="{b7569608-1ea8-4914-a3b4-543b15f7c860}">
+      <Declaration><![CDATA[PROPERTY ErrorID : UDINT]]></Declaration>
       <Get Name="Get" Id="{37935438-07d0-4e35-a5a0-50e5e1f3d03b}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[ErrorCode := nErrorCode;]]></ST>
+          <ST><![CDATA[ErrorID := nErrorCode;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{53062068-e81d-4dce-b763-5cd409ed4079}">
@@ -263,7 +372,28 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[nErrorCode := ErrorCode;]]></ST>
+          <ST><![CDATA[nErrorCode := ErrorID;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="ErrorMessage" Id="{66fe07db-5064-463d-8bc4-a9cd6438f037}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ErrorMessage : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{9aa0784b-8730-40a7-875e-aca2a5851c4c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[ErrorMessage := sErrorMessage;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{fa4a63c8-60c9-4134-be20-b2c5d8ed32f1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -364,7 +494,7 @@ mcReadParams(
 
 IF mcReadParams.Error THEN
     Error := TRUE;
-    ErrorCode := mcReadParams.ErrorID;
+    ErrorID := mcReadParams.ErrorID;
     // Log this error
 END_IF
 
@@ -430,5 +560,218 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Method Name="Resetting" Id="{6a2ae321-d961-46f9-9ef7-70fbe99ba833}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD Resetting
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="RestoreDone" Id="{1c7ebab8-bf9d-41be-8ae1-4fa486ea2515}">
+      <Declaration><![CDATA[PROPERTY RestoreDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{8bb5e119-978e-4082-b448-c991ff07ea58}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{40b6bc4d-296e-4bdd-b462-9f6f5db1b340}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="RestoreError" Id="{c8bc283c-88b2-4008-a719-c60968bbb480}">
+      <Declaration><![CDATA[PROPERTY RestoreError : BOOL]]></Declaration>
+      <Get Name="Get" Id="{1b3bfbf0-a349-43d3-aecc-31567f65bb93}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e13bc731-d9cf-48ae-bf6d-bbd12c4fd2cd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="RestoreErrorID" Id="{c4c8ceda-d787-48c0-a1bc-b70a886d9e03}">
+      <Declaration><![CDATA[PROPERTY RestoreErrorID : UDINT]]></Declaration>
+      <Get Name="Get" Id="{f56d3cf0-c7fc-49f9-b8b1-9feae45afdc2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{ab87e66e-fd4c-4978-a7b5-8871adb99458}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="SetRestorePosition" Id="{5b2243b3-23ed-4fcf-99ed-9d376c12f085}">
+      <Declaration><![CDATA[METHOD SetRestorePosition : BOOL
+VAR_INPUT
+    Load : BOOL;
+    Position : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_MotionAxisNcCommon">
+      <LineId Id="3" Count="5" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.ActDiff.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.ActPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.ActVelo.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisError.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisID.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisParameterSetExposed.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisParameterSetExposed.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisState.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisState.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.AxisStatus">
+      <LineId Id="23" Count="1" />
+      <LineId Id="3" Count="19" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.CalibrateRawEncValue">
+      <LineId Id="3" Count="13" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.EncErrorCheck">
+      <LineId Id="1" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.EncoderCount.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.EncoderCount.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.EncRestore">
+      <LineId Id="1" Count="36" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.EncSave">
+      <LineId Id="1" Count="16" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.Error.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.Error.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.ErrorID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.ErrorID.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.ErrorMessage.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.ErrorMessage.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.InTargetPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.InTargetPosition.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.MotionDriveRef.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.MotionDriveRef.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.MotionEpicsInterfaceRef.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.MotionEpicsInterfaceRef.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.NCParams">
+      <LineId Id="3" Count="32" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.NCParamsReadInit.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.NCParamsReadInit.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RefreshDelay.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RefreshDelay.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.Resetting">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RestoreDone.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RestoreDone.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RestoreError.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RestoreError.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RestoreErrorID.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.RestoreErrorID.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNcCommon.SetRestorePosition">
+      <LineId Id="1" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

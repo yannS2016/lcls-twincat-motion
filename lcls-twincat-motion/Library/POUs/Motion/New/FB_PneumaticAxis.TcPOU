@@ -91,9 +91,9 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="ErrorCode" Id="{abc3ebdb-4ff8-465c-a362-883e97bbb5df}">
+    <Property Name="ErrorID" Id="{abc3ebdb-4ff8-465c-a362-883e97bbb5df}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY ErrorCode : BOOL
+PROPERTY ErrorID : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{54148e71-3368-4bd8-86d5-476ff522cb9c}">
         <Declaration><![CDATA[VAR
@@ -564,9 +564,9 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="Resetting" Id="{294f2062-ab27-4183-949a-b618b9d84b15}">
+    <Method Name="Reset" Id="{294f2062-ab27-4183-949a-b618b9d84b15}">
       <Declaration><![CDATA[{warning 'Add method implementation '}
-METHOD Resetting
+METHOD Reset
 VAR_OUTPUT
     Done	: BOOL;
     Busy	: BOOL;
@@ -651,5 +651,161 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_PneumaticAxis">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Busy.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Busy.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.CalibrateEncValue">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Done.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Done.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.EncSaveRestore">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Error.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Error.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.ErrorID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.ErrorID.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.GearIn">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.GearOut">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.GetAxisRef">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.GetPowerOverride">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Halt">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HaltBusy.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HaltDone.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HaltError.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HaltErrorID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Home">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HomeBusy.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HomeBusy.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HomeDone.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.HomeDone.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MeasuredAcceleration.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MeasuredPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MeasuredVelocity.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsolute">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteBusy.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteDone.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteError.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteErrorID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteTargetAcceleration.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteTargetDeceleration.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteTargetJerk.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteTargetPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.MoveAbsoluteTargetVelocity.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.NegativeMotionIsEnabled.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.PositiveMotionIsEnabled.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Power">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.PowerError.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.PowerErrorID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.PowerIsEnabled.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.PowerOverride.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.PowerStatus.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.Reset">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.SetpointAcceleration.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.SetpointJerk.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.SetpointPosition.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.SetpointVelocity.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PneumaticAxis.SetPowerOverride">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

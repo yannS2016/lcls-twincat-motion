@@ -51,6 +51,7 @@ STRUCT
     bReset: BOOL;
     // Used internally and by the IOC to start or stop a move
     bExecute: BOOL;
+	bHalt : BOOL;
     // Used by the IOC to disable an axis
     {attribute 'pytmc' := '
         pv: PLC:bUserEnable

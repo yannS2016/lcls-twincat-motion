@@ -86,12 +86,21 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="ErrorCode" Id="{8c3215af-3b04-4205-bb95-86608a3602d5}">
-      <Declaration><![CDATA[PROPERTY ErrorCode : UDINT]]></Declaration>
+    <Property Name="ErrorID" Id="{8c3215af-3b04-4205-bb95-86608a3602d5}">
+      <Declaration><![CDATA[PROPERTY ErrorID : UDINT]]></Declaration>
       <Get Name="Get" Id="{4af77a14-9b88-4349-ba02-ac3e863e4ff7}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
       <Set Name="Set" Id="{7b25f38d-6d51-4e83-a00f-8d4bc2aa761a}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="ErrorMessage" Id="{8215b914-909b-477a-a12f-27a57d46fb2d}">
+      <Declaration><![CDATA[PROPERTY ErrorMessage : STRING]]></Declaration>
+      <Get Name="Get" Id="{3c07d3f1-78a7-4c65-9430-4477c8fe4760}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{1f54cfc5-34c4-4c26-9be0-34367cea24bd}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
@@ -145,18 +154,44 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="Reset" Id="{91fe319e-f002-46c7-9e51-87879b0a2c30}">
-      <Declaration><![CDATA[PROPERTY Reset : BOOL]]></Declaration>
-      <Get Name="Get" Id="{df5ec626-4c45-41db-997c-164fb1fbb5ca}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{d728312e-cf7b-4459-9f31-bc3b2442261a}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
     <Method Name="Resetting" Id="{1bc48cb6-eeee-4219-9602-a8c2a2dcdd0f}">
       <Declaration><![CDATA[METHOD Resetting
 VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Property Name="RestoreDone" Id="{852d5da2-20f3-40a4-8ab0-8b0ebb2ca285}">
+      <Declaration><![CDATA[PROPERTY RestoreDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{4f3b62f8-9947-4e8d-a9cf-f23f4d32cb01}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{d594efd4-daa3-4927-90f3-f8362a2ba296}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="RestoreError" Id="{80815cd7-c76d-4675-bb97-e801d3dcea69}">
+      <Declaration><![CDATA[PROPERTY RestoreError : BOOL]]></Declaration>
+      <Get Name="Get" Id="{dbe76bd4-2085-47ed-82a9-7ce3e56236f5}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{0e499d56-3abe-43f3-82fb-dbd2603fd73a}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="RestoreErrorID" Id="{14478e39-3848-4591-86df-eb5530d2d0db}">
+      <Declaration><![CDATA[PROPERTY RestoreErrorID : UDINT]]></Declaration>
+      <Get Name="Get" Id="{369bf874-f43c-4d30-9d9f-b15735e7d325}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{d32d920d-034a-43d3-b2fd-4fae6e3bc0f3}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Method Name="SetRestorePosition" Id="{c6868058-68f0-4062-9a05-0c0f392d803c}">
+      <Declaration><![CDATA[METHOD SetRestorePosition : BOOL
+VAR_INPUT
+	Load : BOOL;
+	Position : LREAL;
 END_VAR
 ]]></Declaration>
     </Method>
