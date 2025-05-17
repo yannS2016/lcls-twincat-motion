@@ -335,7 +335,7 @@
     <Compile Include="POUs\Motion\New\FB_MotionLogger.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\New\FB_MotionAxisNcCommon.TcPOU">
+    <Compile Include="POUs\Motion\New\FB_MotionAxisCommon.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\New\FB_PersistentDataStorage.TcPOU">

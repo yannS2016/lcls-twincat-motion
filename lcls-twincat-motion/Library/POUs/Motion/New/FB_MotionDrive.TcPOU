@@ -9,11 +9,9 @@ VAR
     stMotionEpicsItf : ST_MotionEpicsItf;
 
     iMotionAxis : I_MotionAxis;
-    iMotionAxisCommon : I_MotionAxisCommon;
     iBrake :I_Brake;
     iMotionInterlocks: I_MotionInterlocks;
     iMotionLogger : I_MotionLogger;
-    iPersistentDataStorage : I_PersistentDataStorage;
 
     // Preperties
     sCustomErrorMessage : T_MAXSTRING;
@@ -54,25 +52,25 @@ iMotionInterlocks.SafetyReady S= iMotionInterlocks.PowerSelf;
 iMotionInterlocks.NewMoveReq := bNewMoveReq;
 iMotionInterlocks.EpicsEPSOk :=stMotionEpicsItf.stEPSBackwardEnable.bEPS_OK;;
 iMotionInterlocks.EpicsUserEn:= stMotionEpicsItf.bUserEnable;
-iMotionInterlocks.AxisError := iMotionAxisCommon.AxisError;
+iMotionInterlocks.AxisError := iMotionAxis.Error;
 
 // Get the Axis state machine current state for pre and post move interlocks
-iMotionInterlocks.MotionState := iMotionAxisCommon.AxisState;
+iMotionInterlocks.MotionState := iMotionAxis.AxisState;
 // catch Homing busy interlock
-iMotionInterlocks.HomeBusy := iMotionAxis.HomeBusy;
+iMotionInterlocks.HomeBusy := iMotionAxis.HomingBusy;
 // Brakes
-iBrake.MotionState := iMotionAxisCommon.AxisState;
+iBrake.MotionState := iMotionAxis.AxisState;
 
 //Power
 iMotionAxis.PowerEnable := iMotionInterlocks.AllEnabled;
 iMotionAxis.PowerEnablePositive := iMotionInterlocks.AllEnabled AND iMotionInterlocks.AllForwardEnabled;
 iMotionAxis.PowerEnableNegative := iMotionInterlocks.AllEnabled AND iMotionInterlocks.AllBackwardEnabled;
 // Halt
-iMotionAxis.CommandedHalt := THIS^.stMotionEpicsItf.bHalt;
+iMotionAxis.CmdHalt := THIS^.stMotionEpicsItf.bHalt;
 
 //////////////
 iMotionInterlocks.EpicsExec := stMotionEpicsItf.bExecute;
-iMotionInterlocks.MoveBusy :=iMotionAxis.MoveAbsoluteBusy OR iMotionAxis.HomeBusy;;
+iMotionInterlocks.MoveBusy :=iMotionAxis.Busy;
 
 // Drive state Machine here
  CASE eMoveState OF
@@ -90,26 +88,26 @@ iMotionInterlocks.MoveBusy :=iMotionAxis.MoveAbsoluteBusy OR iMotionAxis.HomeBus
 			stMotionEpicsItf.bDone R= FALSE;
             IF bExecMove THEN
                 iMotionAxis.MoveMode := E_MoveMode.DISCRETE;
-                iMotionAxis.CommandedMoveAbsolute := TRUE;
+                iMotionAxis.CmdMoveAbsolute := TRUE;
             ELSIF bExecHome THEN
 				// clear this inside the iMotionAxis home block
                 //iMotionAxis.HomeDone := FALSE;
-                iMotionAxis.CommandedMoveHome := TRUE;
+                iMotionAxis.CmdMoveHome := TRUE;
                 iMotionAxis.MoveMode := E_MoveMode.HOMING;
             END_IF
             bInit := TRUE;
         END_IF
         //
-        IF 	iMotionAxis.MoveAbsoluteBusy OR iMotionAxis.HomeBusy THEN
+        IF 	iMotionAxis.Busy THEN
                 eMoveState := E_MoveState.MOVE_IN_PROGRESS;
         END_IF
 
     E_MoveState.MOVE_IN_PROGRESS :;
-        IF 	iMotionAxis.MoveAbsoluteDone OR iMotionAxis.HomeDone THEN
+        IF 	iMotionAxis.Done THEN
             eMoveState := E_MoveState.TARGET_REACHED;
         ELSIF stMotionEpicsItf.bHalt OR NOT stMotionEpicsItf.bExecute THEN
             eMoveState := E_MoveState.MOVE_INTERRUPTED;
-        ELSIF iMotionAxis.Error OR iMotionAxisCommon.Error THEN
+        ELSIF iMotionAxis.Error  THEN
             eMoveState := E_MoveState.MOVE_ERROR;
         END_IF
     E_MoveState.TARGET_REACHED:;
@@ -131,10 +129,7 @@ IF iMotionAxis.Error THEN
 	// Higher Priority
 	stMotionEpicsItf.bError := iMotionAxis.Error;
 	stMotionEpicsItf.nErrorId := iMotionAxis.ErrorID;
-ELSIF iMotionAxisCommon.Error THEN
-	// Lower Priority
-	stMotionEpicsItf.bError := iMotionAxisCommon.Error;
-	stMotionEpicsItf.nErrorId := iMotionAxisCommon.ErrorID;
+
 END_IF
 
 IF NOT stMotionEpicsItf.bError AND stMotionEpicsItf.bExecute AND NOT stMotionEpicsItf.bUserEnable THEN
@@ -169,8 +164,8 @@ END_IF
 //////////////////////////////////////////////
 ftStopExec(CLK:=stMotionEpicsItf.bExecute);
 rtStopExec(CLK:=iMotionAxis.HaltDone);
-rtTarget(CLK:=(iMotionAxisCommon.InTargetPosition AND iMotionAxis.MoveAbsoluteDone AND bExecMove));
-rtHomed(CLK:=iMotionAxis.HomeDone AND bExecHome);
+rtTarget(CLK:=(iMotionAxis.Done AND bExecMove));
+rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
 IF rtStopExec.Q OR ftStopExec.Q OR rtTarget.Q OR rtHomed.Q THEN
     IF iMotionAxis.Error THEN
 		iMotionInterlocks.Execute := FALSE;
@@ -199,18 +194,18 @@ IF rtReset.Q THEN
 	stMotionEpicsItf.sErrorMessage := '';
 	// Propagate Reset event
 	iMotionInterlocks.CommandReset := stMotionEpicsItf.bReset;
-	iMotionAxis.CommandReset := stMotionEpicsItf.bReset;
+	iMotionAxis.CmdReset := stMotionEpicsItf.bReset;
 	//iMotionAxisCommon.Reset := stMotionEpicsItf.bReset;
 	stMotionEpicsItf.bReset := FALSE;
 END_IF
 ///////////////////////////////////////////////////////////////////////////////////////
 // Expose axis parameters to the EPICS layer.
 ///////////////////////////////////////////////////////////////////////////////////////
-stMotionEpicsItf.stAxisParametersExposed := iMotionAxisCommon.AxisParameterSetExposed;
+stMotionEpicsItf.stAxisParametersExposed := iMotionAxis.AxisParameterSetExposed;
 //////////////////////////////////////////////////////////////////
 // Transfer NC parameter status to EPICS
 //////////////////////////////////////////////////////////////////
-stMotionEpicsItf.nEncoderCount := iMotionAxisCommon.EncoderCount;
+stMotionEpicsItf.nEncoderCount := iMotionAxis.EncoderCount;
 stMotionEpicsItf.stAxisStatus.bEnable:=iMotionInterlocks.AllEnabled;
 stMotionEpicsItf.stAxisStatus.bEnabled:=iMotionInterlocks.EnableDone;
 stMotionEpicsItf.stAxisStatus.bExecute:=iMotionInterlocks.Execute;
@@ -219,12 +214,12 @@ stMotionEpicsItf.stAxisStatus.bHomeSensor:=iMotionInterlocks.LimitHome;
 stMotionEpicsItf.stAxisStatus.bEnabled:=iMotionInterlocks.EnableDone;
 stMotionEpicsItf.stAxisStatus.bLimitBwd:=iMotionInterlocks.AllBackwardEnabled;
 stMotionEpicsItf.stAxisStatus.bLimitFwd:=iMotionInterlocks.AllForwardEnabled;
-stMotionEpicsItf.stAxisStatus.fActDiff:=iMotionAxisCommon.ActDiff;
-stMotionEpicsItf.stAxisStatus.fActPosition:=iMotionAxisCommon.ActPosition;
-stMotionEpicsItf.stAxisStatus.fActVelocity:=iMotionAxisCommon.ActVelo;
+stMotionEpicsItf.stAxisStatus.fActDiff:=iMotionAxis.ActPositionDiff;
+stMotionEpicsItf.stAxisStatus.fActPosition:=iMotionAxis.ActPosition;
+stMotionEpicsItf.stAxisStatus.fActVelocity:=iMotionAxis.ActVelocity;
 stMotionEpicsItf.stAxisStatus.fOverride:=iMotionAxis.PowerOverride;
-stMotionEpicsItf.stAxisStatus.bBusy:=iMotionAxis.MoveAbsoluteBusy OR iMotionAxis.HomeBusy;
-stMotionEpicsItf.stAxisStatus.bHomed:=iMotionAxis.HomeDone;
+stMotionEpicsItf.stAxisStatus.bBusy:=iMotionAxis.Busy;
+stMotionEpicsItf.stAxisStatus.bHomed:=iMotionAxis.Done;
 //stMotionEpicsInterface.stAxisStatus.bJogBwd:=bJogBwd;
 //stMotionEpicsInterface.stAxisStatus.bJogFwd:=bJogFwd;
 stMotionEpicsItf.stAxisStatus.bReset:=stMotionEpicsItf.bReset;
@@ -347,19 +342,16 @@ VAR_INPUT
     bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
     //Declaration
     iMotionAxis: I_MotionAxis;
-    iMotionAxisCommon : I_MotionAxisCommon;
     iBrake : I_Brake;
     iMotionInterlocks : I_MotionInterlocks;
     iMotionLogger : I_MotionLogger;
-    iPersistentDataStorage: I_PersistentDataStorage;
+
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Body
 THIS^.iMotionAxis:=iMotionAxis;
 THIS^.iBrake:=iBrake;
 THIS^.iMotionInterlocks:=iMotionInterlocks;
-THIS^.iPersistentDataStorage:=iPersistentDataStorage;
-THIS^.iMotionAxisCommon := iMotionAxisCommon;
 
 
 ]]></ST>
@@ -452,7 +444,7 @@ IF rtMoveCmdShortcut.Q AND NOT stMotionEpicsItf.bExecute THEN
     stMotionEpicsItf.bExecute:=TRUE;
     stMotionEpicsItf.nCommand:=E_EpicsMotorCmd.MOVE_ABSOLUTE;
     // attempting to move an axis without homing first?
-    IF iMotionAxis.HomeMode <> E_EpicsHomeCmd.NONE AND NOT iMotionAxis.HomeDone THEN
+    IF iMotionAxis.HomeMode <> E_EpicsHomeCmd.NONE AND NOT iMotionAxis.Done THEN
         stMotionEpicsItf.sErrorMessage:='Axis homing mode set, but homing routine pending';
     END_IF
 
@@ -475,10 +467,10 @@ bNewMoveReq R= NOT stMotionEpicsItf.bExecute OR stMotionEpicsItf.bError;
 rtNewMoveReq(CLK:=bNewMoveReq);
 
 (*These are additional status for special uses*)
-bPosGoal  S= rtNewMoveReq.Q AND (iMotionAxisCommon.ActPosition < stMotionEpicsItf.fPosition) ;
-bNegGoal  S= rtNewMoveReq.Q AND (iMotionAxisCommon.ActPosition > stMotionEpicsItf.fPosition) ;
-bPosGoal  R= iMotionAxis.HomeBusy OR bNegGoal;
-bNegGoal  R= iMotionAxis.HomeBusy OR bPosGoal;
+bPosGoal  S= rtNewMoveReq.Q AND (iMotionAxis.ActPosition < stMotionEpicsItf.fPosition) ;
+bNegGoal  S= rtNewMoveReq.Q AND (iMotionAxis.ActPosition > stMotionEpicsItf.fPosition) ;
+bPosGoal  R= iMotionAxis.Busy OR bNegGoal;
+bNegGoal  R= iMotionAxis.Busy OR bPosGoal;
 
 // Transfer nCommand and nCmdData to local copies at rising edge of bExecute
 // (avoid issues if nCommand or nCmdData are changed during a command)
@@ -499,7 +491,8 @@ END_IF]]></ST>
       <LineId Id="357" Count="0" />
       <LineId Id="27" Count="27" />
       <LineId Id="65" Count="4" />
-      <LineId Id="141" Count="36" />
+      <LineId Id="141" Count="4" />
+      <LineId Id="149" Count="28" />
       <LineId Id="179" Count="1" />
       <LineId Id="195" Count="0" />
       <LineId Id="322" Count="0" />
@@ -555,7 +548,7 @@ END_IF]]></ST>
       <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionDrive.FB_init">
-      <LineId Id="3" Count="5" />
+      <LineId Id="3" Count="3" />
       <LineId Id="10" Count="0" />
       <LineId Id="9" Count="0" />
       <LineId Id="2" Count="0" />

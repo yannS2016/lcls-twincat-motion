@@ -20,19 +20,23 @@ VAR
 
     // for DS402 drive
     {attribute 'TcLinkTo' := '.nRawEncoderUINT := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 2 (EL5101)^ENC Status compact^Counter value'}
-     fbMotionAxisCommon : FB_MotionAxisNcCommon(AxisReference:=NcAxis_GVL.testAxis);
+     fbMotionAxisCommon : FB_MotionAxisCommon(AxisReference:=NcAxis_GVL.testAxis);
      iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisCommon;
 //
 
-     fbMotionAxisDS402NC : FB_MotionAxisDS402NC ( AxisReference:=NcAxis_GVL.testAxis ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE, Name:= 'Module1');
+     fbMotionAxisDS402NC : FB_MotionAxisDS402NC ( AxisRef:=NcAxis_GVL.testAxis, 
+												  iMotionAxisCommon:= iMotionAxisCommon,
+												  iPersistentDataStorage :=iPersistentDataStorage,
+												  iMotionLogger:=iMotionLogger,
+												 ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE, Name:= 'Module1');
+												 
      iMotionAxis: I_MotionAxis := fbMotionAxisDS402NC;
 //
     fbMotionDrive: FB_MotionDrive ( iMotionAxis:=iMotionAxis,
-                                    iMotionAxisCommon:=iMotionAxisCommon,
                                     iBrake:=iBrake,
                                     iMotionInterlocks:=iMotionInterlocks,
                                     iMotionLogger:=iMotionLogger,
-                                    iPersistentDataStorage :=iPersistentDataStorage ) := (Name := 'MCS2');
+                                    ) := (Name := 'MCS2');
     iMotionDrive: I_MotionDrive := fbMotionDrive;
 END_VAR
 ]]></Declaration>

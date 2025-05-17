@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <POU Name="FB_MotionAxisDS402NC" Id="{c65bcaa5-32c2-4ba1-a44e-f37d90d611d0}" SpecialFunc="None">
+  <POU Name="FB_MotionAxisDS402NC" Id="{801bbd21-2723-41eb-b52e-b30845953f1a}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionAxisDS402NC IMPLEMENTS I_MotionAxis
 VAR_INPUT
 END_VAR
@@ -10,180 +10,66 @@ VAR
     {attribute 'no_copy'}
     AxisRef : REFERENCE TO AXIS_REF;
     iMotionAxisCommon : I_MotionAxisCommon;
-    // NC Blocks
-    fbSetPos		:	MC_SetPosition;
-    fbReset: MC_Reset;
-    fbPower: MC_Power;
-    fbHalt: MC_Halt;
-    fbJog: MC_Jog;
-    fbMoveVelocity: MC_MoveVelocity;
-    fbMoveRelative: MC_MoveRelative;
-    fbMcMoveAbsolute: MC_MoveAbsolute;
-    fbMoveModulo: MC_MoveModulo;
-    //fbHomeVirtual:FB_MotionHoming;
-    fbGearInDyn: MC_GearInDyn;
-    fbGearOut: MC_GearOut;
+	iPersistentDataStorage : I_PersistentDataStorage;
+    iMotionLogger : I_MotionLogger;
 
-     bClearPositionLag : BOOL := TRUE;
-    fPowerOverride: LREAL := 100;
-    nCommandLocal: UINT;
-    nCmdDataLocal: UINT;
-    // create a property for some of these
-    bExecMove			: BOOL;
-    bExecHome			: BOOL;
-    bPosGoal			: BOOL;
-    bNegGoal			: BOOL;
-    bNewMoveReq			: BOOL;
-    bHomingBusy			: BOOL;
-    bHomingDone			: BOOL;
-    bPrepareDisable		: BOOL;
-    bMoveDone			: BOOL;
-    bMoveBusy			: BOOL;
-    bHalted				: BOOL;
-    bAborted			: BOOL;
-    bStopped			: BOOL;
-    bOperational		: BOOL;
-    bServoOffTrans		: BOOL;
-    bServoOnTrans 		: BOOL;
-    bServoOffMode		: BOOL ;
-    bServoOnMode		: BOOL;
-    bDiscreteInit		: BOOL;
-    bDiscreteMotionAct  : BOOL;
-    bServoOffparamsSet  : BOOL;
-    bServoOffparamsSetDone : BOOL;
-    bLimOverride				: BOOL;
-    bPositionHolding		: BOOL;
-    bError				: BOOL:=FALSE;
-    bErrorStop			: BOOL;
-    // use this for motion time axis states
-    bExecute			: BOOL;
+    stAxisParameterSetExposed : ST_AxisParameterSetExposed;
+
     // This prevent unexpected logical 1 on stMotionStage.bExecute
     nErrorId			: UDINT:=0;
-    sLocalErrorMessage	: STRING;
-    nPiezoErrorCode		: UDINT;
-    // Save abd restore encoder value
-    bInit				: BOOL;
-    bLoad				: BOOL;
-    bEncError			: BOOL;
-    bSaveDone			: BOOL;
-    bAbortDone			: BOOL;
-    // axis status -- emulating some NC axis
-    bClosedLoopMode		:	BOOL;
-    bPositiveDirection	:  	BOOL;
-    bNegativeDirection 	:  	BOOL;
-    bInTargetPosition 	:  	BOOL;
-    bReadErrDone			: 	BOOL;
-    bLogReady			: 	BOOL;
-    bFault				: 	BOOL;
-    bDiscreteMotion 	:  	BOOL;
-    bContinuousMotion 	:  	BOOL;
-    bSlowParamReadTimer	: 	BOOL := TRUE;
-	ftDone : F_TRIG;
-    rtHaltedDone	: R_TRIG;
-    rtTargetReached	: R_TRIG;
-    ftAbortDone: F_TRIG;
-    rtFault			: R_TRIG;
-    rtHomed			: R_TRIG;
-    rtMoveCmdShortcut	: R_TRIG;
-    rtHomeCmdShortcut	: R_TRIG;
-	rtAbsoluteModeDone		: R_TRIG;
-	rtNewMoveReq			: R_TRIG;
-    rtEnableMode		: R_TRIG;
-    rtUserExec			: R_TRIG;
-    rtModeChange			: R_TRIG;
-    rtTarget		: R_TRIG;
-    rtServoOnMode	: R_TRIG;
-    rtEnableDrive	: R_TRIG;
-    rtServoOnTrans	: R_TRIG;
-    rtNotClState 	: R_TRIG;
-    rtNotOlState 	: R_TRIG;
-    //rtNewMoveReq	: R_TRIG;
-    rtNewHoldTime	: R_TRIG;
-    ftServoOffTrans	: F_TRIG;
-    rtServoOffMode	: R_TRIG;
-    ftAmsNetId 		: F_TRIG;
-    ftExec			: F_TRIG;
-    ftErrorSdoRead	: F_TRIG;
-    ftEnableDrive	: F_TRIG;
-    ftForwardEnabled	: F_TRIG;
-    ftBackwardEnabled	: F_TRIG;
-    ftServo				: F_TRIG;
+    bHomingBusy			: BOOL;
+    bHomingDone			: BOOL;
+    fHomePosition : LREAL :=0.0;
+    bError				: BOOL;
+    sErrorMessage		: STRING;
 	
-    ftSdoStep		: 	F_TRIG;
-    ftSdoStepFreq	: 	F_TRIG;
-    ftSdoStepAmp	: 	F_TRIG;
-	sErrorMessage : STRING;
-    tonSyncHoming 		: TON;
-    tonHoldTime			: TON;
-    tonServoOffSync		: TON;
-    tonSlowParamReadTimer: TON;
-    // fast changing paramter timer -- wwe could have used PDO for this params
-    // but the Piezo ESC have fixed PDO list.
-    tonFastParamReadTimer: TON;
-    //bInitiated	: BOOL;
-    // Diagnotics data from the drive, mainly Error codes
- 
+    fSetPosition	: LREAL;
+    fSetVelocity	: LREAL;
+    fSetAcceleration	: LREAL := 0.0;
+    fSetDeceleration	: LREAL := 0.0;
+    fSetJerk	: LREAL := 0.0;
+    nHomingMode:ENUM_EpicsHomeCmd :=ENUM_EpicsHomeCmd.NONE;
+    eBufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
+	
+	// Piezo Motion Control
     tholtime		: TIME := T#10S;
     bBusy : BOOL;
-	ftStopExec : F_TRIG;
-// NC Exposed Parameters
-
-    fHomePosition : LREAL :=0.0;
-    nHomingMode:ENUM_EpicsHomeCmd :=ENUM_EpicsHomeCmd.NONE;
-
-
-    bCommandedMoveAbsolute : BOOL;
-    bMostRecentMoveAbsoluteDone : BOOL;
-
-    bCommandedReset : BOOL;
-    fbMcReset : MC_Reset;
-
-    fbMcPower : MC_Power;
-
-    bCommandedHalt : BOOL;
-    fbMcHalt : MC_Halt;
-    bMostRecentHaltDone : BOOL;
-
-    bCommandedStop : BOOL;
-    fbMcStop : MC_Stop;
-    bMostRecentStopDone : BOOL;
+	bDone: BOOL;
 	
-	bMoveAbsoluteBusy : BOOL;
-	bMoveAbsoluteDone : BOOL;
-	bMoveAbsoluteError : BOOL;
-	bCommandAborted : BOOL;
-	bActive : BOOL;
-	nMoveAbsoluteErrorID : UDINT;
-    fPosition	: LREAL;
-    fVelocity	: LREAL;
-    fAcceleration	: LREAL := 0.0;
-    fDeceleration	: LREAL := 0.0;
-    fJerk	: LREAL := 0.0;
-    eBufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
-	// Reset
-    bResetDone : BOOL;
-    bResetBusy: BOOL;
-    bResetError: BOOL;
-    bResetErrorID: UDINT;
-	// Power
-    bPowerEnable : BOOL;
-	bPowerEnablePositive : BOOL;
-    bPowerEnableNegative : BOOL;
-	bPowerIsEnabled : BOOL;
-	bPowerBusy : BOOL;
-	bPowerError : BOOL;
-	nPowerErrorID : UDINT;
-	// Halt
-	bHaltDone : BOOL;
-	bHaltError : BOOL;
-	nHaltErrorID : UDINT;
-	bHaltBusy : BOOL;
-	bReset : BOOL;
+	// intermediary motion signal: from EPICS interface
+    bCmdMoveAbsolute	: BOOL;
+    bCmdReset 			: BOOL;
+    bCmdHalt 			: BOOL;
+    bCmdStop 			: BOOL;
+	bCmdAbort 			: BOOL;
+	nCommandLocal 		: UINT;
+	nCmdDataLocal		: UINT;
+	
+	ftDone 				: F_TRIG;
+    rtHaltedDone		: R_TRIG;
+    rtTargetReached		: R_TRIG;
+    ftAbortDone			: F_TRIG;
+    rtFault				: R_TRIG;
+    rtHomed				: R_TRIG;
+    rtMoveCmdShortcut	: R_TRIG;
+    rtHomeCmdShortcut	: R_TRIG;
+	rtAbsoluteModeDone	: R_TRIG;
+    rtModeChange		: R_TRIG;
+    rtTarget			: R_TRIG;
+    rtServoOnMode		: R_TRIG;
+    rtEnableDrive		: R_TRIG;
+    rtServoOnTrans		: R_TRIG;
+    rtNewHoldTime		: R_TRIG;
+    ftServoOffTrans		: F_TRIG;
+    rtServoOffMode		: R_TRIG;
+    ftErrorSdoRead		: F_TRIG;
+    ftEnableDrive		: F_TRIG;
+    ftServo				: F_TRIG;
 END_VAR
 
-
-VAR CONSTANT
-
+VAR PERSISTENT
+    bSaved: BOOL;
+    fSavedPosition: LREAL;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -191,84 +77,16 @@ END_VAR
     RETURN;
 END_IF
 
-///////////////////////////////////////////////////////////////
-// Reset the Axis based on signaling event on CommandedReset
-//////////////////////////////////////////////////////////////
-THIS^.fbMcReset(
-    Axis := THIS^.AxisRef,
-    Execute := THIS^.bCommandedReset,
-    Done => bResetDone,
-    Busy => bResetBusy,
-    Error => bResetError,
-    ErrorID => bResetErrorID,
-);
-
-IF bResetDone THEN
-	THIS^.bCommandedReset := FALSE;	
-END_IF
-
-//////////////////////////////////////////////////////////////////
-// Power block depends on interlocks check in  iMotionInterlocks
-/////////////////////////////////////////////////////////////////
-THIS^.fbMcPower(
-    Axis := THIS^.AxisRef,
-    Enable := bPowerEnable,
-    Enable_Positive := bPowerEnablePositive,
-    Enable_Negative := bPowerEnableNegative,
-    Override := fPowerOverride,
-    BufferMode := eBufferMode,
-	(*Enabled*)
-    Status => bPowerIsEnabled,
-    Busy => bPowerBusy,
-    Error => bPowerError,
-    ErrorID => nPowerErrorID
-);
-////////////////////////////////////////////////////////////////////////////////////
-// Handling Absolute move request using signaling events
-// on CommandedMoveAbsolute and bPowerIsEnabled ( interlock dependent)
-// clear the done bit after previous move is completed by an error condition
-///////////////////////////////////////////////////////////////////////////////////
-
-IF AxisRef.Status.Error THEN
-	bMoveAbsoluteDone := FALSE;
-END_IF
-
-THIS^.fbMcMoveAbsolute(
-    Axis := THIS^.AxisRef,
-	// for DURING_MOTION mode, we need to wait for bPowerIsEnabled to be set
-    Execute := THIS^.bCommandedMoveAbsolute AND bPowerIsEnabled,
-    Position := fPosition,
-    Velocity := fVelocity,
-    Acceleration := fAcceleration,
-    Deceleration := fDeceleration,
-    Jerk := fJerk,
-    BufferMode := eBufferMode,
-    Done => ,
-    Busy => bMoveAbsoluteBusy,
-    Active => bActive,
-    CommandAborted => bCommandAborted,
-    Error => bMoveAbsoluteError,
-    ErrorID => nMoveAbsoluteErrorID
-);
-// A neg edge on bMoveAbsoluteBusy comfirm that the previous move is done
-// either because of an error, an abort or a target reached.
-// bMoveAbsoluteDone will reset next cycle if done condition was an error
-ftDone (CLK:=bMoveAbsoluteBusy);
-IF ftDone.Q THEN
-	bMoveAbsoluteDone := TRUE;
-END_IF
 /////////////////////////////////////////////////////////////////////////////
 // Execute DS402 Homing routine using signaling event on CommandedMoveHome
 ////////////////////////////////////////////////////////////////////////////
-THIS^.Home();
-
-]]></ST>
+THIS^.Home();]]></ST>
     </Implementation>
-    <Property Name="Active" Id="{f9292f43-b253-4816-89b5-1d9e221c781b}">
+    <Property Name="Active" Id="{dbdda3b0-891a-4c62-815d-074a68d10421}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY Active : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{9e2856ef-29be-4801-90bd-43f2da588fad}">
+      <Get Name="Get" Id="{034933d0-f9aa-4dd1-baf8-9af660cb4eba}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -277,60 +95,89 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="BufferMode" Id="{e34163e0-a36e-4a18-b906-7f406ea1500a}">
+    <Property Name="ActPosition" Id="{53e00a6e-9298-4101-b21d-e8c19754365c}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ActPosition : LREAL
+]]></Declaration>
+      <Get Name="Get" Id="{e417788f-b1f1-472e-9df0-17f2d9b88aaf}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="ActPositionDiff" Id="{d1f78522-93e4-4235-aae5-4cbb8bd3f785}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ActPositionDiff : LREAL
+]]></Declaration>
+      <Get Name="Get" Id="{09e96fb3-7cbc-4791-8160-4daceec25458}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="ActVelocity" Id="{db1d877f-9ba6-4f35-a4d7-b5d88180d4e8}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ActVelocity : LREAL
+]]></Declaration>
+      <Get Name="Get" Id="{1513f674-f5b5-4534-a2b3-dfed5379c09f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="AxisParameterSetExposed" Id="{8db71c4a-9e30-4aeb-bb2d-fe3d3640fff0}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY AxisParameterSetExposed : ST_AxisParameterSetExposed
+]]></Declaration>
+      <Get Name="Get" Id="{d8f17bcd-0c09-4532-8200-01bf3fe4c977}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="AxisState" Id="{b443362e-84a0-40d8-9c59-7620cdc5e24b}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY AxisState : MC_AxisStates
+]]></Declaration>
+      <Get Name="Get" Id="{5c88147e-0598-4e19-afe6-c79188ce0ec0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="BufferMode" Id="{1779e0a5-015f-4970-910f-d9d83ff1d082}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY BufferMode : MC_BufferMode
 ]]></Declaration>
-      <Set Name="Set" Id="{37613c93-8ee8-490e-a139-d8c834498120}">
+      <Set Name="Set" Id="{298a153d-ff33-4c53-b36d-35ceaa0ac865}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[eBufferMode := BufferMode;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="Busy" Id="{3b0a8700-f5de-4cc7-8f6c-38e9b00316b5}">
-      <Declaration><![CDATA[PROPERTY Busy : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{502cce42-5100-40d5-8423-29d77102bb7e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[Busy := bBusy;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="Cmd" Id="{0638b73e-e191-450a-af91-598e4ae8fdd7}">
-      <Declaration><![CDATA[PROPERTY Cmd : UINT
-]]></Declaration>
-      <Set Name="Set" Id="{93bb025e-d042-48f6-b85d-6b474fe082c8}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[nCommandLocal := Cmd;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdData" Id="{6a2a7540-2c57-48b2-b09c-48d4915b7ebc}">
-      <Declaration><![CDATA[PROPERTY CmdData : UINT
-]]></Declaration>
-      <Set Name="Set" Id="{f8a6ee18-7a88-4f6a-a5d1-0986be086c00}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[nCmdDataLocal := CmdData;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CommandAborted" Id="{1b0945b5-e963-460b-b08c-4bc2c3e55707}">
+    <Property Name="Busy" Id="{84566076-af9c-46f4-b899-764dbb133cd9}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CommandAborted : BOOL
+PROPERTY Busy : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{f3b4bd6b-8393-4bb7-82ef-81bbac0a7e6e}">
+      <Get Name="Get" Id="{1ec18b60-d32c-4287-8dc1-ac5860fd7924}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -338,41 +185,25 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{6f2e9012-27e4-485d-b960-b1d776bda83f}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
     </Property>
-    <Property Name="CommandedHalt" Id="{22c64db7-7d6f-4561-883e-0a852bebaa94}">
+    <Property Name="Cmd" Id="{f554850c-a776-440b-89b6-b360a1b022dd}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CommandedHalt : BOOL
+PROPERTY Cmd : UINT
 ]]></Declaration>
-      <Get Name="Get" Id="{76b0c26c-b513-4e65-bc75-f42a2e8e4515}">
+      <Set Name="Set" Id="{fe84b62d-b975-4a81-b134-25efa734e30e}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[CommandedHalt := bCommandedHalt;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{4b327828-d75b-4218-958a-2c275095cb08}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bCommandedHalt := CommandedHalt;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="CommandedMoveAbsolute" Id="{5a2c5423-4242-4ff7-ac3f-c6e4b5fcc9f8}">
+    <Property Name="CmdAbort" Id="{eef93f27-c0c9-46ac-a893-f81832c81b71}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CommandedMoveAbsolute : BOOL
+PROPERTY CmdAbort : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{2f2aeb2f-f512-49e3-bbf1-9712d95fb29a}">
+      <Get Name="Get" Id="{b5b62e84-fbea-4572-b59a-c3d498ce58b7}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -380,7 +211,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{179a68bc-4665-46a3-ae4a-a59345a7e9b3}">
+      <Set Name="Set" Id="{b086f0e8-dabd-48f6-a500-5d0fa6b3d46d}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -389,19 +220,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="CommandedMoveHome" Id="{cd0bf661-37e9-4af8-b052-9f14b04d61ba}">
+    <Property Name="CmdData" Id="{4c0ee888-0cee-44ab-8013-1a8ee4dcabc7}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CommandedMoveHome : BOOL
+PROPERTY CmdData : UINT
 ]]></Declaration>
-      <Get Name="Get" Id="{29f26455-2471-44e4-b830-d0f993e076e4}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{258e176b-9882-4f58-8f30-5085840555ee}">
+      <Set Name="Set" Id="{bd4644ff-da22-4da2-ab4c-8d2d9af7f632}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -410,11 +233,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="CommandReset" Id="{8df61c4d-1960-43cf-8503-3c2b512a839b}">
+    <Property Name="CmdHalt" Id="{4a38959f-9f84-4550-a37f-06ef67882b54}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CommandReset : BOOL
+PROPERTY CmdHalt : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{1fc4e9a9-ded4-4373-b596-a18a6c6710f5}">
+      <Get Name="Get" Id="{c8afcf10-6cc1-4a48-b00c-3859a50f5ef3}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -422,26 +245,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{111a59dc-baac-4153-a430-2c2a328c9af9}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="ControlWord" Id="{2e23514f-1ff8-4e7d-ba07-c83a3406e12d}">
-      <Declaration><![CDATA[PROPERTY ControlWord : UINT]]></Declaration>
-      <Get Name="Get" Id="{d1d98f73-4ffe-4c5e-ac5b-39dd2029d583}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{7fe4a318-1fd6-4879-9b09-7166eef3accc}">
+      <Set Name="Set" Id="{386299a0-8d67-49ae-8929-d437123ccf46}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -450,75 +254,143 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="Error" Id="{6591e605-cd47-41e1-b465-f220aaf35b56}">
-      <Declaration><![CDATA[PROPERTY Error : BOOL
+    <Property Name="CmdMoveAbsolute" Id="{66ae2ee2-0c01-40b6-9539-edb268b91e17}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CmdMoveAbsolute : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{83c61458-bc47-4a5e-a9b2-bc79b90aa45e}">
+      <Get Name="Get" Id="{4ba671fd-6e1b-47e6-968e-4f5f9eb74fa0}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[Error := bError;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-    </Property>
-    <Method Name="ErrorHandling" Id="{e3e9f4c3-bd6f-4479-80bb-9cc735eca053}">
-      <Declaration><![CDATA[METHOD ErrorHandling
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[(*Error from functions and Nc*)
-IF fbMcPower.Error AND fbMcPower.Active THEN
-    bError:=fbMcPower.Enable;
-    nErrorId:=fbMcPower.ErrorID;
-ELSIF fbMcHalt.Error AND fbMcHalt.Active THEN
-    bError:=fbMcHalt.Execute;
-    nErrorId:=fbMcHalt.ErrorID;
-ELSIF fbMcMoveAbsolute.Error AND nCommandLocal=3 (*fbMcMoveAbsolute.Active*) THEN
-    bError:=fbMcMoveAbsolute.Execute;
-    nErrorId:=fbMcMoveAbsolute.ErrorID;
-ELSIF HomeError AND nCommandLocal=10 (*fbMcHome.Active*) THEN
-    bError:=HomeError;
-    nErrorId:=HomeErrorID;
-
-ELSIF AxisRef.Status.Error  THEN
-    bError:=TRUE;
-    nErrorId:=AxisRef.Status.ErrorID;
-ELSIF HomeError THEN
-    bError:=TRUE;
-    nErrorId:=HomeErrorID;
-ELSE
-    bError:=FALSE;
-    nErrorId:=0;
-END_IF;
-]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="ErrorID" Id="{e4677a0d-4413-43f2-9c1c-22656f92edde}">
-      <Declaration><![CDATA[PROPERTY ErrorID : UDINT
-]]></Declaration>
-      <Get Name="Get" Id="{dd065214-6bd8-4f8e-aaae-f102862fe903}">
+      <Set Name="Set" Id="{508f3062-131c-43b8-b6c5-2f6c55a29a73}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[ErrorID := nErrorId;]]></ST>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="CmdMoveHome" Id="{8abbd5ea-3dc4-4d69-9e0c-38836283e746}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CmdMoveHome : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{416ce021-bf50-40d5-9e4c-4f6d024da3bd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{10a77ad4-7e59-42e4-ac07-baeea6a8f2ff}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="CmdReset" Id="{c16be852-adc6-456a-a49a-98c1b8a1f37a}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CmdReset : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{92c6b943-c2fa-4c9e-8c58-92122cc964cc}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{cd56bc88-77fb-4b54-8728-6bb9557a5260}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="Done" Id="{8351758b-6cfa-4b15-986c-cab50513fbbf}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Done : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{d85e4345-bb3b-48d0-b3ed-47f4d696bf7a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
     </Property>
-    <Property Name="ErrorMessage" Id="{25210ee7-785c-4324-9ef7-80ddc45c5ef8}">
+    <Property Name="EncoderCount" Id="{80cecb36-cb51-4595-a49d-be7d0f5ff1ab}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY EncoderCount : UINT
+]]></Declaration>
+      <Get Name="Get" Id="{6dc40e1c-acd5-4265-8cdd-2cf97a505266}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{09631e4e-2cae-42a4-a268-30a82cf2c6cd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="Error" Id="{8b00f2db-fadf-4210-a8aa-eb6a6cb672f9}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Error : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{18288df6-fdec-4f39-966b-60080b13ddb0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="ErrorID" Id="{037eae73-2cca-4051-b425-ef3a3c23ec5f}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ErrorID : UDINT
+]]></Declaration>
+      <Get Name="Get" Id="{a338b64b-662d-4f93-ae63-722a1df0ec32}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="ErrorMessage" Id="{0c8dd38e-99a8-48fc-a9fa-6c32b6240d89}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY ErrorMessage : STRING
 ]]></Declaration>
-      <Get Name="Get" Id="{dfd30ebe-7e0d-4f36-8053-48facf9ed134}">
+      <Get Name="Get" Id="{5dd3eac2-6990-4ce3-b3be-ef9265bf5d6b}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[ErrorMessage := sErrorMessage;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
     </Property>
-    <Method Name="FB_Init" Id="{3c6b89cf-6335-421f-bc49-43ad02ddd5d0}">
+    <Method Name="FB_Init" Id="{2f8eec8a-827c-4f4a-94c1-681acdd27250}">
       <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
 //The return value is not evaluated. For a specific influence, you can also declare the
 //methods explicitly and provide additional code there with the standard initialization
@@ -526,235 +398,54 @@ END_VAR
 METHOD FB_Init: BOOL
 VAR_INPUT
     bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
-    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
-    AxisReference : REFERENCE TO AXIS_REF;
-    //iMotionAxisCommon : I_MotionAxisCommon;
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)   
+    AxisRef : REFERENCE TO AXIS_REF;
+    iMotionAxisCommon : I_MotionAxisCommon;
+	iPersistentDataStorage : I_PersistentDataStorage;
+    iMotionLogger : I_MotionLogger;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[AxisRef REF= AxisReference;
-//iMotionAxisCommon := iMotionAxisCommon;]]></ST>
+        <ST><![CDATA[THIS^.AxisRef := AxisRef;
+THIS^.iMotionAxisCommon := iMotionAxisCommon;
+THIS^.iPersistentDataStorage := iPersistentDataStorage;
+THIS^.iMotionLogger := THIS^.iMotionLogger;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Halt" Id="{b6a8e12d-141b-4b04-b9a3-63a5a6a53059}">
-      <Declaration><![CDATA[METHOD Halt
-
-
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[THIS^.fbMcHalt(
-    Axis := THIS^.AxisRef,
-    Execute := THIS^.bCommandedHalt,
-    Deceleration := fDeceleration,
-    Jerk := fJerk,
-    BufferMode := eBufferMode,
-    Done => bHaltDone,
-    Busy => bHaltBusy,
-    CommandAborted => bCommandAborted,
-    Error => bHaltError,
-    ErrorID => nHaltErrorID
-);
-
-THIS^.bCommandedHalt := FALSE;
-]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="HaltBusy" Id="{6de0810c-191e-4226-bd42-c87c979bb175}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HaltBusy : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{d49b1f45-1fdf-4987-913a-622876a70ea8}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="HaltDone" Id="{a8f5b39a-39b9-4a5b-ad34-4985140fd6f3}">
+    <Property Name="HaltDone" Id="{fde5e42a-822a-4e41-9d45-79c3d316bdec}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY HaltDone : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{c7f2d09e-21b3-40ba-a673-33daea3f18eb}">
+      <Get Name="Get" Id="{8360176b-4dee-4e8e-bceb-05bae163384b}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[HaltDone := bHaltDone;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-    </Property>
-    <Property Name="HaltError" Id="{2768033b-365c-4b0f-930b-fb1bc259fcf2}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HaltError : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{4cba867e-6440-4471-83ba-4d04bff8bddf}">
+      <Set Name="Set" Id="{920caa67-8b1d-4a55-84f2-e88316755b41}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[HaltError := bHaltError;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
-      </Get>
+      </Set>
     </Property>
-    <Property Name="HaltErrorID" Id="{529176ba-5239-45de-acf8-647c49afbae5}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HaltErrorID : UDINT
-]]></Declaration>
-      <Get Name="Get" Id="{628ea864-33f6-43f6-8f24-83692e88db69}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[HaltErrorID := nHaltErrorID;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Method Name="Home" Id="{70bd90c9-eebc-4f8a-a8ba-43919335ed26}">
+    <Method Name="Home" Id="{1a1b8073-35aa-42b1-9c72-a7efebcdade2}">
       <Declaration><![CDATA[METHOD Home
+VAR_INPUT
+END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[//
-// tonSyncHoming(PT:=T#500MS);
-// (* IMPORTANT: Homing options and parameters must be configured either via the COE online tab or via the service tool *)
-// CASE eHomingState OF
-//     E_DS402Homing.INIT_HOMING :;
-// 		rtModeChange (CLK:=(THIS^.ModeOfOperationDisplay = E_DS402OpMode.HOMING));
-//         IF rtModeChange.Q THEN
-// 			tonSyncHoming.IN := TRUE;
-//             stPiezoStage.nPiezoDriveControl.4:=TRUE;
-//         END_IF
-// 		IF tonSyncHoming.Q THEN
-// 			eHomingState:=E_DS402Homing.HOMING_IN_PROGRESS;
-// 		END_IF
-//     E_DS402Homing.HOMING_IN_PROGRESS:
-//         IF NOT stPiezoStage.stPiezoDriveStatus.TargetReached
-//            AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-//                 HomingBusy:=TRUE;
-//                 HomeDone:=FALSE;
-//
-//         // Interrupted
-//         ELSIF Stopped AND stPiezoStage.bHalt THEN
-//             eHomingState:=E_DS402Homing.HOMING_INTERRUPTED;
-//
-// 		// Genral Motion error i.e Following error ?
-// 		ELSIF stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-// 			eHomingState:=E_DS402Homing.HOMING_ERROR;
-//
-//         // Reached
-//         ELSIF stPiezoStage.stPiezoDriveStatus.TargetReached
-//             AND stPiezoStage.stPiezoDriveStatus.Bit12_OpModeSpecific
-//             AND NOT stPiezoStage.stPiezoDriveStatus.Bit13_OpModeSpecific THEN
-//             eHomingState:=E_DS402Homing.HOMING_ATTAINED;
-//         END_IF
-//
-//
-//     E_DS402Homing.HOMING_INTERRUPTED :;
-//         HomingBusy:=FALSE;
-//         HomeDone:=FALSE;
-// 		Halted := TRUE;
-// 		McAxisState:= MC_AxisStates.MC_AXISSTATE_STOPPING;
-//
-//     E_DS402Homing.HOMING_ATTAINED:;
-//         HomingBusy:=FALSE;
-// 		tonSyncHoming.IN := FALSE;
-// 		tonHoldTime.IN := TRUE;
-// 		eHomingState:=E_DS402Homing.HOMING_DONE;
-//
-//     E_DS402Homing.HOMING_DONE:;
-// 		//prepare next move
-// 		IF NOT THIS^.PositionHolding THEN
-// 			HomeDone:=TRUE;
-// 			stPiezoStage.fPosition:=0.0;
-// 			fbSetPos.Position := stPiezoStage.fPosition;
-// 			fbSetPos.Execute := HomeDone;
-// 			IF fbSetPos.bError THEN
-// 				eHomingState:=E_DS402Homing.HOMING_ERROR;
-// 			ELSE
-// 				IF (fbSetPos.bDone) THEN
-// 					fbSetPos.Execute := FALSE;
-// 				END_IF
-// 			END_IF
-// 			PositionHolding := TRUE;
-// 			stPiezoStage.nPiezoDriveControl.4:=FALSE;
-// 		END_IF
-//
-//
-//     E_DS402Homing.HOMING_ERROR :;
-// 		Error:= TRUE;
-// 		HomeDone:=FALSE;
-// 		HomingBusy:= FALSE;
-// 		IF fbSetPos.nErrorId <> 0 THEN
-// 		// set an Error flag home, homing actually does sdo read on ErrorCode object
-// 			ErrorCode := fbSetPos.nErrorId;
-// 		ELSE
-// 			McAxisState:=MC_AxisStates.MC_AXISSTATE_ERRORSTOP;
-// 		END_IF
-//
-// END_CASE
-//
-// fbSetPos.Options.ClearPositionLag:= bClearPositionLag;
-// fbSetPos( Axis:= stPiezoStage.Axis  );
-]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="HomeBusy" Id="{73613f6b-5360-47c4-a9ca-b2b51b8e5224}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HomeBusy : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{21f2fba0-7289-43ea-9a84-75045f357048}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="HomeDone" Id="{3f03d77b-7aea-46cf-b024-61ea35080b25}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HomeDone : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{25d464c0-bb5a-4130-86d9-11dd9c72a9ce}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="HomeError" Id="{89d749f3-c20f-4098-9a59-f611ee216d97}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HomeError : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{da236e9c-ab3d-4509-a4a8-72c3222920e6}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="HomeErrorID" Id="{66a24b85-ad6e-4960-b49f-688ddf5e3b42}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HomeErrorID : UDINT
-]]></Declaration>
-      <Get Name="Get" Id="{47c9aa52-40c4-4ddb-b9e2-148d3f6516ec}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="HomeMode" Id="{44f56f3a-23e4-4423-816f-dad30e743a68}">
+    <Property Name="HomeMode" Id="{692a5a88-7991-4857-b5d1-e543e055ab6d}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY HomeMode : E_EpicsHomeCmd
 ]]></Declaration>
-      <Get Name="Get" Id="{9a35af34-0604-4257-82a5-a3c257399498}">
+      <Get Name="Get" Id="{bc0ee76c-5ed7-49e0-bdc1-6ff08e127700}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -762,7 +453,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{5fdff12e-357c-48b1-98ef-18311ae80cdd}">
+      <Set Name="Set" Id="{79b13ac3-26f2-4e15-82b3-8e0182e26f73}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -771,11 +462,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="HomePosition" Id="{fde9d940-34a1-4650-86e5-2ea352411543}">
+    <Property Name="HomePosition" Id="{3b84d300-da71-470c-a5eb-56ea4e36769c}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY HomePosition : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{be28f3ba-7f06-436b-81a2-3dfa793a33d5}">
+      <Get Name="Get" Id="{19ae9d50-744e-43e8-90e1-8192e0cd49fc}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -783,7 +474,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{60d707a8-67ba-4e6f-af64-cfa7515bb0e3}">
+      <Set Name="Set" Id="{731c0d6f-962f-49f1-852c-e5535ed12a6d}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -792,11 +483,40 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="MeasuredAcceleration" Id="{e265c786-9035-4ea9-82fe-efff9985ed1b}">
+    <Property Name="HomingBusy" Id="{6926970c-02c1-45b2-a2c5-f0be9f26e212}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY HomingBusy : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{04c4a441-3bf0-42de-8c77-753f31b9b153}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{f3e113cd-57d8-424c-b0b0-81dd6445d77d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="InterruptMove" Id="{60a4ad68-fe16-487b-8a81-61a4adc1c297}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD InterruptMove
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="MeasuredAcceleration" Id="{7bab305f-c400-45c6-8cc1-8bb7135d7aee}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MeasuredAcceleration : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{405282c6-1f48-4d0b-9ca0-a1359e4ad562}">
+      <Get Name="Get" Id="{c039336d-c104-49da-8bbf-53634b028e2d}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -805,11 +525,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="MeasuredPosition" Id="{210ba193-d721-4b65-bd1d-f2c43e4f1098}">
+    <Property Name="MeasuredPosition" Id="{aa32b87a-9366-487b-a063-6097d7b9eab9}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MeasuredPosition : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{ea0c0a20-155f-480f-b77a-543c70a9ce7c}">
+      <Get Name="Get" Id="{2efb5672-41cd-456d-9a9e-538095c14051}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -818,11 +538,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="MeasuredVelocity" Id="{cc7e62a9-ad83-4971-a6af-2ec0a8bfdfc3}">
+    <Property Name="MeasuredVelocity" Id="{e1a7f385-3130-4e0a-bad0-e95e31dd3271}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MeasuredVelocity : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{7e3270c1-6958-4385-8fe5-a7f14d3aeafc}">
+      <Get Name="Get" Id="{02129c6d-f2e0-45a1-b426-8f115b7f28a5}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -831,9 +551,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="ModeOfOperation" Id="{875d8e8c-6833-41bc-9ba1-506b540ec8bd}">
-      <Declaration><![CDATA[PROPERTY ModeOfOperation : BOOL]]></Declaration>
-      <Get Name="Get" Id="{56d86dbd-488d-4d81-8fba-585be7d2afb4}">
+    <Property Name="ModeOfOperation" Id="{2e9c42d0-7cee-4e8b-b5e8-925e3a94de9a}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ModeOfOperation : SINT
+]]></Declaration>
+      <Get Name="Get" Id="{9cf1ff75-7a20-4fd2-8931-dadb051c46ed}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -841,7 +563,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{cb4afb24-f6a8-483d-9128-b2270706924c}">
+      <Set Name="Set" Id="{54ed8f67-df69-4990-b996-cdf482605b99}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -850,139 +572,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="ModeOfOperationDisplay" Id="{025cb625-ad11-4c51-9d0f-d907911a35f1}">
-      <Declaration><![CDATA[PROPERTY ModeOfOperationDisplay : INT]]></Declaration>
-      <Get Name="Get" Id="{246a8b29-e645-4a6c-ba23-adb92ac595af}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{66c00ddb-4deb-4f26-b4ae-ee600494a340}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="MostRecentMoveAbsoluteDone" Id="{beee8d3f-7283-4472-8cb8-d8033f07bbab}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MostRecentMoveAbsoluteDone : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{b7ec8bdb-acef-4d02-a2c0-33d3f3246da2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{32f29d88-26ee-484e-b966-df15e9f0cb98}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Method Name="MoveAbsolute" Id="{6b50c75c-030a-4b3c-9a0b-c342bc66e047}">
-      <Declaration><![CDATA[METHOD MoveAbsolute
-VAR_INPUT
-// Set the corresponding properties for motion paramters
-END_VAR
-
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[THIS^.fbMcMoveAbsolute(
-    Axis := THIS^.AxisRef,
-	// for DURING_MOTION mode, we need to wait for bPowerIsEnabled to be set
-    Execute := THIS^.bCommandedMoveAbsolute AND bPowerIsEnabled,
-    Position := fPosition,
-    Velocity := fVelocity,
-    Acceleration := fAcceleration,
-    Deceleration := fDeceleration,
-    Jerk := fJerk,
-    BufferMode := eBufferMode,
-    Done => ,
-    Busy => bMoveAbsoluteBusy,
-    Active => bActive,
-    CommandAborted => bCommandAborted,
-    Error => bMoveAbsoluteError,
-    ErrorID => nMoveAbsoluteErrorID
-);
-// We dont allow  any new request unless the current one is:
-// 1- Done
-// 2- Aborted / Stopped
-// 3- Halted ( loosely, has halted does not complete the current move instead its pauses it)
-// THIS^.bCommandedMoveAbsolute : maintains previous state till any of the condition above occurs
-
-
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="MoveAbsoluteBusy" Id="{2cd6cbfa-43df-4b87-bc54-2038020ebf9b}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MoveAbsoluteBusy : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{b6e2b46f-30ca-4446-92b6-ee2b61e9f9b2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="MoveAbsoluteDone" Id="{943f432d-764c-4ecb-a2a2-cb12fcf0605e}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MoveAbsoluteDone : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{f8486990-9e49-4836-aeaf-28e8593a1573}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="MoveAbsoluteError" Id="{cf626fd1-69d1-4b24-bf39-eb2bb0e6a669}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MoveAbsoluteError : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{cd3b4f88-1fc9-479a-a785-870d96087ddf}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="MoveAbsoluteErrorID" Id="{66a0e8fd-8446-42d5-8dc1-d21194658885}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MoveAbsoluteErrorID : UDINT
-]]></Declaration>
-      <Get Name="Get" Id="{06ebca53-388c-4ee1-8791-6f2d219ed147}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="MoveAbsoluteTargetAcceleration" Id="{85a7ce31-e422-4d55-815b-75f6f2eddb95}">
+    <Property Name="MoveAbsoluteTargetAcceleration" Id="{1f1c6b3a-5714-4320-9baa-60161ba76712}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MoveAbsoluteTargetAcceleration : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{86dfc7b8-790f-4832-9018-cbf0f297986f}">
+      <Get Name="Get" Id="{f6693189-f2a5-43a1-be25-d9f8cde5b8f0}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -991,11 +585,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="MoveAbsoluteTargetDeceleration" Id="{0e4ef2c7-4d34-41bb-b03d-118b7f0b03e9}">
+    <Property Name="MoveAbsoluteTargetDeceleration" Id="{df57a943-19f9-487b-afb9-48ad9e3f910a}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MoveAbsoluteTargetDeceleration : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{37121560-1d7e-4942-bc92-21680601bbc3}">
+      <Get Name="Get" Id="{70f719c6-2302-454e-a65a-14b604814c10}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1004,11 +598,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="MoveAbsoluteTargetJerk" Id="{8119e403-1deb-4a90-bedb-4b1dcfe12cd6}">
+    <Property Name="MoveAbsoluteTargetJerk" Id="{ff2c6111-5c60-42e6-af1e-19fde241c7ab}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MoveAbsoluteTargetJerk : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{97349205-8d90-4980-b021-ce4ef7c014b6}">
+      <Get Name="Get" Id="{6cba9dd7-90fb-48dc-9dfd-81211085927a}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1017,11 +611,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="MoveAbsoluteTargetPosition" Id="{e1d6496d-5008-43ee-ae2c-af333785de71}">
+    <Property Name="MoveAbsoluteTargetPosition" Id="{0e1646b2-f911-43fb-be23-142c52cc15d3}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MoveAbsoluteTargetPosition : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{dd8957fc-2f6f-457e-8c95-7815964cb472}">
+      <Get Name="Get" Id="{af6e6419-f949-41ba-99fd-c8ad29bf3df7}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1030,11 +624,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="MoveAbsoluteTargetVelocity" Id="{4df382a2-3116-4e7b-be1e-d14c3031819d}">
+    <Property Name="MoveAbsoluteTargetVelocity" Id="{dd584409-123c-49de-9635-902c406a6369}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MoveAbsoluteTargetVelocity : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{e2a6dfe8-fb2a-46a4-8e5f-3597e2316671}">
+      <Get Name="Get" Id="{2c4ed92b-c6a9-4edd-b145-19ac2a5b290c}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1043,11 +637,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="MoveMode" Id="{715cddf1-65bc-4109-ae0e-afc9bed91c0a}">
+    <Property Name="MoveMode" Id="{fb816de5-0e80-4956-97d5-c714cee3e393}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY MoveMode : E_MoveMode
 ]]></Declaration>
-      <Get Name="Get" Id="{77cd73cd-5492-43c3-bf4e-af65aa7e181b}">
+      <Get Name="Get" Id="{e310af6e-5607-4919-a3ed-869369d9bfe7}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1055,7 +649,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{baa7746e-d27b-4868-b5ca-dcc34b2b5d38}">
+      <Set Name="Set" Id="{e3f032e9-2397-4ae5-8671-93d016d4703c}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1064,11 +658,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="Name" Id="{874105bd-a3aa-4497-b2c1-837f0dd3b402}">
+    <Property Name="Name" Id="{f8e5b4f0-c11c-4778-83fc-4b40b61e824a}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY Name : STRING
 ]]></Declaration>
-      <Get Name="Get" Id="{7df6782c-92b0-4f43-b6b6-ca5532c6c5d2}">
+      <Get Name="Get" Id="{8a9e875b-5d4c-4535-8ebc-011ebcccfc2b}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1076,7 +670,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{06c262d3-6092-4591-b92e-88452a905f7f}">
+      <Set Name="Set" Id="{b47fe4f5-3b9b-439e-89f9-009430cfb46a}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1085,11 +679,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="NegativeMotionIsEnabled" Id="{c419136a-7e67-4072-b836-78cc8c7dca74}">
+    <Property Name="NegativeMotionIsEnabled" Id="{dbf57efd-ddcc-4cca-89db-4b9b5f4001b7}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY NegativeMotionIsEnabled : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{fa9d6d62-bb9b-4692-8628-c509a0f38156}">
+      <Get Name="Get" Id="{8f385ef6-31e0-459f-b40e-2757d3ac0933}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1098,30 +692,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="PositionHolding" Id="{4d252e80-92d2-459f-82bc-7e889c788733}">
-      <Declaration><![CDATA[PROPERTY PositionHolding : BOOL]]></Declaration>
-      <Get Name="Get" Id="{8d3dc6eb-61b9-42e5-b787-b381bdd2aa3a}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{4c2c329c-0ff8-4545-9da1-65a502c3f8b9}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="PositiveMotionIsEnabled" Id="{f4210734-bd88-49db-a085-cf2cc3ddc720}">
+    <Property Name="PositiveMotionIsEnabled" Id="{9a5cb4c6-ec98-4a2b-b846-0e46979c5e4a}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY PositiveMotionIsEnabled : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{881e0050-033c-4af3-9389-3c745f0a9b23}">
+      <Get Name="Get" Id="{57559c90-3b21-47bf-a38a-953bdd9fcecb}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1130,54 +705,19 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="Power" Id="{dd25e964-0517-40f5-924c-4964ca24fa0f}">
-      <Declaration><![CDATA[METHOD Power
-VAR_INPUT
-    Enable	: BOOL;
-    Enable_Positive	: BOOL;
-    Enable_Negative	: BOOL;
-    (* in percent from 0 to 100 *)
-    Override	: LREAL := 100.0;
-    BufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
-END_VAR
-VAR_OUTPUT
-    Status	: BOOL;
-    Busy	: BOOL;
-    Active	: BOOL;
-    Error	: BOOL;
-    ErrorID	: UDINT;
-    ErrorStr	: T_MaxString;
-END_VAR
+    <Property Name="PowerEnable" Id="{eefc5866-d56d-4207-bd21-0e45dd5ddbad}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY PowerEnable : BOOL
 ]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[THIS^.fbMcPower(
-    Axis := THIS^.AxisRef,
-    Enable := PowerEnable,
-    Enable_Positive := bPowerEnablePositive,
-    Enable_Negative := bPowerEnableNegative,
-    Override := fPowerOverride,
-    BufferMode := eBufferMode,
-	(*Enabled*)
-    Status => bPowerIsEnabled,
-    Busy => bPowerBusy,
-    Error => bPowerError,
-    ErrorID => nPowerErrorID
-);
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="PowerEnable" Id="{f414bfb9-6ee7-4955-9adb-80483d66f6c1}">
-      <Declaration><![CDATA[PROPERTY PowerEnable : BOOL]]></Declaration>
-      <Get Name="Get" Id="{d3ce8088-ddb3-4bb8-af6d-799ae790dbbf}">
+      <Get Name="Get" Id="{df788870-2518-4f43-8df0-89fb64c387e6}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[PowerEnable := bPowerEnable ;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{0a42915d-6317-4fe0-a236-9d0212c38acf}">
+      <Set Name="Set" Id="{452cc9f6-5436-4eb8-8e57-95944699a54e}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1186,79 +726,53 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="PowerEnableNegative" Id="{5aea918e-e583-464e-9bf7-5b682d91bcbb}">
+    <Property Name="PowerEnableNegative" Id="{86ca79e8-2940-4b53-aacf-466cb358990a}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY PowerEnableNegative : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{f3d86057-8f2f-4723-aa23-3a95fc75c897}">
+      <Get Name="Get" Id="{e69118ff-0e7c-447c-b3b7-4316c7c227e8}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[PowerEnableNegative := bPowerEnableNegative;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{35c3b395-8b99-4ec8-8416-b2fe03047a90}">
+      <Set Name="Set" Id="{f5906b96-9570-4a40-90b8-657b190f8b3d}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[bPowerEnableNegative := PowerEnableNegative;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="PowerEnablePositive" Id="{3adce3e1-13e3-4016-8a81-a9c9333b576d}">
+    <Property Name="PowerEnablePositive" Id="{f04766b5-ad74-4c60-bba0-b525bbbf6eca}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY PowerEnablePositive : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{d4253322-3521-407d-921b-405ce764ce97}">
+      <Get Name="Get" Id="{69972e64-0200-419c-9b21-e3e0e74194bc}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[PowerEnablePositive := bPowerEnablePositive;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{d1ecc6df-432f-4ec8-b53c-f5934b8dc16d}">
+      <Set Name="Set" Id="{499cde77-62b4-4236-8c44-de8d1bb6a0d6}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[bPowerEnablePositive := PowerEnablePositive;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="PowerError" Id="{b157fef6-ae05-49ee-b05a-7231ade2f25f}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY PowerError : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{4dd46f48-26c6-4cf3-b258-858bb12ab4fd}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="PowerErrorID" Id="{b1c1fc39-4291-4107-94b8-9ae5e59e6ef1}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY PowerErrorID : UDINT
-]]></Declaration>
-      <Get Name="Get" Id="{bb948010-4f02-4aac-a3ea-658089f48b76}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="PowerIsEnabled" Id="{f1bac38f-a6f1-4fbe-879b-b55cde1ce210}">
+    <Property Name="PowerIsEnabled" Id="{f2dc159f-acb8-45a4-8c47-706d30c9746c}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY PowerIsEnabled : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{ab94d513-cd6f-4f9a-b9b2-4020fd45d543}">
+      <Get Name="Get" Id="{eca67d64-6f90-40c1-bc4e-c51f1f02b4ea}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1267,31 +781,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="PowerOverride" Id="{4348eebc-54ee-41d6-be75-c7ac46384e68}">
+    <Property Name="PowerOverride" Id="{b3cd8984-4857-4ed9-a8ba-033ece3ac73d}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY PowerOverride : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{20717937-76df-4e92-b634-edad94aef9c1}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[PowerOverride := fPowerOverride;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{fd3a14fa-37f7-44eb-818a-e46a9188bb65}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[fPowerOverride := PowerOverride;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="PowerStatus" Id="{a1fcac09-eaa5-4dd8-8dbc-d1d1f1c7685d}">
-      <Declaration><![CDATA[PROPERTY PowerStatus : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{2960272a-335f-4434-a3c9-59af96bed5c2}">
+      <Get Name="Get" Id="{f89ce9c4-c5dc-48ff-81b3-933fb6300251}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1300,30 +794,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="Reset" Id="{a6bfedcd-09ad-4e2e-b0fb-fb5b66d37a7f}">
-      <Declaration><![CDATA[METHOD Reset
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[THIS^.fbMcReset(
-    Axis := THIS^.AxisRef,
-    Execute := THIS^.bCommandedReset,
-    Done => bResetDone,
-    Busy => bResetBusy,
-    Error => bResetError,
-    ErrorID => bResetErrorID,
-);
-
-IF bResetDone THEN
-	THIS^.bCommandedReset := FALSE;	
-END_IF
-]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="ResetBusy" Id="{fd56e587-648d-44d2-825c-3a46d55e2eac}">
+    <Property Name="Servo" Id="{c1694d9d-c210-4bd8-b17c-a28bee8ea91c}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY ResetBusy : BOOL
+PROPERTY Servo : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{6652f608-a22f-4ee1-8f38-536c24ef8462}">
+      <Get Name="Get" Id="{610974ba-c4da-44ac-8da7-1414ff836eae}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1331,7 +806,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{8c478df8-6a55-4103-aefd-e45acd13b3cd}">
+      <Set Name="Set" Id="{7aebce03-b4e1-4452-8a52-2876fa552266}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1340,74 +815,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="ResetDone" Id="{e15f0f8c-4653-47e9-acdf-45f13742b040}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY ResetDone : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{aedfc2f7-4368-4d01-9af1-c5ac7ffa311e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{d1c93745-ff3a-4dae-a95d-ed088680ba3d}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="ResetError" Id="{2f6e4ea7-3aa5-47af-aaf0-eaa1c0e68b3e}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY ResetError : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{8d6d7307-d057-413e-bb11-1cedbdcc4d7e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{250ea139-7e67-42a2-8dc6-c78ac3c8b5a6}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="ResetErrorID" Id="{86768fff-0dbd-4d6a-8660-baab50f6a3d1}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY ResetErrorID : UDINT
-]]></Declaration>
-      <Get Name="Get" Id="{448214bf-b2cd-453a-ac7e-b852845c6b14}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{f7ccaf22-23fb-420a-9ead-3f51eee362d9}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="SetpointAcceleration" Id="{35df09f7-af10-412c-b5b8-cd15f520d684}">
+    <Property Name="SetpointAcceleration" Id="{ceb97b28-863c-4b90-8ff7-8c0f88f9ec3b}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY SetpointAcceleration : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{94f09d03-01ad-4f68-9164-4773b797edee}">
+      <Get Name="Get" Id="{862d3432-ab50-42a7-a9fe-718ad5d7093e}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1416,11 +828,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="SetPointDecceleration" Id="{147deb20-c6d8-4d1d-8c84-40d474e103ef}">
+    <Property Name="SetPointDecceleration" Id="{d779b1c9-7454-41bf-96a7-20b3852fbbbc}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY SetPointDecceleration : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{ba4e09b1-0da6-4754-bfc6-eefa9ac93006}">
+      <Get Name="Get" Id="{f0a3efc9-c340-448e-9394-691387674ac1}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1428,7 +840,7 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{7f7d4f2c-7f83-4f5a-9490-fe95b6e204ad}">
+      <Set Name="Set" Id="{826e9cc2-735b-4ad5-9c6f-d9c1be445baa}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1437,11 +849,11 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="SetpointJerk" Id="{b378fa45-cce4-4de8-84b1-72661da9d428}">
+    <Property Name="SetpointJerk" Id="{4c3c39b4-10cf-4e4b-aa89-f274b18d478f}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY SetpointJerk : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{dbb8889c-77c4-4f80-81be-834a84700b59}">
+      <Get Name="Get" Id="{21c11ebe-edc6-40c9-8039-30ca0734b0b6}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1450,11 +862,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="SetpointPosition" Id="{c2596662-270a-4759-9e67-ef75493ff811}">
+    <Property Name="SetpointPosition" Id="{8c202ea0-ed33-4cb2-978f-34fc66ba4864}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY SetpointPosition : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{1ca53cc7-289e-444a-afa9-57df6575a7b3}">
+      <Get Name="Get" Id="{bdedeccf-85ea-4d8c-99b9-759d54dc3f35}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1463,11 +875,11 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="SetpointVelocity" Id="{c430ed88-ac57-4c22-ba59-69ce5d060837}">
+    <Property Name="SetpointVelocity" Id="{6f8653f1-3750-4d7e-a5b8-4fd6af55941d}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY SetpointVelocity : LREAL
 ]]></Declaration>
-      <Get Name="Get" Id="{9c0b191a-47f4-41c3-bf5d-c2be323f98ea}">
+      <Get Name="Get" Id="{2a9e300d-dae9-4c92-9e42-84dc75c4d9ae}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1476,42 +888,33 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Method Name="SetPowerOverride" Id="{f5197579-0377-4093-b3b0-a7c948ff579a}">
+    <Method Name="StartMove" Id="{f7413bfe-5d7e-4f37-8a0d-455e16d25413}">
       <Declaration><![CDATA[{warning 'Add method implementation '}
-METHOD SetPowerOverride
-VAR_INPUT
-    (* in percent from 0 to 100 *)
-    Override	: LREAL;
-END_VAR
-VAR_OUTPUT
-    Status	: BOOL;
-    Busy	: BOOL;
-    Active	: BOOL;
-    Error	: BOOL;
-    ErrorID	: UDINT;
-    ErrorStr	: T_MaxString;
-END_VAR
+(* 
+	Check all post condition before updating bCommandedMoveAbsolute
+	The implmentatation will depend on the axis type
+	DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
+	MP NC axis : will immediately write to bCommandedMoveAbsolute 
+*)
+METHOD StartMove
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="SetRestorePosition" Id="{a1006cdf-99ff-4013-aad5-ae3aac5c89b8}">
-      <Declaration><![CDATA[METHOD SetRestorePosition : BOOL
-VAR_INPUT
-    Load : BOOL;
-    Position : LREAL;
-END_VAR
+    <Method Name="StopMove" Id="{9b9f0b47-ade1-4cae-b7ed-c8f92646c240}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD StopMove
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="TargetReached" Id="{3562833c-ce41-4565-8139-15c4ed916d67}">
+    <Property Name="TargetReached" Id="{ae1c820e-047f-4f1d-82d3-a6b2d6394415}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY TargetReached : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{0b49ffac-1cd2-409a-9168-7c1b8cfea36d}">
+      <Get Name="Get" Id="{bf4a11cc-ec50-419d-93c3-a19a3ca701c3}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -1519,230 +922,150 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{509c7735-ec82-475b-8350-042795f52a87}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <LineIds Name="FB_MotionAxisDS402NC">
-      <LineId Id="8" Count="2" />
-      <LineId Id="137" Count="0" />
-      <LineId Id="17" Count="0" />
-      <LineId Id="138" Count="1" />
-      <LineId Id="71" Count="11" />
-      <LineId Id="140" Count="0" />
-      <LineId Id="84" Count="0" />
-      <LineId Id="141" Count="1" />
-      <LineId Id="85" Count="12" />
-      <LineId Id="83" Count="0" />
-      <LineId Id="132" Count="0" />
-      <LineId Id="134" Count="0" />
-      <LineId Id="158" Count="0" />
-      <LineId Id="133" Count="0" />
-      <LineId Id="154" Count="2" />
-      <LineId Id="152" Count="0" />
-      <LineId Id="157" Count="0" />
-      <LineId Id="98" Count="16" />
-      <LineId Id="126" Count="1" />
-      <LineId Id="159" Count="0" />
-      <LineId Id="128" Count="2" />
-      <LineId Id="123" Count="0" />
-      <LineId Id="131" Count="0" />
-      <LineId Id="7" Count="0" />
-      <LineId Id="136" Count="0" />
-      <LineId Id="2" Count="0" />
-      <LineId Id="144" Count="0" />
-      <LineId Id="70" Count="0" />
+      <LineId Id="1" Count="7" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.Active.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.ActPosition.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.ActPositionDiff.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.ActVelocity.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.AxisParameterSetExposed.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.AxisState.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.BufferMode.Set">
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.Busy.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.Cmd.Set">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.CmdAbort.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.CmdAbort.Set">
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.CmdData.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandAborted.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandAborted.Set">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdHalt.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandedHalt.Get">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdHalt.Set">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandedHalt.Set">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveAbsolute.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandedMoveAbsolute.Get">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveAbsolute.Set">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandedMoveAbsolute.Set">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveHome.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandedMoveHome.Get">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveHome.Set">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandedMoveHome.Set">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdReset.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandReset.Get">
+    <LineIds Name="FB_MotionAxisDS402NC.CmdReset.Set">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CommandReset.Set">
+    <LineIds Name="FB_MotionAxisDS402NC.Done.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ControlWord.Get">
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_MotionAxisDS402NC.EncoderCount.Get">
+      <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ControlWord.Set">
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_MotionAxisDS402NC.EncoderCount.Set">
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.Error.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ErrorHandling">
-      <LineId Id="44" Count="6" />
-      <LineId Id="60" Count="2" />
-      <LineId Id="66" Count="2" />
-      <LineId Id="74" Count="10" />
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.ErrorID.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.ErrorMessage.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.FB_Init">
-      <LineId Id="3" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Halt">
-      <LineId Id="10" Count="1" />
-      <LineId Id="29" Count="0" />
-      <LineId Id="12" Count="4" />
-      <LineId Id="18" Count="3" />
-      <LineId Id="27" Count="0" />
-      <LineId Id="23" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HaltBusy.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="3" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.HaltDone.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HaltError.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HaltErrorID.Get">
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_MotionAxisDS402NC.HaltDone.Set">
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.Home">
-      <LineId Id="3" Count="80" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomeBusy.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomeDone.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomeError.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomeErrorID.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.HomeMode.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.HomeMode.Set">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.HomePosition.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.HomePosition.Set">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.HomingBusy.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.HomingBusy.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.InterruptMove">
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MeasuredAcceleration.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MeasuredPosition.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MeasuredVelocity.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.ModeOfOperation.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.ModeOfOperation.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ModeOfOperationDisplay.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ModeOfOperationDisplay.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MostRecentMoveAbsoluteDone.Get">
       <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MostRecentMoveAbsoluteDone.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsolute">
-      <LineId Id="10" Count="1" />
-      <LineId Id="55" Count="0" />
-      <LineId Id="37" Count="0" />
-      <LineId Id="12" Count="12" />
-      <LineId Id="62" Count="0" />
-      <LineId Id="65" Count="2" />
-      <LineId Id="54" Count="0" />
-      <LineId Id="68" Count="0" />
-      <LineId Id="52" Count="1" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteBusy.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteDone.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteError.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteErrorID.Get">
-      <LineId Id="2" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetAcceleration.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetDeceleration.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetJerk.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetPosition.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetVelocity.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.MoveMode.Get">
       <LineId Id="1" Count="0" />
@@ -1751,29 +1074,16 @@ END_VAR
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.Name.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.Name.Set">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.NegativeMotionIsEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PositionHolding.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PositionHolding.Set">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.PositiveMotionIsEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Power">
-      <LineId Id="4" Count="6" />
-      <LineId Id="18" Count="0" />
-      <LineId Id="11" Count="1" />
-      <LineId Id="14" Count="3" />
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.PowerEnable.Get">
       <LineId Id="1" Count="0" />
@@ -1793,57 +1103,20 @@ END_VAR
     <LineIds Name="FB_MotionAxisDS402NC.PowerEnablePositive.Set">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerError.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerErrorID.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.PowerIsEnabled.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.PowerOverride.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerOverride.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerStatus.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Reset">
-      <LineId Id="4" Count="7" />
-      <LineId Id="21" Count="0" />
-      <LineId Id="20" Count="0" />
-      <LineId Id="22" Count="1" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetBusy.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetBusy.Set">
+    <LineIds Name="FB_MotionAxisDS402NC.Servo.Get">
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetDone.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetDone.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetError.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetError.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetErrorID.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ResetErrorID.Set">
+    <LineIds Name="FB_MotionAxisDS402NC.Servo.Set">
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.SetpointAcceleration.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.SetPointDecceleration.Get">
       <LineId Id="1" Count="0" />
@@ -1852,25 +1125,22 @@ END_VAR
       <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.SetpointJerk.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.SetpointPosition.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.SetpointVelocity.Get">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetPowerOverride">
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_MotionAxisDS402NC.StartMove">
+      <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetRestorePosition">
-      <LineId Id="2" Count="0" />
+    <LineIds Name="FB_MotionAxisDS402NC.StopMove">
+      <LineId Id="1" Count="0" />
     </LineIds>
     <LineIds Name="FB_MotionAxisDS402NC.TargetReached.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.TargetReached.Set">
-      <LineId Id="2" Count="0" />
+      <LineId Id="1" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

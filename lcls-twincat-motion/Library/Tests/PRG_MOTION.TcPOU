@@ -22,7 +22,7 @@ VAR
     iMotionInterlocks: I_MotionInterlocks := fbMotionInterlocks;
 
     // for DS402 drive
-    fbMotionAxisCommon : FB_MotionAxisNcCommon(AxisReference:=NcAxis_GVL.testAxis);
+    fbMotionAxisCommon : FB_MotionAxisCommon(AxisReference:=NcAxis_GVL.testAxis);
     iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisCommon;
 
     fbMotionAxisDS402NC : FB_MotionAxisDS402NC ( AxisReference:=NcAxis_GVL.testAxis ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE);
@@ -42,5 +42,9 @@ END_VAR
       <ST><![CDATA[// iPersistentDataStorage[1].TriggerWriteOfPersistentData := FALSE;
 // iPersistentDataStorage[2].TriggerWriteOfPersistentData := FALSE;]]></ST>
     </Implementation>
+    <LineIds Name="PRG_MOTION">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>
