@@ -145,6 +145,27 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="CmdHome" Id="{c395dfdf-d70a-44b4-b28d-92652bde1018}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CmdHome : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{1420a89c-5b22-4bb0-8e73-12accbb1efb2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e63353e4-5a93-45b2-be43-809aca83dbc0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Property Name="CmdMoveAbsolute" Id="{ccca9401-a0a7-46de-8ed6-27a7678f2d56}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY CmdMoveAbsolute : BOOL
@@ -158,27 +179,6 @@ END_VAR
         </Implementation>
       </Get>
       <Set Name="Set" Id="{8ae404a2-683e-46d4-b37a-db6f4e07d629}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdMoveHome" Id="{c395dfdf-d70a-44b4-b28d-92652bde1018}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdMoveHome : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{1420a89c-5b22-4bb0-8e73-12accbb1efb2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{e63353e4-5a93-45b2-be43-809aca83dbc0}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -730,11 +730,11 @@ END_VAR
     </Property>
     <Method Name="StartMove" Id="{31a6e98b-2bcc-4b20-97b8-daa393ac284f}">
       <Declaration><![CDATA[{warning 'Add method implementation '}
-(* 
-	Check all post condition before updating bCommandedMoveAbsolute
-	The implmentatation will depend on the axis type
-	DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
-	MP NC axis : will immediately write to bCommandedMoveAbsolute 
+(*
+    Check all post condition before updating bCommandedMoveAbsolute
+    The implmentatation will depend on the axis type
+    DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
+    MP NC axis : will immediately write to bCommandedMoveAbsolute
 *)
 METHOD StartMove
 ]]></Declaration>
@@ -763,203 +763,5 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <LineIds Name="FB_MotionAxisDS402">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Active.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.AxisParameterSetExposed.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.AxisState.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.BufferMode.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Busy.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Cmd.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdAbort.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdAbort.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdData.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdHalt.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdHalt.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdMoveAbsolute.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdMoveAbsolute.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdMoveHome.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdMoveHome.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdReset.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.CmdReset.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Done.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Error.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.ErrorID.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.ErrorMessage.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HaltDone.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HaltDone.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HomeMode.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HomeMode.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HomePosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HomePosition.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HomingBusy.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.HomingBusy.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.InterruptMove">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MeasuredAcceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MeasuredPosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MeasuredVelocity.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.ModeOfOperation.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.ModeOfOperation.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MoveAbsoluteTargetAcceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MoveAbsoluteTargetDeceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MoveAbsoluteTargetJerk.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MoveAbsoluteTargetPosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MoveAbsoluteTargetVelocity.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MoveMode.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.MoveMode.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Name.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Name.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.NegativeMotionIsEnabled.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PositiveMotionIsEnabled.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerEnable.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerEnable.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerEnableNegative.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerEnableNegative.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerEnablePositive.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerEnablePositive.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerIsEnabled.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.PowerOverride.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Servo.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.Servo.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.SetpointAcceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.SetPointDecceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.SetPointDecceleration.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.SetpointJerk.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.SetpointPosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.SetpointVelocity.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.StartMove">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.StopMove">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402.TargetReached.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

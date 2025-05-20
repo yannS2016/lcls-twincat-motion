@@ -1,65 +1,73 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_MotionDrive" Id="{ab485b6e-0ea0-46c8-a998-93ea4aaa54b4}" SpecialFunc="None">
-    <Declaration><![CDATA[{attribute 'call_after_init'}
-FUNCTION_BLOCK FB_MotionDrive IMPLEMENTS I_MotionDrive
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionDrive IMPLEMENTS I_MotionDrive
 
 VAR
-    stMotionDrive : ST_MotionDrive;
+    // EPICS Interface
     stMotionEpicsItf : ST_MotionEpicsItf;
+    bMoveCmd	: BOOL;
+    //
+    {attribute 'hide'}
+    iMotionAxis 		: I_MotionAxis;
+    {attribute 'hide'}
+    iBrake 				: I_Brake;
+    {attribute 'hide'}
+    iMotionInterlocks	: I_MotionInterlocks;
+    {attribute 'hide'}
+    iMotionLogger 		: I_MotionLogger;
 
-    iMotionAxis : I_MotionAxis;
-    iBrake :I_Brake;
-    iMotionInterlocks: I_MotionInterlocks;
-    iMotionLogger : I_MotionLogger;
-
-    // Preperties
-    sCustomErrorMessage : T_MAXSTRING;
-
-    fbExecuteRiseEdge: R_TRIG;
-    // Start a move to fPosition with fVelocity
-    bMoveCmd: BOOL;
-    rtMoveCmdShortcut : R_TRIG;
-    rtHomeCmdShortcut : R_TRIG;
-    rtUserExec : R_TRIG;
-    rtNewMoveReq : R_TRIG;
-    rtTarget: R_TRIG;
-    rtHomed: R_TRIG;
-ftStopExec : F_TRIG;
-rtStopExec : R_TRIG;
-  rtExec : R_TRIG;
+    eMoveState  		: E_MoveState;
+    {attribute 'hide'}
     bNewMoveReq : BOOL;
-    bExecHome : BOOL;
-    bExecMove : BOOL;
-    bBusy : BOOL;
-    bDone : BOOL;
-    bHome : BOOL;
-    eMoveState  : E_MoveState;
-    bInit : BOOL;
-	bNegGoal : BOOL;
-	bPosGoal :BOOL;
-	rtReset : R_TRIG;
+    {attribute 'hide'}
+    bExecHome 	: BOOL;
+    {attribute 'hide'}
+    bExecMove 	: BOOL;
+    {attribute 'hide'}
+      rtMoveCmdShortcut 	: R_TRIG;
+    {attribute 'hide'}
+    rtHomeCmdShortcut 	: R_TRIG;
+    {attribute 'hide'}
+    rtEpicsExec			: R_TRIG;
+    {attribute 'hide'}
+    rtUserExec 			: R_TRIG;
+    {attribute 'hide'}
+    rtNewMoveReq 		: R_TRIG;
+    {attribute 'hide'}
+    rtTarget			: R_TRIG;
+    {attribute 'hide'}
+    rtHomed				: R_TRIG;
+    {attribute 'hide'}
+    rtStopExec 			: R_TRIG;
+    {attribute 'hide'}
+    rtInterlockExec 	: R_TRIG;
+    {attribute 'hide'}
+    rtReset 			: R_TRIG;
+    {attribute 'hide'}
+    ftStopExec 			: F_TRIG;
+     {attribute 'hide'}
+     ftError 			: F_TRIG;
+
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[(* Critical to inter FBs com, handle events and sync dependends FBs *)
-// THese calls are needed for interlocks checks
-iMotionInterlocks.PrepareDisable R= bNewMoveReq;
-// Moves are automatically allowed if no safety hooks. Otherwise, some other code will set this.
-iMotionInterlocks.SafetyReady S= iMotionInterlocks.PowerSelf;
-
+THIS^.ProcessMoveReq();
 // These define the interface between FB_MotionDrive and FB_MotionInterlocks:
+// all properties participating in these exchanges are hidden from user apps.
 iMotionInterlocks.NewMoveReq := bNewMoveReq;
-iMotionInterlocks.EpicsEPSOk :=stMotionEpicsItf.stEPSBackwardEnable.bEPS_OK;;
-iMotionInterlocks.EpicsUserEn:= stMotionEpicsItf.bUserEnable;
-iMotionInterlocks.AxisError := iMotionAxis.Error;
-
-// Get the Axis state machine current state for pre and post move interlocks
-iMotionInterlocks.MotionState := iMotionAxis.AxisState;
+iMotionInterlocks.EPSOk :=stMotionEpicsItf.stEPSBackwardEnable.bEPS_OK;;
+iMotionInterlocks.UserEnable:= stMotionEpicsItf.bUserEnable;
+iMotionInterlocks.Error := iMotionAxis.Error;
+iMotionInterlocks.Execute := stMotionEpicsItf.bExecute;
+iMotionInterlocks.MoveBusy :=iMotionAxis.Busy;
 // catch Homing busy interlock
-iMotionInterlocks.HomeBusy := iMotionAxis.HomingBusy;
-// Brakes
+iMotionInterlocks.HomingBusy := iMotionAxis.HomingBusy;
+// Get the Axis state machine current state for pre and post move interlocks
+//iMotionInterlocks.AxisStates(AxisState := iMotionAxis.AxisState);
 iBrake.MotionState := iMotionAxis.AxisState;
+iMotionInterlocks.AxisState := iMotionAxis.AxisState;
 
 //Power
 iMotionAxis.PowerEnable := iMotionInterlocks.AllEnabled;
@@ -68,136 +76,118 @@ iMotionAxis.PowerEnableNegative := iMotionInterlocks.AllEnabled AND iMotionInter
 // Halt
 iMotionAxis.CmdHalt := THIS^.stMotionEpicsItf.bHalt;
 
-//////////////
-iMotionInterlocks.EpicsExec := stMotionEpicsItf.bExecute;
-iMotionInterlocks.MoveBusy :=iMotionAxis.Busy;
-
-// Drive state Machine here
- CASE eMoveState OF
-    E_MoveState.IDLING:;
-        THIS^.ProcessMoveReq();
-        bExecHome:=iMotionInterlocks.Execute AND stMotionEpicsItf.nCommand = 10;
-        bExecMove:=iMotionInterlocks.Execute AND NOT bExecHome;
-        IF bExecMove OR bExecHome THEN
-            eMoveState := E_MoveState.INIT_MOVE;
-        END_IF
-
-    E_MoveState.INIT_MOVE:
-        IF NOT bInit THEN
-			stMotionEpicsItf.bBusy S= TRUE;
-			stMotionEpicsItf.bDone R= FALSE;
-            IF bExecMove THEN
-                iMotionAxis.MoveMode := E_MoveMode.DISCRETE;
-                iMotionAxis.CmdMoveAbsolute := TRUE;
-            ELSIF bExecHome THEN
-				// clear this inside the iMotionAxis home block
-                //iMotionAxis.HomeDone := FALSE;
-                iMotionAxis.CmdMoveHome := TRUE;
-                iMotionAxis.MoveMode := E_MoveMode.HOMING;
-            END_IF
-            bInit := TRUE;
-        END_IF
-        //
-        IF 	iMotionAxis.Busy THEN
-                eMoveState := E_MoveState.MOVE_IN_PROGRESS;
-        END_IF
-
-    E_MoveState.MOVE_IN_PROGRESS :;
-        IF 	iMotionAxis.Done THEN
-            eMoveState := E_MoveState.TARGET_REACHED;
-        ELSIF stMotionEpicsItf.bHalt OR NOT stMotionEpicsItf.bExecute THEN
-            eMoveState := E_MoveState.MOVE_INTERRUPTED;
-        ELSIF iMotionAxis.Error  THEN
-            eMoveState := E_MoveState.MOVE_ERROR;
-        END_IF
-    E_MoveState.TARGET_REACHED:;
-        bInit := FALSE;
-    E_MoveState.MOVE_INTERRUPTED:;
-    E_MoveState.MOVE_ABORTED:;
-
-    E_MoveState.MOVE_ERROR:
-
-        // No moves allowed in error states
-        iMotionInterlocks.Execute := FALSE;
-
-        IF NOT stMotionEpicsItf.bError THEN
-            eMoveState := E_MoveState.IDLING;
-        END_IF
- END_CASE
-// This will be revamp once logger is operational
-IF iMotionAxis.Error THEN
-	// Higher Priority
-	stMotionEpicsItf.bError := iMotionAxis.Error;
-	stMotionEpicsItf.nErrorId := iMotionAxis.ErrorID;
-
+//  Abort move when limits are engaged
+IF iMotionInterlocks.LimHit THEN
+    stMotionEpicsItf.bExecute := FALSE;
 END_IF
 
-IF NOT stMotionEpicsItf.bError AND stMotionEpicsItf.bExecute AND NOT stMotionEpicsItf.bUserEnable THEN
-    stMotionEpicsItf.bError := TRUE;
-    THIS^.ErrorID := 1;
-    THIS^.sCustomErrorMessage := 'Move requested, but user enable is disabled!';
-END_IF
 
-// When we start, set the busy/done appropriately
-rtExec(CLK:=iMotionInterlocks.Execute);
-IF rtExec.Q THEN
-	stMotionEpicsItf.bBusy := TRUE;
-	stMotionEpicsItf.bDone := FALSE;
-END_IF
-
-// IF iMotionInterlocks.Execute THEN
-// 	stMotionEpicsItf.bBusy := TRUE;
-// 	stMotionEpicsItf.bDone := FALSE;	
-// END_IF
-
-IF iMotionInterlocks.LimitHit THEN
-	stMotionEpicsItf.bExecute := FALSE;
-END_IF
-
-IF stMotionEpicsItf.bError THEN
-	stMotionEpicsItf.bBusy := FALSE;
-	stMotionEpicsItf.bDone := FALSE;
-END_IF
-
-//////////////////////////////////////////////
-// Post Move handlings
-//////////////////////////////////////////////
-ftStopExec(CLK:=stMotionEpicsItf.bExecute);
-rtStopExec(CLK:=iMotionAxis.HaltDone);
-rtTarget(CLK:=(iMotionAxis.Done AND bExecMove));
-rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
-IF rtStopExec.Q OR ftStopExec.Q OR rtTarget.Q OR rtHomed.Q THEN
-    IF iMotionAxis.Error THEN
-		iMotionInterlocks.Execute := FALSE;
-		// epics flags
-		stMotionEpicsItf.bBusy := FALSE;
-		stMotionEpicsItf.bDone := FALSE;
-    ELSE
-		// here the move completed or was aborted
-		IF NOT stMotionEpicsItf.bDone THEN
-			stMotionEpicsItf.bDone := TRUE;
-			stMotionEpicsItf.bBusy := FALSE;
-		END_IF
-    END_IF
-	// must reset in any case
-	stMotionEpicsItf.bExecute := FALSE;
-END_IF
 /////////////////////////////////////////////////
 // Reset sequence
 ////////////////////////////////////////////////
 // Initiate reset sequence
 rtReset(CLK:=stMotionEpicsItf.bReset);
 IF rtReset.Q THEN
-	stMotionEpicsItf.bExecute := FALSE;
-	stMotionEpicsItf.bError := FALSE;
-	stMotionEpicsItf.nErrorId := 0;
-	stMotionEpicsItf.sErrorMessage := '';
-	// Propagate Reset event
-	iMotionInterlocks.CommandReset := stMotionEpicsItf.bReset;
-	iMotionAxis.CmdReset := stMotionEpicsItf.bReset;
-	//iMotionAxisCommon.Reset := stMotionEpicsItf.bReset;
-	stMotionEpicsItf.bReset := FALSE;
+    stMotionEpicsItf.bExecute := FALSE;
+    stMotionEpicsItf.bError := FALSE;
+    stMotionEpicsItf.nErrorId := 0;
+    stMotionEpicsItf.sErrorMessage := '';
+    // Propagate Reset event
+    iMotionInterlocks.CmdReset := stMotionEpicsItf.bReset;
+    iMotionAxis.CmdReset := stMotionEpicsItf.bReset;
+    stMotionEpicsItf.bReset := FALSE;
 END_IF
+
+ /////////////////////////////////////////
+// Post Move handlings
+//////////////////////////////////////////
+ftError(CLK:=stMotionEpicsItf.bError);
+ftStopExec(CLK:=stMotionEpicsItf.bExecute);
+rtStopExec(CLK:=iMotionAxis.HaltDone);
+rtTarget(CLK:=(iMotionAxis.Done AND bExecMove));
+rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
+
+// Drive state Machine here
+ CASE eMoveState OF
+    E_MoveState.IDLING:;
+        IF bExecMove OR bExecHome THEN
+            eMoveState := E_MoveState.INIT_MOVE;
+        END_IF
+        // reset error flag
+        stMotionEpicsItf.sErrorMessage := '';
+
+    E_MoveState.INIT_MOVE:
+        // When we start, set the busy/done appropriately
+        stMotionEpicsItf.bBusy := TRUE;
+        stMotionEpicsItf.bDone := FALSE;
+
+        IF bExecMove THEN
+            iMotionAxis.MoveMode := E_MoveMode.DISCRETE;
+            iMotionAxis.MoveAbsoluteTargetPosition := stMotionEpicsItf.fPosition;
+            iMotionAxis.MoveAbsoluteTargetVelocity := stMotionEpicsItf.fVelocity;
+            iMotionAxis.MoveAbsoluteTargetAcceleration := stMotionEpicsItf.fAcceleration;
+            iMotionAxis.MoveAbsoluteTargetDeceleration := stMotionEpicsItf.fAcceleration;
+            iMotionAxis.CmdMoveAbsolute := TRUE;
+        ELSIF bExecHome THEN
+            iMotionAxis.MoveMode := E_MoveMode.HOMING;
+        END_IF
+
+        eMoveState := E_MoveState.START_MOVE;
+
+    E_MoveState.START_MOVE:
+
+        // post request check: DS402 will ensure right mode of operation
+        // based on the move mode and move cmd
+        // it will internal start the appropriate move blocks
+        // this test will take 1 to multiple prog cycles
+        IF iMotionAxis.StartMove() THEN
+            eMoveState := E_MoveState.MOVE_IN_PROGRESS;
+        END_IF
+
+    E_MoveState.MOVE_IN_PROGRESS :;
+
+        IF 	iMotionAxis.Error THEN
+            eMoveState := E_MoveState.MOVE_ERROR;
+
+        ELSIF ftStopExec.Q OR rtStopExec.Q OR stMotionEpicsItf.bReset THEN
+            eMoveState := E_MoveState.MOVE_INTERRUPTED;
+
+        ELSIF  rtTarget.Q OR rtHomed.Q  THEN
+            eMoveState := E_MoveState.TARGET_REACHED;
+        END_IF
+
+    E_MoveState.TARGET_REACHED, E_MoveState.MOVE_INTERRUPTED:
+        stMotionEpicsItf.bDone := TRUE;
+        stMotionEpicsItf.bBusy := FALSE;
+        stMotionEpicsItf.bExecute := FALSE;
+        // release the cmds
+        stMotionEpicsItf.bHomeCmd:=FALSE;
+        THIS^.bMoveCmd:=FALSE;
+
+        IF iMotionAxis.Done OR iMotionAxis.ResetDone OR iMotionAxis.HaltDone THEN
+            eMoveState := E_MoveState.IDLING;
+        END_IF
+    E_MoveState.MOVE_ERROR:
+        // Pass error state to interlock block
+        // latch this flags, as MC_MoveAbsolute will reset erros flags
+        IF NOT stMotionEpicsItf.bError THEN
+            stMotionEpicsItf.bError := iMotionAxis.Error;
+            stMotionEpicsItf.nErrorId := iMotionAxis.ErrorID;
+            iMotionInterlocks.Error := iMotionAxis.Error;
+        END_IF
+
+        stMotionEpicsItf.bBusy := FALSE;
+        stMotionEpicsItf.bDone := FALSE;
+        stMotionEpicsItf.bHomeCmd:=FALSE;
+        THIS^.bMoveCmd:=FALSE;
+        // stay here till errors are cleared
+        // wait for a failling edge after reset
+        IF ftError.Q THEN
+            eMoveState := E_MoveState.IDLING;
+        END_IF
+
+ END_CASE
+
 ///////////////////////////////////////////////////////////////////////////////////////
 // Expose axis parameters to the EPICS layer.
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -208,9 +198,9 @@ stMotionEpicsItf.stAxisParametersExposed := iMotionAxis.AxisParameterSetExposed;
 stMotionEpicsItf.nEncoderCount := iMotionAxis.EncoderCount;
 stMotionEpicsItf.stAxisStatus.bEnable:=iMotionInterlocks.AllEnabled;
 stMotionEpicsItf.stAxisStatus.bEnabled:=iMotionInterlocks.EnableDone;
+stMotionEpicsItf.stAxisStatus.bExecute:=iMotionInterlocks.InterlockExec;
 stMotionEpicsItf.stAxisStatus.bExecute:=iMotionInterlocks.Execute;
-stMotionEpicsItf.stAxisStatus.bExecute:=iMotionInterlocks.EpicsExec;
-stMotionEpicsItf.stAxisStatus.bHomeSensor:=iMotionInterlocks.LimitHome;
+stMotionEpicsItf.stAxisStatus.bHomeSensor:=iMotionInterlocks.LimHome;
 stMotionEpicsItf.stAxisStatus.bEnabled:=iMotionInterlocks.EnableDone;
 stMotionEpicsItf.stAxisStatus.bLimitBwd:=iMotionInterlocks.AllBackwardEnabled;
 stMotionEpicsItf.stAxisStatus.bLimitFwd:=iMotionInterlocks.AllForwardEnabled;
@@ -236,101 +226,6 @@ stMotionEpicsItf.stAxisStatus.nErrorId:=stMotionEpicsItf.nErrorId;
 
 ]]></ST>
     </Implementation>
-    <Property Name="CustomErrorMessage" Id="{1f5bdf07-1530-4bc4-9f01-61edf34dd121}">
-      <Declaration><![CDATA[PROPERTY CustomErrorMessage : STRING]]></Declaration>
-      <Get Name="Get" Id="{6eea42ad-cf02-40c0-96b8-7a877334a1b1}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[CustomErrorMessage := sCustomErrorMessage;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{9e008f35-cbcf-45e0-9835-9c1c6074aee6}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[sCustomErrorMessage := CustomErrorMessage;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Method Name="DepsInit" Id="{40c6b3f7-f127-40e3-a616-1d1f82a96ee8}">
-      <Declaration><![CDATA[{attribute 'call_after_init'}
-METHOD DepsInit
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Passed Local Drive and Epics Interface structures to common axis
-// THIS^.iMotionAxisCommon.MotionDriveRef REF= stMotionDrive;
-//THIS^.iMotionAxisCommon.MotionEpicsInterfaceRef REF= THIS^.stMotionEpicsItf;
-// THIS^.iMotionInterlocks.MotionDriveRef REF= stMotionDrive;
-//THIS^.iMotionInterlocks.MotionEpicsInterfaceRef REF= stMotionEpicsItf;
-]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="Done" Id="{50b9fce4-3433-4cd4-8af0-3e6cb1e4c188}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Done : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{ac289ee1-82cd-44b2-b1f7-cc6a2f792ef2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{1b870293-2941-4d2c-9bbe-3ff9f1376470}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="Error" Id="{9e9f8ffe-6e96-4b18-9522-dd45ebc471b8}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Error : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{06a27d70-70de-4b99-a912-9d5fb421aef2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{ec338d56-3b79-4ff9-ae9f-e315a8d5ee7f}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="ErrorID" Id="{82d12daf-7c03-42c7-91e0-028740989fb2}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY ErrorID : UDINT
-]]></Declaration>
-      <Get Name="Get" Id="{745866a5-7830-470f-94c1-1c5eacda59a5}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{b393c613-5b8a-4252-96ef-ba4124ed098d}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Method Name="FB_init" Id="{15f40a72-aeff-42da-b103-42138a2002e8}">
       <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
 //The return value is not evaluated. For a specific influence, you can also declare the
@@ -357,13 +252,19 @@ THIS^.iMotionInterlocks:=iMotionInterlocks;
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="HandleInterFBCom" Id="{77700af7-7f88-4fff-9362-18f5a1e5f708}">
-      <Declaration><![CDATA[METHOD HandleInterFBCom
+    <Property Name="MoveState" Id="{dd5b8cbd-9409-4656-92fd-5594fa82e2d0}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY MoveState : E_MoveState
 ]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
+      <Get Name="Get" Id="{9f61ff24-1681-4c53-bc9c-5e302f7489f0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MoveState := eMoveState;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Property Name="Name" Id="{2d9876f4-b697-4cac-84f8-82078aa58de7}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY Name : STRING
@@ -385,50 +286,8 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="NegGoal" Id="{f61950ba-968d-43de-9cff-40bf82e839cb}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY NegGoal : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{66fce4e0-b942-408b-90b9-efb879161159}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[NegGoal := bNegGoal;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{9b0938cc-681d-4d9f-b136-744d1db0cdd8}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bNegGoal := NegGoal;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="PosGoal" Id="{bbdd4f4e-6bd8-4801-b11a-4ec5f7bbfde2}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY PosGoal : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{31ad9785-cb52-4009-a71d-008ab6ced550}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[PosGoal := bPosGoal;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{ddd2633f-9820-4fa7-9845-650eb83ed430}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bPosGoal := PosGoal;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Method Name="ProcessMoveReq" Id="{1da2dc9d-4406-4cb4-be2e-a29a35f201c7}">
-      <Declaration><![CDATA[METHOD ProcessMoveReq
+      <Declaration><![CDATA[METHOD INTERNAL ProcessMoveReq
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[(*
@@ -438,6 +297,7 @@ END_VAR
 *)
 rtMoveCmdShortcut(CLK:=bMoveCmd);
 rtHomeCmdShortcut(CLK:=stMotionEpicsItf.bHomeCmd);
+
 
 // Execute on rising edge
 IF rtMoveCmdShortcut.Q AND NOT stMotionEpicsItf.bExecute THEN
@@ -455,129 +315,38 @@ ELSIF rtHomeCmdShortcut.Q AND NOT stMotionEpicsItf.bExecute THEN
     stMotionEpicsItf.nCmdData:=iMotionAxis.HomeMode;
 END_IF
 
-// Handle main execs .  Rising on bMoved should be the ntry point
-// bu this is not the case in production its a rising on bExecute.
+//////////////////////////////////////
+// External (EPICS) Move Requests: No userEnable no move
+//////////////////////////////////////
 rtUserExec(CLK:=stMotionEpicsItf.bExecute);
+
+IF rtUserExec.Q AND NOT stMotionEpicsItf.bError AND NOT stMotionEpicsItf.bUserEnable THEN
+    THIS^.stMotionEpicsItf.bError := TRUE;
+    THIS^.stMotionEpicsItf.nErrorId:= 1;
+    THIS^.stMotionEpicsItf.sErrorMessage := 'Move requested, but user enable is disabled!';
+END_IF
+
 // if a Move/Home Goal is comfirmed and there is no persistant
 // error conditions, then we have a valid move request.
-bNewMoveReq S= NOT stMotionEpicsItf.stAxisStatus.bBusy AND rtUserExec.Q AND NOT stMotionEpicsItf.bError;
+bNewMoveReq S= rtUserExec.Q AND NOT iMotionAxis.Busy AND NOT stMotionEpicsItf.bError;
 // this Move request is valid till an error occurs or the currently move is done
 bNewMoveReq R= NOT stMotionEpicsItf.bExecute OR stMotionEpicsItf.bError;
 // define this R_TRIG to comfirm a new move request.
 rtNewMoveReq(CLK:=bNewMoveReq);
 
-(*These are additional status for special uses*)
-bPosGoal  S= rtNewMoveReq.Q AND (iMotionAxis.ActPosition < stMotionEpicsItf.fPosition) ;
-bNegGoal  S= rtNewMoveReq.Q AND (iMotionAxis.ActPosition > stMotionEpicsItf.fPosition) ;
-bPosGoal  R= iMotionAxis.Busy OR bNegGoal;
-bNegGoal  R= iMotionAxis.Busy OR bPosGoal;
 
 // Transfer nCommand and nCmdData to local copies at rising edge of bExecute
 // (avoid issues if nCommand or nCmdData are changed during a command)
-fbExecuteRiseEdge(CLK:=iMotionInterlocks.Execute);
-IF fbExecuteRiseEdge.Q THEN
+rtInterlockExec(CLK:=iMotionInterlocks.InterlockExec);
+IF rtInterlockExec.Q THEN
   iMotionAxis.CmdData:=INT_TO_UINT(stMotionEpicsItf.nCmdData);
   iMotionAxis.Cmd:=INT_TO_UINT(stMotionEpicsItf.nCommand);
-END_IF]]></ST>
+END_IF
+
+
+bExecHome:=iMotionInterlocks.InterlockExec AND stMotionEpicsItf.nCommand = 10;
+bExecMove:=iMotionInterlocks.InterlockExec AND NOT bExecHome;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionDrive">
-      <LineId Id="4" Count="0" />
-      <LineId Id="75" Count="28" />
-      <LineId Id="8" Count="11" />
-      <LineId Id="74" Count="0" />
-      <LineId Id="21" Count="3" />
-      <LineId Id="26" Count="0" />
-      <LineId Id="357" Count="0" />
-      <LineId Id="27" Count="27" />
-      <LineId Id="65" Count="4" />
-      <LineId Id="141" Count="4" />
-      <LineId Id="149" Count="28" />
-      <LineId Id="179" Count="1" />
-      <LineId Id="195" Count="0" />
-      <LineId Id="322" Count="0" />
-      <LineId Id="181" Count="3" />
-      <LineId Id="342" Count="14" />
-      <LineId Id="193" Count="0" />
-      <LineId Id="196" Count="0" />
-      <LineId Id="198" Count="1" />
-      <LineId Id="235" Count="0" />
-      <LineId Id="251" Count="0" />
-      <LineId Id="236" Count="8" />
-      <LineId Id="253" Count="0" />
-      <LineId Id="245" Count="0" />
-      <LineId Id="318" Count="1" />
-      <LineId Id="321" Count="0" />
-      <LineId Id="320" Count="0" />
-      <LineId Id="287" Count="1" />
-      <LineId Id="317" Count="0" />
-      <LineId Id="289" Count="0" />
-      <LineId Id="291" Count="7" />
-      <LineId Id="300" Count="16" />
-      <LineId Id="285" Count="0" />
-      <LineId Id="200" Count="0" />
-      <LineId Id="227" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.CustomErrorMessage.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.CustomErrorMessage.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.DepsInit">
-      <LineId Id="3" Count="4" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Done.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Done.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Error.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Error.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.ErrorID.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.ErrorID.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.FB_init">
-      <LineId Id="3" Count="3" />
-      <LineId Id="10" Count="0" />
-      <LineId Id="9" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.HandleInterFBCom">
-      <LineId Id="86" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Name.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Name.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.NegGoal.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.NegGoal.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.PosGoal.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.PosGoal.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.ProcessMoveReq">
-      <LineId Id="3" Count="18" />
-      <LineId Id="23" Count="27" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

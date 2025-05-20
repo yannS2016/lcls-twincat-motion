@@ -7,8 +7,6 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-
-    bExecute : BOOL;
     (* Hardware *)
     // NC Forward Limit Switch: TRUE if ok to move
     bLimitForwardEnable AT %I*: BOOL;
@@ -26,78 +24,105 @@ VAR
         field: DESC TRUE if STO not hit
     '}
     bHardwareEnable AT %I*: BOOL;
-
-    // Forward enable EPS summary
-    bAllForwardEnable: BOOL:=FALSE;
-    // Backward enable EPS summary
-    bAllBackwardEnable: BOOL:=FALSE;
-    // Enable EPS summary encapsulating emergency stop button and any additional motion preventive hardware
-    bAllEnable: BOOL:=FALSE;
     // Forward virtual gantry limit switch
     bGantryForwardEnable: BOOL:=FALSE;
     // Backward virtual gantry limit switch
     bGantryBackwardEnable: BOOL:=FALSE;
     // Set true to activate gantry EPS
     bGantryAxis: BOOL:=FALSE;
-    bSafetyReady : BOOL;
     bPowerSelf : BOOL;
     bLimOverride : BOOL;
-    bHomeBusy : BOOL;
-    bMoveBusy	: BOOL;
-    bMoveDone : BOOL;
-    bHomeDone : BOOL;
-    bNewMoveReq	: BOOL;
-    // Used internally to request enables
-    bEnable: BOOL;
-    bPrepareDisable : BOOL;
-    bEnableDone	: BOOL;
     nEnableMode : E_StageEnableMode := ENUM_StageEnableMode.DURING_MOTION;
-    eAxisState			:	MC_AxisStates;
-    ftForwardEnabled	: F_TRIG;
-    ftBackwardEnabled	: F_TRIG;
-    rtEnableMode : R_TRIG;
-    ftStopExec : F_TRIG;
-  
-	bSoftInterlock : BOOL;
-    rtNewMoveReq : R_TRIG;
-    // External Interface
-    bEpicsBusy : BOOL;
-    bEpicsDone: BOOL;
-    bEpicsExec : BOOL;
-    bEpicsEPSOk : BOOL;
-    bEpicsUserEn: BOOL;
-    sEpicsWarnMsg : STRING;
-    nErpicsWarnId : UINT;
-    bError : BOOL;
-    bAxisError : BOOL;
-    bReset : BOOL;
-	bLimHit : BOOL;
+    bSoftInterlock : BOOL;
 
-	
+    (* Hidden locals: No user apps changes allowed *)
+    {attribute 'hide'}
+    iMotionLogger 		: I_MotionLogger;
+    {attribute 'hide'}
+    bSafetyReady : BOOL;
+    {attribute 'hide'}
+    bInterlockExec : BOOL;
+    {attribute 'hide'}
+    bAllForwardEnabled: BOOL:=FALSE;
+     {attribute 'hide'}
+    bAllBackwardEnabled: BOOL:=FALSE;
+    {attribute 'hide'}
+    bAllEnabled: BOOL:=FALSE;
+    {attribute 'hide'}
+    bHomingBusy : BOOL;
+    {attribute 'hide'}
+    bMoveBusy	: BOOL;
+    {attribute 'hide'}
+    bNewMoveReq	: BOOL;
+    {attribute 'hide'}
+    bEnable: BOOL;
+    {attribute 'hide'}
+    bPrepareDisable : BOOL;
+    {attribute 'hide'}
+    bEnableDone	: BOOL;
+    {attribute 'hide'}
+    bExec : BOOL;
+    {attribute 'hide'}
+    bEPSOk : BOOL;
+    {attribute 'hide'}
+    bUserEnable: BOOL;
+    {attribute 'hide'}
+    sWarningMsg : STRING;
+    {attribute 'hide'}
+    nErpicsWarnId : UINT;
+    {attribute 'hide'}
+    bError : BOOL;
+    {attribute 'hide'}
+    bReset : BOOL;
+    {attribute 'hide'}
+    bLimHit : BOOL;
+    {attribute 'hide'}
+    eAxisState	: MC_AxisStates;
+    {attribute 'hide'}
+    ftForwardEnabled : F_TRIG;
+    {attribute 'hide'}
+    ftBackwardEnabled : F_TRIG;
+    {attribute 'hide'}
+    rtEnableMode : R_TRIG;
+    {attribute 'hide'}
+    ftStopExec : F_TRIG;
+    {attribute 'hide'}
+    rtNewMoveReq : R_TRIG;
+
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[bAllBackwardEnable := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND bEpicsEPSOk;
-bAllForwardEnable := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGantryAxis) AND bEpicsEPSOk;
+      <ST><![CDATA[bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND bEPSOk;
+bAllForwardEnabled := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGantryAxis) AND bEPSOk;
 ///////////////////////////////////
 // SoftInterlock is a user defined interloc logic active high
-bAllEnable := bEnable AND bHardwareEnable AND bEpicsEPSOk AND NOT bSoftInterlock;
-bAllEnable R= NOT bEpicsUserEn OR bSoftInterlock;
+bAllEnabled := bEnable AND bHardwareEnable AND bEPSOk AND NOT bSoftInterlock;
+bAllEnabled R= NOT bUserEnable OR bSoftInterlock;
 //// use falling trigger to avoid spaming  sErrorMessage
-ftForwardEnabled(CLK:=bAllForwardEnable);
-ftBackwardEnabled(CLK:=bAllBackwardEnable);
-////////////////
-IF  NOT bHomeBusy AND ( ftForwardEnabled.Q OR ftBackwardEnabled.Q) THEN
+ftForwardEnabled(CLK:=bAllForwardEnabled);
+ftBackwardEnabled(CLK:=bAllBackwardEnabled);
+///////////////////////////////////////////////////////////////
+// Raise a warning when limit are hit outisde of homing routine
+///////////////////////////////////////////////////////////////
+IF   ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
     // Not an error, just a warning
-    sEpicsWarnMsg:='Cannot move past limits.';
+    IF NOT bAllForwardEnabled THEN
+        sWarningMsg:='Cannot move past positive limit.';
+    ELSIF NOT bAllBackwardEnabled THEN
+        sWarningMsg:='Cannot move past Negative limit.';
+    END_IF
+    bLimHit := TRUE;
+    // will serve later
     bLimOverride := TRUE;
-	bLimHit := TRUE;
-// bMoveBusy must be from axis status
-ELSIF bMoveBusy THEN
-	bLimHit := FALSE;
+ELSE
     bLimOverride := FALSE;
+    bLimHit := FALSE;
 END_IF
-/////////////////////
+
+bPrepareDisable R= bNewMoveReq;
+// Moves are automatically allowed if no safety hooks. Otherwise, some other code will set this.
+bSafetyReady S= bPowerSelf;
+
 rtNewMoveReq(CLK:=bNewMoveReq);
 rtEnableMode(CLK:=(EnableMode = E_StageEnableMode.DURING_MOTION));
 // Handle auto-enable timing
@@ -115,7 +140,7 @@ CASE EnableMode OF
 END_CASE
 
 // Get a definitive bEnabled reading
-CASE MotionState OF
+CASE eAxisState OF
     // We are not enabled if there is an issue
     MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
         bEnableDone := FALSE;
@@ -124,151 +149,88 @@ CASE MotionState OF
 END_CASE
 
 // This is the output interlock check used to allow the requested move
-bExecute:= NOT bError AND bEpicsExec AND bAllEnable AND bEnableDone AND bSafetyReady;
+bInterlockExec:= NOT bError AND bExec AND bAllEnabled AND bEnableDone AND bSafetyReady;
 
-ftStopExec(CLK:=bEpicsExec);
+ftStopExec(CLK:=bExec);
 // Handle auto-disable timing
 bPrepareDisable S= (EnableMode = E_StageEnableMode.DURING_MOTION AND ftStopExec.Q );
 // Delay the disable until we reach standstill, else brake issues or other race conditions
-IF bPrepareDisable AND MotionState = MC_AXISSTATE_STANDSTILL THEN
+IF bPrepareDisable AND ( eAxisState = MC_AXISSTATE_STANDSTILL ) THEN
     bPrepareDisable := FALSE;
     bEnable := FALSE;
 END_IF
 
-// Catch reset signal 
-IF bReset THEN
-	bExecute := FALSE;
-	bEnable := FALSE;
+// Catch reset or error signal
+IF bReset OR bError THEN
+    bInterlockExec := FALSE;
+    bEnable := FALSE;
 END_IF]]></ST>
     </Implementation>
     <Property Name="AllBackwardEnabled" Id="{418fcf62-072d-4be6-9a52-23305e127201}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY AllBackwardEnabled : BOOL
+      <Declaration><![CDATA[PROPERTY AllBackwardEnabled : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{55a054b8-413b-4eb9-bcde-040b97b12037}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[AllBackwardEnabled  := bAllBackwardEnabled ;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{dde7b5e3-bff9-4400-9615-d0b82d1ed9fb}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="AllEnabled" Id="{b8e0c844-5e14-430a-80f0-4b68fea05847}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY AllEnabled : BOOL
+      <Declaration><![CDATA[PROPERTY AllEnabled : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{6ea43e2c-0382-4571-9cfc-7bb729ee79e3}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[AllEnabled := bAllEnabled;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{bc541e90-14d2-466b-a893-fb7d7691bb68}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="AllForwardEnabled" Id="{2f7747e3-44e7-42e0-9a1c-83d2d1a76054}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY AllForwardEnabled : BOOL
+      <Declaration><![CDATA[PROPERTY AllForwardEnabled : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{1ca1d849-7776-4ef6-9a28-190e986cc112}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[AllForwardEnabled  := bAllForwardEnabled ;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{1eb53a24-0bcd-4760-87b6-925dfdb82351}">
-        <Declaration><![CDATA[VAR
+    </Property>
+    <Property Name="AxisState" Id="{44a90cbd-3691-4882-b1b6-f892bb7ba71a}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY AxisState : MC_AxisStates
+]]></Declaration>
+      <Set Name="Set" Id="{1bd6e9a6-5cc4-44ec-a57f-bd547d52311d}">
+        <Declaration><![CDATA[
+VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[eAxisState := AxisState;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="AxisError" Id="{e0b11fb3-26c7-45f7-98ce-2376d327b10d}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY AxisError : BOOL
+    <Property Name="CmdReset" Id="{d7c5797b-f020-4663-9b29-a4ce671834e7}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY CmdReset : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{157da7fc-bd5b-4bf8-84cf-8df6b7e3cdec}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[AxisError := bAxisError;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{350c8db8-656b-4142-9030-c38e2a19d07c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bAxisError := AxisError;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="BrakeMode" Id="{605a15ef-00f9-4753-8ea7-1aca6535bc7a}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY BrakeMode : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{b0047fa4-62a8-4fd8-837e-15a35c2102db}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{ac63ed4c-2f72-4bf9-aee0-e515ce83d560}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CommandReset" Id="{d7c5797b-f020-4663-9b29-a4ce671834e7}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CommandReset : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{2abe93f5-7c2d-4c51-945f-f82e9caf61dc}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bReset := CommandReset;]]></ST>
-        </Implementation>
-      </Get>
       <Set Name="Set" Id="{fe671024-6b4a-4be3-ba0d-efe323f187fa}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[CommandReset := bReset;]]></ST>
+          <ST><![CDATA[CmdReset := bReset;]]></ST>
         </Implementation>
       </Set>
     </Property>
     <Property Name="Enable" Id="{eb9d37e7-c20f-4579-883e-a60995bb2154}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY Enable : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{577ae15a-eb93-44cc-b94c-5d345337fc3c}">
@@ -280,17 +242,9 @@ END_VAR
 ]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{87acea23-86f0-41e3-a128-7d31e40f27c7}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bEnable := Enable;]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="EnableDone" Id="{e8f686cf-2820-4def-9cf3-b4656f653df8}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY EnableDone : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{08422664-dee5-4efb-b45d-daa37c0a0460}">
@@ -301,17 +255,10 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{d5873ec5-a49f-4a80-a2e6-e9d897675f80}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="EnableMode" Id="{0059a3f0-809f-424e-ade1-142436c73b96}">
-      <Declaration><![CDATA[PROPERTY EnableMode : E_StageEnableMode
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY EnableMode : E_StageEnableMode
 ]]></Declaration>
       <Get Name="Get" Id="{c252aba3-058d-4c88-b3ae-fd371338d57a}">
         <Declaration><![CDATA[VAR
@@ -330,14 +277,15 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="EpicsEPSOk" Id="{92783980-27d5-4db6-93ad-759db6eb8d88}">
-      <Declaration><![CDATA[PROPERTY EpicsEPSOk : BOOL]]></Declaration>
+    <Property Name="EPSOk" Id="{92783980-27d5-4db6-93ad-759db6eb8d88}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY EPSOk : BOOL]]></Declaration>
       <Get Name="Get" Id="{5901b928-70bf-45c0-9664-fb5466a768f0}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[EpicsEPSOk := bEpicsEPSOk;]]></ST>
+          <ST><![CDATA[EPSOk := bEPSOk;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{d5afccd0-d5e1-4ad6-8d85-c44d6f4e523c}">
@@ -345,18 +293,32 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[bEpicsEPSOk := EpicsEPSOk;]]></ST>
+          <ST><![CDATA[bEPSOk := EPSOk;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="EpicsExec" Id="{adfea890-baf3-46d4-88d1-ab670b437eba}">
-      <Declaration><![CDATA[PROPERTY EpicsExec : BOOL]]></Declaration>
+    <Property Name="Error" Id="{ed388f45-b221-4a5a-b448-df78256526be}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY Error : BOOL
+]]></Declaration>
+      <Set Name="Set" Id="{33a5d504-8baa-4ed2-a8b1-5d7ee0ad1a00}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bError  := Error ;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="Execute" Id="{adfea890-baf3-46d4-88d1-ab670b437eba}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY Execute : BOOL]]></Declaration>
       <Get Name="Get" Id="{3eb81bbb-e312-49e1-a2e8-5baefbde74e1}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[EpicsExec := bEpicsExec;]]></ST>
+          <ST><![CDATA[Execute := bExec;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{849e685b-a5bc-4a6d-9ac3-62f1b3ae7fe9}">
@@ -364,123 +326,34 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[bEpicsExec := EpicsExec;]]></ST>
+          <ST><![CDATA[bExec := Execute;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="EpicsUserEn" Id="{7e460973-7eca-4640-a87e-aea5109100a1}">
-      <Declaration><![CDATA[PROPERTY EpicsUserEn : BOOL]]></Declaration>
-      <Get Name="Get" Id="{60a2a96e-359c-44c0-b656-b6511b040c6b}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EpicsUserEn := bEpicsUserEn;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{7908cd37-ba77-48eb-88d0-e770b31f2177}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bEpicsUserEn := EpicsUserEn;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="EpicsWarnID" Id="{5598e3c0-c025-4591-a33e-0591f1851621}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY EpicsWarnID : UINT
-]]></Declaration>
-      <Get Name="Get" Id="{37a33505-3c15-43ab-b9e2-da7fe440eb0c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EpicsWarnID  := nErpicsWarnId;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{f28a72c6-4afc-4fef-ad8b-62a6c8efdef1}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[nErpicsWarnId := EpicsWarnID;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="EpicsWarnMsg" Id="{c58a222e-888c-449d-acb8-7036a45dc5e8}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY EpicsWarnMsg : STRING
-]]></Declaration>
-      <Get Name="Get" Id="{c813683b-22cc-422c-89ed-ba893df5d926}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EpicsWarnMsg := sEpicsWarnMsg;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{e973959c-f57a-4bd4-b9a9-074c3ca4a843}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[sEpicsWarnMsg := EpicsWarnMsg;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="Error" Id="{ed388f45-b221-4a5a-b448-df78256526be}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Error : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{a58042ce-cb18-4233-87ab-70674b1ab7b6}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{33a5d504-8baa-4ed2-a8b1-5d7ee0ad1a00}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="Execute" Id="{241c85ea-6b4a-4cfb-b30d-18c9f3324f20}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Execute : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{885f2612-672c-46b6-8b6d-e739eb91c124}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[Execute := bExecute;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{8fddbe71-33bb-4885-ad6d-c2f6a371762a}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bExecute := Execute;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
+    <Method Name="FB_Init" Id="{84019423-7ce0-4649-83b3-d87beaa3ba25}">
+      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
+//The return value is not evaluated. For a specific influence, you can also declare the
+//methods explicitly and provide additional code there with the standard initialization
+//code. You can evaluate the return value.
+METHOD FB_Init: BOOL
+VAR_INPUT
+    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+    iMotionLogger 		: I_MotionLogger;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.iMotionLogger := iMotionLogger;]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="GantryAxis" Id="{d8cb5e8d-9253-42f7-9db8-070eb5987299}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY GantryAxis : BOOL
+      <Declaration><![CDATA[PROPERTY GantryAxis : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{90d116f0-2ada-46f1-bf3e-472f395eedca}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[ GantryAxis :=  bGantryAxis;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{1abb758b-9861-482a-a859-5ba04c1504b8}">
@@ -488,20 +361,19 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[ bGantryAxis :=  bGantryAxis;]]></ST>
         </Implementation>
       </Set>
     </Property>
     <Property Name="GantryBackwardEnable" Id="{6eb9203e-9a27-4754-832f-3e6ac487d7cd}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY GantryBackwardEnable : BOOL
+      <Declaration><![CDATA[PROPERTY GantryBackwardEnable : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{c16b98fb-bd19-41f8-8513-af8b053105c4}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[GantryBackwardEnable := bGantryBackwardEnable;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{411048ad-2cbc-4674-9fb4-645d69a609a3}">
@@ -509,20 +381,19 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[bGantryBackwardEnable := GantryBackwardEnable;]]></ST>
         </Implementation>
       </Set>
     </Property>
     <Property Name="GantryForwardEnable" Id="{49ac7373-d315-4647-997e-c3d4fbe89b3d}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY GantryForwardEnable : BOOL
+      <Declaration><![CDATA[PROPERTY GantryForwardEnable : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{f431d19d-5fc7-4cdb-b93c-67ea289b1b4a}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[GantryForwardEnable := bGantryForwardEnable;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{0282b8e9-d635-4cf4-8302-0e014dc947a3}">
@@ -530,7 +401,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[bGantryForwardEnable := GantryForwardEnable;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -553,58 +424,41 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="HomeBusy" Id="{bc31249e-e1b0-4246-9f27-a6accf53a3b3}">
+    <Property Name="HomingBusy" Id="{bc31249e-e1b0-4246-9f27-a6accf53a3b3}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HomeBusy : BOOL
+PROPERTY HomingBusy : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{1f498d4b-bbbc-4cc1-aaa9-26f320329ae3}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[HomeBusy := bHomeBusy;]]></ST>
-        </Implementation>
-      </Get>
       <Set Name="Set" Id="{28bb4f29-aa60-44f5-983c-b2a5c8ee0f40}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[bHomeBusy := HomeBusy;]]></ST>
+          <ST><![CDATA[bHomingBusy := HomingBusy;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="HomeDone" Id="{552d233f-fafa-49fc-9b9b-f4fefb2240b1}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HomeDone : BOOL
+    <Property Name="InterlockExec" Id="{241c85ea-6b4a-4cfb-b30d-18c9f3324f20}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY InterlockExec : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{a6abb2f3-aab7-4d32-97aa-6252f4a7e023}">
+      <Get Name="Get" Id="{885f2612-672c-46b6-8b6d-e739eb91c124}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[HomeDone := bHomeDone;]]></ST>
+          <ST><![CDATA[InterlockExec := bInterlockExec;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{f358825d-9539-4f92-8dc7-5280f9fb1bbc}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bHomeDone := HomeDone;]]></ST>
-        </Implementation>
-      </Set>
     </Property>
-    <Property Name="LimitBackwardEnable" Id="{f0c12a5c-c1fb-43de-bba5-3d0b5a489e5e}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY LimitBackwardEnable : BOOL
+    <Property Name="LimBwdEnable" Id="{f0c12a5c-c1fb-43de-bba5-3d0b5a489e5e}">
+      <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{37912160-1a31-42d9-94e4-e0d17cedefed}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[LimitBackwardEnable := bLimitBackwardEnable;]]></ST>
+          <ST><![CDATA[LimBwdEnable := bLimitBackwardEnable;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{cf37b50f-e07e-4d56-aee1-bdbbb25c2090}">
@@ -612,54 +466,46 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[bLimitBackwardEnable := LimitBackwardEnable;]]></ST>
+          <ST><![CDATA[bLimitBackwardEnable := LimBwdEnable;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="LimitForwardEnable" Id="{bad98783-f68c-4f18-8ede-2f4301263843}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY LimitForwardEnable : BOOL
+    <Property Name="LimFwdEnable" Id="{bad98783-f68c-4f18-8ede-2f4301263843}">
+      <Declaration><![CDATA[PROPERTY LimFwdEnable : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{68c7fce3-79d3-4024-9097-1684f0f11d11}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[LimitForwardEnable := bLimitForwardEnable;]]></ST>
+          <ST><![CDATA[LimFwdEnable := bLimitForwardEnable;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{d1eef325-c448-4ca6-b9ed-45599867d6d2}">
-        <Declaration><![CDATA[VAR
+      <Set Name="Set" Id="{16df96f9-94f0-4d35-9b1c-fda03f8469e0}">
+        <Declaration><![CDATA[
+VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[bLimitForwardEnable := LimitForwardEnable;]]></ST>
+          <ST><![CDATA[bLimitForwardEnable := LimFwdEnable;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="LimitHit" Id="{42c9b53e-e670-4408-8538-d34ff8b98535}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY LimitHit : BOOL
+    <Property Name="LimHit" Id="{42c9b53e-e670-4408-8538-d34ff8b98535}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY LimHit : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{a3588f8d-5778-455b-960b-1464f8c08488}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[LimHit := bLimHit;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{52990498-a906-4964-a4e4-e902ea1d7579}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
     </Property>
-    <Property Name="LimitHome" Id="{98a7960f-d5b5-4afa-a6d4-836668115fc2}">
-      <Declaration><![CDATA[PROPERTY LimitHome : BOOL]]></Declaration>
+    <Property Name="LimHome" Id="{98a7960f-d5b5-4afa-a6d4-836668115fc2}">
+      <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
       <Get Name="Get" Id="{f1ca984e-77a2-439a-be50-7890b12815a4}">
         <Declaration><![CDATA[VAR
 END_VAR
@@ -687,47 +533,11 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{ef0c8919-606f-4c9f-9b7e-a1ef662b6cfb}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="MotionState" Id="{44a90cbd-3691-4882-b1b6-f892bb7ba71a}">
-      <Declaration><![CDATA[PROPERTY MotionState : MC_AxisStates
-]]></Declaration>
-      <Get Name="Get" Id="{3359291a-1868-42f0-b984-f039e16d5a57}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[MotionState := eAxisState;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{457e1b1c-976f-4367-b531-863c463e19aa}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[eAxisState := MotionState;]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="MoveBusy" Id="{3b662135-5c7b-4ef2-8b8b-c5b21d18abaf}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY MoveBusy : BOOL
 ]]></Declaration>
-      <Get Name="Get" Id="{cf263f7a-1151-4a3d-8860-af46e7b9f103}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
       <Set Name="Set" Id="{19d2e732-69d6-4ce4-b249-1c354a28e43a}">
         <Declaration><![CDATA[VAR
 END_VAR
@@ -738,7 +548,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="NewMoveReq" Id="{d21bd231-742e-430d-ac58-752fa989439e}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY NewMoveReq : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{d34ff2ae-4ca2-4f54-9cbe-2bae1d4b6f58}">
@@ -749,8 +559,9 @@ END_VAR
           <ST><![CDATA[NewMoveReq := bNewMoveReq ;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{8074a5f2-a27a-4168-8635-4d5f83b65162}">
-        <Declaration><![CDATA[VAR
+      <Set Name="Set" Id="{2e2ac28f-5f81-46ac-84c3-c5bf8fbc6d52}">
+        <Declaration><![CDATA[
+VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
@@ -759,8 +570,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="PowerSelf" Id="{fb36e9c1-0ee1-4f1a-b06f-22d945195377}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY PowerSelf : BOOL
+      <Declaration><![CDATA[PROPERTY PowerSelf : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{c06ff4fd-ee59-4911-94a2-c723bdd82017}">
         <Declaration><![CDATA[VAR
@@ -780,7 +590,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="PrepareDisable" Id="{74f72c04-fe7f-4e73-bd9e-9da711ed7881}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY PrepareDisable : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{fed14a6f-2527-439a-8476-ab4afab54f62}">
@@ -788,21 +598,12 @@ PROPERTY PrepareDisable : BOOL
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[PrepareDisable := bPrepareDisable;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{b3c6d7d4-e234-4499-8d50-2aa614dc6dc7}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="SafetyReady" Id="{62e38fe3-a7fb-4294-903f-29b79adc8e09}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY SafetyReady : BOOL
+      <Declaration><![CDATA[PROPERTY SafetyReady : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{827e9c82-e09d-4f11-ade7-bddb9139debf}">
         <Declaration><![CDATA[VAR
@@ -842,228 +643,51 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <LineIds Name="FB_MotionInterlocks">
-      <LineId Id="120" Count="1" />
-      <LineId Id="123" Count="0" />
-      <LineId Id="222" Count="0" />
-      <LineId Id="124" Count="1" />
-      <LineId Id="127" Count="30" />
-      <LineId Id="164" Count="10" />
-      <LineId Id="185" Count="0" />
-      <LineId Id="209" Count="0" />
-      <LineId Id="201" Count="5" />
-      <LineId Id="60" Count="0" />
-      <LineId Id="228" Count="0" />
-      <LineId Id="224" Count="0" />
-      <LineId Id="223" Count="0" />
-      <LineId Id="225" Count="0" />
-      <LineId Id="227" Count="0" />
-      <LineId Id="226" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AllBackwardEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AllBackwardEnabled.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AllEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AllEnabled.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AllForwardEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AllForwardEnabled.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AxisError.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.AxisError.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.BrakeMode.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.BrakeMode.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.CommandReset.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.CommandReset.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.Enable.Get">
-      <LineId Id="3" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.Enable.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EnableDone.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EnableDone.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EnableMode.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EnableMode.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsEPSOk.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsEPSOk.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsExec.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsExec.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsUserEn.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsUserEn.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsWarnID.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsWarnID.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsWarnMsg.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.EpicsWarnMsg.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.Error.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.Error.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.Execute.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.Execute.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.GantryAxis.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.GantryAxis.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.GantryBackwardEnable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.GantryBackwardEnable.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.GantryForwardEnable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.GantryForwardEnable.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.HardwareEnable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.HardwareEnable.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.HomeBusy.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.HomeBusy.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.HomeDone.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.HomeDone.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitBackwardEnable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitBackwardEnable.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitForwardEnable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitForwardEnable.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitHit.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitHit.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitHome.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimitHome.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimOverride.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.LimOverride.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.MotionState.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.MotionState.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.MoveBusy.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.MoveBusy.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.NewMoveReq.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.NewMoveReq.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.PowerSelf.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.PowerSelf.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.PrepareDisable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.PrepareDisable.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.SafetyReady.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.SafetyReady.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.SoftInterlock.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocks.SoftInterlock.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
+    <Property Name="UserEnable" Id="{7e460973-7eca-4640-a87e-aea5109100a1}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY UserEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{60a2a96e-359c-44c0-b656-b6511b040c6b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[UserEnable := bUserEnable;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{7908cd37-ba77-48eb-88d0-e770b31f2177}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bUserEnable := UserEnable;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="WarnID" Id="{5598e3c0-c025-4591-a33e-0591f1851621}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY WarnID : UINT
+]]></Declaration>
+      <Get Name="Get" Id="{37a33505-3c15-43ab-b9e2-da7fe440eb0c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[WarnID  := nErpicsWarnId;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="WarningMsg" Id="{c58a222e-888c-449d-acb8-7036a45dc5e8}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY WarningMsg : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{c813683b-22cc-422c-89ed-ba893df5d926}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[WarningMsg := sWarningMsg;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
   </POU>
 </TcPlcObject>

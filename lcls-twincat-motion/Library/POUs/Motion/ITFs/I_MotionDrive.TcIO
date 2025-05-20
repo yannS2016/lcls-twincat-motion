@@ -2,54 +2,12 @@
 <TcPlcObject Version="1.1.0.1">
   <Itf Name="I_MotionDrive" Id="{4f84f724-7938-4847-ac53-18866323f75e}">
     <Declaration><![CDATA[INTERFACE I_MotionDrive]]></Declaration>
-    <Property Name="CustomErrorMessage" Id="{1f202727-1b36-4e25-b74c-103d33b9d571}">
-      <Declaration><![CDATA[PROPERTY CustomErrorMessage : STRING]]></Declaration>
-      <Get Name="Get" Id="{f8e06972-f73d-4bc3-9676-e2259d72e3ee}">
+    <Property Name="MoveState" Id="{59c202a3-c882-4210-9481-3189a09e98b7}">
+      <Declaration><![CDATA[PROPERTY MoveState : E_MoveState]]></Declaration>
+      <Get Name="Get" Id="{666a02d0-c9d6-458d-954f-78bfef8b7a4d}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{aae53a41-e997-4a33-a47e-083bd72a85ca}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
     </Property>
-    <Method Name="DepsInit" Id="{bf5827d1-d917-4cf2-bee1-86b0b5256fcf}">
-      <Declaration><![CDATA[METHOD DepsInit
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Property Name="Done" Id="{3f8a8de7-7e6f-415e-90b3-ae5922bd3074}">
-      <Declaration><![CDATA[PROPERTY Done : BOOL]]></Declaration>
-      <Get Name="Get" Id="{e0481405-1904-426f-8294-683a0a15ba2c}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{69ec95aa-0883-4c80-92a1-83f7f5d53e54}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="Error" Id="{28692bda-2e15-49a9-ae9c-44ee2c225402}">
-      <Declaration><![CDATA[PROPERTY Error : BOOL]]></Declaration>
-      <Get Name="Get" Id="{e7c06eb5-1986-4004-bdcb-ca18cd302e3f}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{5320cbe2-83f6-49ab-a814-bb332a3d0b75}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="ErrorID" Id="{415dcb0a-1a80-4f20-a5f6-d07b913efdcb}">
-      <Declaration><![CDATA[PROPERTY ErrorID : UDINT]]></Declaration>
-      <Get Name="Get" Id="{2080dd72-b57e-4aae-b589-16fc55f2d7f8}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{eb8abf2e-d9e9-4d6c-a6ee-9a201b51f0c5}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Method Name="HandleInterFBCom" Id="{9db29681-ab2b-481a-8dad-3e40513073e7}">
-      <Declaration><![CDATA[METHOD HandleInterFBCom
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
     <Property Name="Name" Id="{808bc845-b6e4-4963-ab8f-244d15a3cc40}">
       <Declaration><![CDATA[PROPERTY Name : STRING]]></Declaration>
       <Get Name="Get" Id="{eef700d5-67cb-4093-abd3-49b2850feb0c}">
@@ -59,29 +17,5 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="NegGoal" Id="{8ca9aaff-70e5-4a7d-a380-f334afbad2d7}">
-      <Declaration><![CDATA[PROPERTY NegGoal : BOOL]]></Declaration>
-      <Get Name="Get" Id="{dcb0f332-0cee-463b-a760-dfbb09a2481f}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{b6d4edb5-1521-4c30-ad4f-617130ebe079}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="PosGoal" Id="{3bbc2f55-6d26-4fcf-84a1-58d794d496f9}">
-      <Declaration><![CDATA[PROPERTY PosGoal : BOOL]]></Declaration>
-      <Get Name="Get" Id="{c16d3cd5-bc57-4e01-b657-b628634e13d4}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{ab4cb165-b4bb-475f-901a-3072d677c7cc}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Method Name="ProcessMoveReq" Id="{16636825-34ac-44bb-b4de-2566f4d18b17}">
-      <Declaration><![CDATA[METHOD ProcessMoveReq
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
   </Itf>
 </TcPlcObject>

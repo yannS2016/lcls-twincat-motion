@@ -10,7 +10,7 @@ VAR
     {attribute 'no_copy'}
     AxisRef : REFERENCE TO AXIS_REF;
     iMotionAxisCommon : I_MotionAxisCommon;
-	iPersistentDataStorage : I_PersistentDataStorage;
+    iPersistentDataStorage : I_PersistentDataStorage;
     iMotionLogger : I_MotionLogger;
 
     stAxisParameterSetExposed : ST_AxisParameterSetExposed;
@@ -22,7 +22,7 @@ VAR
     fHomePosition : LREAL :=0.0;
     bError				: BOOL;
     sErrorMessage		: STRING;
-	
+
     fSetPosition	: LREAL;
     fSetVelocity	: LREAL;
     fSetAcceleration	: LREAL := 0.0;
@@ -30,22 +30,22 @@ VAR
     fSetJerk	: LREAL := 0.0;
     nHomingMode:ENUM_EpicsHomeCmd :=ENUM_EpicsHomeCmd.NONE;
     eBufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
-	
-	// Piezo Motion Control
+
+    // Piezo Motion Control
     tholtime		: TIME := T#10S;
     bBusy : BOOL;
-	bDone: BOOL;
-	
-	// intermediary motion signal: from EPICS interface
+    bDone: BOOL;
+
+    // intermediary motion signal: from EPICS interface
     bCmdMoveAbsolute	: BOOL;
     bCmdReset 			: BOOL;
     bCmdHalt 			: BOOL;
     bCmdStop 			: BOOL;
-	bCmdAbort 			: BOOL;
-	nCommandLocal 		: UINT;
-	nCmdDataLocal		: UINT;
-	
-	ftDone 				: F_TRIG;
+    bCmdAbort 			: BOOL;
+    nCommandLocal 		: UINT;
+    nCmdDataLocal		: UINT;
+
+    ftDone 				: F_TRIG;
     rtHaltedDone		: R_TRIG;
     rtTargetReached		: R_TRIG;
     ftAbortDone			: F_TRIG;
@@ -53,7 +53,7 @@ VAR
     rtHomed				: R_TRIG;
     rtMoveCmdShortcut	: R_TRIG;
     rtHomeCmdShortcut	: R_TRIG;
-	rtAbsoluteModeDone	: R_TRIG;
+    rtAbsoluteModeDone	: R_TRIG;
     rtModeChange		: R_TRIG;
     rtTarget			: R_TRIG;
     rtServoOnMode		: R_TRIG;
@@ -65,6 +65,9 @@ VAR
     ftErrorSdoRead		: F_TRIG;
     ftEnableDrive		: F_TRIG;
     ftServo				: F_TRIG;
+
+    bModeOfOperation    : SINT;
+    nControlWord		: UINT;
 END_VAR
 
 VAR PERSISTENT
@@ -254,6 +257,27 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="CmdHome" Id="{8abbd5ea-3dc4-4d69-9e0c-38836283e746}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CmdHome : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{416ce021-bf50-40d5-9e4c-4f6d024da3bd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{10a77ad4-7e59-42e4-ac07-baeea6a8f2ff}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Property Name="CmdMoveAbsolute" Id="{66ae2ee2-0c01-40b6-9539-edb268b91e17}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY CmdMoveAbsolute : BOOL
@@ -267,27 +291,6 @@ END_VAR
         </Implementation>
       </Get>
       <Set Name="Set" Id="{508f3062-131c-43b8-b6c5-2f6c55a29a73}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdMoveHome" Id="{8abbd5ea-3dc4-4d69-9e0c-38836283e746}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdMoveHome : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{416ce021-bf50-40d5-9e4c-4f6d024da3bd}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{10a77ad4-7e59-42e4-ac07-baeea6a8f2ff}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -398,17 +401,18 @@ END_VAR
 METHOD FB_Init: BOOL
 VAR_INPUT
     bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
-    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)   
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+
     AxisRef : REFERENCE TO AXIS_REF;
     iMotionAxisCommon : I_MotionAxisCommon;
-	iPersistentDataStorage : I_PersistentDataStorage;
+    iPersistentDataStorage : I_PersistentDataStorage;
     iMotionLogger : I_MotionLogger;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.AxisRef := AxisRef;
+        <ST><![CDATA[THIS^.AxisRef REF= AxisRef;
 THIS^.iMotionAxisCommon := iMotionAxisCommon;
 THIS^.iPersistentDataStorage := iPersistentDataStorage;
-THIS^.iMotionLogger := THIS^.iMotionLogger;]]></ST>
+THIS^.iMotionLogger := iMotionLogger;]]></ST>
       </Implementation>
     </Method>
     <Property Name="HaltDone" Id="{fde5e42a-822a-4e41-9d45-79c3d316bdec}">
@@ -890,13 +894,13 @@ END_VAR
     </Property>
     <Method Name="StartMove" Id="{f7413bfe-5d7e-4f37-8a0d-455e16d25413}">
       <Declaration><![CDATA[{warning 'Add method implementation '}
-(* 
-	Check all post condition before updating bCommandedMoveAbsolute
-	The implmentatation will depend on the axis type
-	DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
-	MP NC axis : will immediately write to bCommandedMoveAbsolute 
+(*
+    Check all post condition before updating bCommandedMoveAbsolute
+    The implmentatation will depend on the axis type
+    DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
+    MP NC axis : will immediately write to bCommandedMoveAbsolute
 *)
-METHOD StartMove
+METHOD StartMove : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
@@ -923,224 +927,5 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <LineIds Name="FB_MotionAxisDS402NC">
-      <LineId Id="1" Count="7" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Active.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ActPosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ActPositionDiff.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ActVelocity.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.AxisParameterSetExposed.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.AxisState.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.BufferMode.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Busy.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Cmd.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdAbort.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdAbort.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdData.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdHalt.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdHalt.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveAbsolute.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveAbsolute.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveHome.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdMoveHome.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdReset.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.CmdReset.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Done.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.EncoderCount.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.EncoderCount.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Error.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ErrorID.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ErrorMessage.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.FB_Init">
-      <LineId Id="1" Count="3" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HaltDone.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HaltDone.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Home">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomeMode.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomeMode.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomePosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomePosition.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomingBusy.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.HomingBusy.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.InterruptMove">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MeasuredAcceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MeasuredPosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MeasuredVelocity.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ModeOfOperation.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.ModeOfOperation.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetAcceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetDeceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetJerk.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetPosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveAbsoluteTargetVelocity.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveMode.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.MoveMode.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Name.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Name.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.NegativeMotionIsEnabled.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PositiveMotionIsEnabled.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerEnable.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerEnable.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerEnableNegative.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerEnableNegative.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerEnablePositive.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerEnablePositive.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerIsEnabled.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.PowerOverride.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Servo.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.Servo.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetpointAcceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetPointDecceleration.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetPointDecceleration.Set">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetpointJerk.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetpointPosition.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.SetpointVelocity.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.StartMove">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.StopMove">
-      <LineId Id="1" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.TargetReached.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>
