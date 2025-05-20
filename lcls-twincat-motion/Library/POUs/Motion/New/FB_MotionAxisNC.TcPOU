@@ -44,6 +44,7 @@ VAR
     bResetDone : BOOL;
     bHaltDone : BOOL;
     bHomeDone  : BOOL;
+
     {attribute 'hide'}
     eAxisState : MC_AxisStates;
     // intermediary motion signal: from EPICS interface
@@ -59,30 +60,27 @@ VAR
     fMoveAbsoluteTargetAcceleration : LREAL;
     fMoveAbsoluteTargetDeceleration : LREAL;
     fMoveAbsoluteTargetJerk : LREAL;
-    ftDone 				: F_TRIG;
-    rtHaltedDone		: R_TRIG;
-    rtTargetReached		: R_TRIG;
-    ftAbortDone			: F_TRIG;
-    rtFault				: R_TRIG;
+    fMeasuredAcceleration : LREAL;
+    fMeasuredVelocity : LREAL;
+    fMeasuredPosition : LREAL;
+    fMeasuredPositionDiff : LREAL;
+
+    rtDone 				: R_TRIG;
+    rtError				: R_TRIG;
+    rtReset				: R_TRIG;
     rtHomed				: R_TRIG;
-    rtMoveCmdShortcut	: R_TRIG;
-    rtHomeCmdShortcut	: R_TRIG;
-    rtAbsoluteModeDone	: R_TRIG;
-    rtModeChange		: R_TRIG;
-    rtTarget			: R_TRIG;
-    rtServoOnMode		: R_TRIG;
-    rtEnableDrive		: R_TRIG;
-    rtServoOnTrans		: R_TRIG;
-    rtNewHoldTime		: R_TRIG;
-    ftServoOffTrans		: F_TRIG;
-    rtServoOffMode		: R_TRIG;
-    ftErrorSdoRead		: F_TRIG;
-    ftEnableDrive		: F_TRIG;
     ftServo				: F_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[// Propagate user command to common worker
+// 1- Power status
+iMotionAxisCOmmon.BufferMode := THIS^.eBufferMode;
+iMotionAxisCommon.PowerEnable := THIS^.bPowerEnable;
+iMotionAxisCommon.PowerEnableNegative := THIS^.bPowerEnableNegative;
+iMotionAxisCommon.PowerEnablePositive := THIS^.bPowerEnablePositive;
+iMotionAxisCommon.PowerOverride := THIS^.fPowerOverride;
+// 2- Motion commands
 iMotionAxisCommon.CommandedHalt := THIS^.bCmdHalt;
 iMotionAxisCommon.CommandedReset := THIS^.bCmdReset;
 iMotionAxisCommon.CommandedMoveAbsolute := THIS^.bCmdMoveAbsolute;
@@ -90,7 +88,32 @@ iMotionAxisCommon.MoveAbsoluteTargetPosition := THIS^.fMoveAbsoluteTargetPositio
 iMotionAxisCommon.MoveAbsoluteTargetVelocity := THIS^.fMoveAbsoluteTargetVelocity;
 iMotionAxisCommon.MoveAbsoluteTargetAcceleration := THIS^.fMoveAbsoluteTargetAcceleration;
 iMotionAxisCommon.MoveAbsoluteTargetDeceleration := THIS^.fMoveAbsoluteTargetDeceleration;
-iMotionAxisCommon.MoveAbsoluteTargetJerk := THIS^.fMoveAbsoluteTargetJerk;]]></ST>
+iMotionAxisCommon.MoveAbsoluteTargetJerk := THIS^.fMoveAbsoluteTargetJerk;
+
+// readbacks and status update from common worker
+THIS^.fMeasuredAcceleration := iMotionAxisCommon.MeasuredAcceleration;
+THIS^.fMeasuredVelocity := iMotionAxisCommon.MeasuredVelocity;
+THIS^.fMeasuredPosition := iMotionAxisCommon.MeasuredPosition;
+THIS^.fMeasuredPositionDiff := iMotionAxisCommon.MeasuredPositionDiff;
+THIS^.bHaltDone := iMotionAxisCommon.HaltDone;
+THIS^.bResetDone := iMotionAxisCommon.ResetDone;
+THIS^.bDone := iMotionAxisCommon.MoveAbsoluteDone OR THIS^.HomeDone;
+THIS^.bBusy := iMotionAxisCommon.MoveAbsoluteBusy OR THIS^.HomingBusy;
+THIS^.bError := iMotionAxisCommon.Error;
+THIS^.nErrorId := iMotionAxisCommon.ErrorID;
+THIS^.sErrorMessage := iMotionAxisCommon.ErrorMessage;
+THIS^.eAxisState := iMotionAxisCommon.AxisState;
+
+// reset cmds if done, error or reset
+rtDone(CLK:=bDone);
+rtError(CLK:=bError);
+rtReset(CLK:=bCmdReset);
+IF rtDone.Q OR rtError.Q OR rtReset.Q THEN
+    bCmdMoveAbsolute	:= FALSE;
+    bCmdReset	:= FALSE;
+    bCmdHalt 	:= FALSE;
+    bCmdMoveHome	:= FALSE;
+END_IF]]></ST>
     </Implementation>
     <Property Name="AxisParameterSetExposed" Id="{384b2d0e-5f4f-4936-8350-ceae816b150e}">
       <Declaration><![CDATA[PROPERTY AxisParameterSetExposed : ST_AxisParameterSetExposed
@@ -427,15 +450,14 @@ METHOD InterruptMove
       </Implementation>
     </Method>
     <Property Name="MeasuredAcceleration" Id="{7e81f087-a061-41fe-adda-cdd75fb8d3b7}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MeasuredAcceleration : LREAL
+      <Declaration><![CDATA[PROPERTY MeasuredAcceleration : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{1fb1b26a-c93f-4978-8c85-5aca7ba005c8}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[MeasuredAcceleration := fMeasuredAcceleration;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -448,7 +470,7 @@ PROPERTY MeasuredPosition : LREAL
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[MeasuredPosition := fMeasuredPosition;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -461,20 +483,19 @@ PROPERTY MeasuredPositionDiff : LREAL
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[MeasuredPositionDiff := fMeasuredPositionDiff;]]></ST>
         </Implementation>
       </Get>
     </Property>
     <Property Name="MeasuredVelocity" Id="{df9982a2-284d-4e07-a730-805522796a88}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MeasuredVelocity : LREAL
+      <Declaration><![CDATA[PROPERTY MeasuredVelocity : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{3ce526bf-887f-4f07-b397-c7b40bc7ea9d}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[MeasuredVelocity := fMeasuredVelocity;]]></ST>
         </Implementation>
       </Get>
     </Property>

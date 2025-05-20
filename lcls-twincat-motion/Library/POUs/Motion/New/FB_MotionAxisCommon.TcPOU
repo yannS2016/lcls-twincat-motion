@@ -590,10 +590,19 @@ ELSIF fbMcHalt.Error AND fbMcHalt.Active THEN
 ELSIF fbMcReset.Error  THEN
     bError:=fbMcPower.Enable;
     nErrorId:=fbMcPower.ErrorID;
+ELSIF mcReadParams.Error THEN
+    bError := mcReadParams.Error;
+    nErrorId := mcReadParams.ErrorID;
+ELSIF bRestoreError THEN
+    bError := bRestoreError ;
+    nErrorId := nRestoreErrorID;
 ELSE
     bError:=FALSE;
     nErrorId:=0;
+    sErrorMessage := '';
 END_IF;
+
+
 ]]></ST>
       </Implementation>
     </Method>
@@ -640,8 +649,6 @@ mcReadParams(
     Execute:= bExecute );
 
 IF mcReadParams.Error THEN
-    bError := TRUE;
-    nErrorID := mcReadParams.ErrorID;
     // Log this error
 END_IF
 
