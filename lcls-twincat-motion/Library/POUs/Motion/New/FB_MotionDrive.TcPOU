@@ -92,6 +92,7 @@ IF rtReset.Q THEN
     stMotionEpicsItf.bError := FALSE;
     stMotionEpicsItf.nErrorId := 0;
     stMotionEpicsItf.sErrorMessage := '';
+    THIS^.bMoveCmd := FALSE;
     // Propagate Reset event
     iMotionInterlocks.CmdReset := stMotionEpicsItf.bReset;
     iMotionAxis.CmdReset := stMotionEpicsItf.bReset;
@@ -120,7 +121,7 @@ rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
         // When we start, set the busy/done appropriately
         stMotionEpicsItf.bBusy := TRUE;
         stMotionEpicsItf.bDone := FALSE;
-
+         iMotionInterlocks.MoveDone := FALSE;
         IF bExecMove THEN
             iMotionAxis.MoveMode := E_MoveMode.DISCRETE;
             iMotionAxis.MoveAbsoluteTargetPosition := stMotionEpicsItf.fPosition;

@@ -40,7 +40,7 @@ VAR
     bPowerEnableNegative : BOOL;
     bPowerEnablePositive : BOOL;
     bPowerIsEnabled : BOOL;
-    fPowerOverride : LREAL;
+    fPowerOverride : LREAL := 100.0;
     bResetDone : BOOL;
     bHaltDone : BOOL;
     bHomeDone  : BOOL;
@@ -95,6 +95,7 @@ THIS^.fMeasuredAcceleration := iMotionAxisCommon.MeasuredAcceleration;
 THIS^.fMeasuredVelocity := iMotionAxisCommon.MeasuredVelocity;
 THIS^.fMeasuredPosition := iMotionAxisCommon.MeasuredPosition;
 THIS^.fMeasuredPositionDiff := iMotionAxisCommon.MeasuredPositionDiff;
+THIS^.nEncoderCount := iMotionAxisCommon.EncoderCount;
 THIS^.bHaltDone := iMotionAxisCommon.HaltDone;
 THIS^.bResetDone := iMotionAxisCommon.ResetDone;
 THIS^.bDone := iMotionAxisCommon.MoveAbsoluteDone OR THIS^.HomeDone;
@@ -107,7 +108,7 @@ THIS^.eAxisState := iMotionAxisCommon.AxisState;
 // reset cmds if done, error or reset
 rtDone(CLK:=bDone);
 rtError(CLK:=bError);
-rtReset(CLK:=bCmdReset);
+rtReset(CLK:=bResetDone);
 IF rtDone.Q OR rtError.Q OR rtReset.Q THEN
     bCmdMoveAbsolute	:= FALSE;
     bCmdReset	:= FALSE;

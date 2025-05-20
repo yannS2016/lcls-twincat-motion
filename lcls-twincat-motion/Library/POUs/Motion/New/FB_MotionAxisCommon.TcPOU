@@ -164,7 +164,7 @@ VAR
     {attribute 'hide'}
     sErrorMessage		: STRING;
     {attribute 'hide'}
-    ftDone 			: F_TRIG;
+    ftMoveAbsoluteBusy 			: F_TRIG;
     {attribute 'hide'}
     ftStopExec 		: F_TRIG;
     {attribute 'hide'}
@@ -174,7 +174,7 @@ VAR
     {attribute 'hide'}
     rtTargetReached	: R_TRIG;
     {attribute 'hide'}
-    rtAbsoluteModeDone	: R_TRIG;
+    ftAbsoluteMoveDone	: F_TRIG;
 
 END_VAR
 
@@ -195,14 +195,14 @@ THIS^.AxisStatus();
 THIS^.fbMcHalt(
     Axis := THIS^.AxisRef,
     Execute := THIS^.bCommandedHalt,
-    Deceleration := fMoveAbsoluteTargetDeceleration,
-    Jerk := fMoveAbsoluteTargetJerk,
-    BufferMode := eBufferMode,
-    Done => bHaltDone,
-    Busy => bHaltBusy,
-    CommandAborted => bCommandAborted,
-    Error => bHaltError,
-    ErrorID => nHaltErrorID
+    Deceleration := THIS^.fMoveAbsoluteTargetDeceleration,
+    Jerk := THIS^.fMoveAbsoluteTargetJerk,
+    BufferMode := THIS^.eBufferMode,
+    Done => THIS^.bHaltDone,
+    Busy => THIS^.bHaltBusy,
+    CommandAborted => THIS^.bCommandAborted,
+    Error => THIS^.bHaltError,
+    ErrorID => THIS^.nHaltErrorID
 );
 
 THIS^.bCommandedHalt := FALSE;
@@ -213,10 +213,10 @@ THIS^.bCommandedHalt := FALSE;
 THIS^.fbMcReset(
     Axis := THIS^.AxisRef,
     Execute := THIS^.bCommandedReset,
-    Done => bResetDone,
-    Busy => bResetBusy,
-    Error => bResetError,
-    ErrorID => bResetErrorID,
+    Done => THIS^.bResetDone,
+    Busy => THIS^.bResetBusy,
+    Error => THIS^.bResetError,
+    ErrorID => THIS^.bResetErrorID,
 );
 
 IF bResetDone THEN
@@ -228,16 +228,16 @@ END_IF
 /////////////////////////////////////////////////////////////////
 THIS^.fbMcPower(
     Axis := THIS^.AxisRef,
-    Enable := bPowerEnable,
-    Enable_Positive := bPowerEnablePositive,
-    Enable_Negative := bPowerEnableNegative,
-    Override := fOverride,
-    BufferMode := eBufferMode,
+    Enable := THIS^.bPowerEnable,
+    Enable_Positive := THIS^.bPowerEnablePositive,
+    Enable_Negative := THIS^.bPowerEnableNegative,
+    Override := THIS^.fOverride,
+    BufferMode := THIS^.eBufferMode,
     (*Enabled*)
-    Status => bPowerIsEnabled,
-    Busy => bPowerBusy,
-    Error => bPowerError,
-    ErrorID => nPowerErrorID
+    Status => THIS^.bPowerIsEnabled,
+    Busy => THIS^.bPowerBusy,
+    Error => THIS^.bPowerError,
+    ErrorID => THIS^.nPowerErrorID
 );
 ////////////////////////////////////////////////////////////////////////////////////
 // Handling Absolute move request using signaling events
@@ -247,30 +247,31 @@ THIS^.fbMcPower(
 THIS^.fbMcMoveAbsolute(
     Axis := THIS^.AxisRef,
     Execute := THIS^.bCommandedMoveAbsolute,
-    Position := fMoveAbsoluteTargetPosition,
-    Velocity := fMoveAbsoluteTargetVelocity,
-    Acceleration := fMoveAbsoluteTargetAcceleration,
-    Deceleration := fMoveAbsoluteTargetDeceleration,
-    Jerk := fMoveAbsoluteTargetJerk,
-    BufferMode := eBufferMode,
+    Position := THIS^.fMoveAbsoluteTargetPosition,
+    Velocity := THIS^.fMoveAbsoluteTargetVelocity,
+    Acceleration := THIS^.fMoveAbsoluteTargetAcceleration,
+    Deceleration := THIS^.fMoveAbsoluteTargetDeceleration,
+    Jerk := THIS^.fMoveAbsoluteTargetJerk,
+    BufferMode := THIS^.eBufferMode,
     Done => ,
-    Busy => bMoveAbsoluteBusy,
+    Busy => THIS^.bMoveAbsoluteBusy,
     Active => ,
-    CommandAborted => bCommandAborted,
-    Error => bMoveAbsoluteError,
-    ErrorID => nMoveAbsoluteErrorID
+    CommandAborted => THIS^.bCommandAborted,
+    Error => THIS^.bMoveAbsoluteError,
+    ErrorID => THIS^.nMoveAbsoluteErrorID
 );
 ////////////////////////////////////////////////////////////////////////////
 // A neg edge on bMoveAbsoluteBusy comfirm that the previous move is done
 //   either because of an error, an abort or a target reached.
 //   bMoveAbsoluteDone will reset next cycle if done condition was an error
 ////////////////////////////////////////////////////////////////////////////
-ftDone (CLK:=bMoveAbsoluteBusy);
-IF ftDone.Q AND NOT bMoveAbsoluteError THEN
+ftMoveAbsoluteBusy (CLK:=bMoveAbsoluteBusy);
+ftAbsoluteMoveDone(CLK:=fbMcMoveAbsolute.Done);
+IF ftMoveAbsoluteBusy.Q AND NOT bMoveAbsoluteError THEN
     bMoveAbsoluteDone := TRUE;
-
-ELSIF AxisRef.Status.Error THEN
-    bMoveAbsoluteDone := FALSE;
+// Done bit cleared Next cycle
+ELSIF ftAbsoluteMoveDone.Q OR AxisRef.Status.Error THEN
+   bMoveAbsoluteDone := FALSE;
 END_IF
 
 THIS^.CalibrateRawEncValue();
@@ -468,7 +469,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[CommandedReset := bCommandedReset;]]></ST>
+          <ST><![CDATA[bCommandedReset := CommandedReset;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -920,7 +921,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[fMoveAbsoluteTargetDeceleration := MoveAbsoluteTargetDeceleration;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -955,7 +956,7 @@ PROPERTY MoveAbsoluteTargetPosition : LREAL
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[fMoveAbsoluteTargetPosition := MoveAbsoluteTargetPosition ;]]></ST>
+          <ST><![CDATA[MoveAbsoluteTargetPosition := fMoveAbsoluteTargetPosition ;]]></ST>
         </Implementation>
       </Get>
       <Set Name="Set" Id="{6c1082d7-96f3-4f8a-907d-c5d126db8bcc}">
@@ -964,7 +965,7 @@ VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[MoveAbsoluteTargetPosition  := fMoveAbsoluteTargetPosition;]]></ST>
+          <ST><![CDATA[fMoveAbsoluteTargetPosition  := MoveAbsoluteTargetPosition;]]></ST>
         </Implementation>
       </Set>
     </Property>

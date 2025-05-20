@@ -90,7 +90,10 @@ VAR
     ftStopExec : F_TRIG;
     {attribute 'hide'}
     rtNewMoveReq : R_TRIG;
-
+    // reset cmds if done, error or reset
+    rtDone : R_TRIG;
+    rtError: R_TRIG;
+    rtReset: R_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -137,7 +140,7 @@ CASE EnableMode OF
         END_IF
         // Power interlock only enabled with a new move request
         IF rtNewMoveReq.Q THEN
-            bEnable S= SafetyReady;
+            bEnable S= bSafetyReady;
         END_IF
 END_CASE
 
@@ -163,7 +166,11 @@ IF bPrepareDisable AND ( eAxisState = MC_AXISSTATE_STANDSTILL ) THEN
 END_IF
 
 // Catch reset or error signal
-IF bReset OR bError OR bMoveDone THEN
+// reset cmds if done, error or reset
+rtDone(CLK:=bMoveDone);
+rtError(CLK:=bError);
+rtReset(CLK:=bReset);
+IF rtDone.Q OR rtError.Q OR rtReset.Q THEN
     bInterlockExec := FALSE;
     bEnable := FALSE;
 END_IF]]></ST>

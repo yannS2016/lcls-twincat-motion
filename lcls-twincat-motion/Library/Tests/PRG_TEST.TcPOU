@@ -13,8 +13,8 @@ VAR
      fbBrake : FB_Brake := (BrakeMode := E_StageBrakeMode.IF_MOVING);
      iBrake : I_Brake := fbBrake;
 
-    {attribute 'TcLinkTo' := '.bLimitForwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 1;
-                              .bLimitBackwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 2' }
+    {attribute 'TcLinkTo' := '.bLimitForwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 2;
+                              .bLimitBackwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 1' }
      fbMotionInterlocks: FB_MotionInterlocks (iMotionLogger:=iMotionLogger) := ( PowerSelf := TRUE, EnableMode:=ENUM_StageEnableMode.DURING_MOTION, HardwareEnable:=TRUE);;
      iMotionInterlocks: I_MotionInterlocks := fbMotionInterlocks;
 
@@ -28,7 +28,7 @@ VAR
                                                   iMotionAxisCommon:= iMotionAxisCommon,
                                                   iPersistentDataStorage :=iPersistentDataStorage,
                                                   iMotionLogger:=iMotionLogger,
-                                                 ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE, Name:= 'Module1');
+                                                 ):=( PowerOverride:=100.0, HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE, Name:= 'Module1' );
 
      iMotionAxis: I_MotionAxis := fbMotionAxisNC;
 //
@@ -41,15 +41,13 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[fbMotionLogger();
-fbMotionInterlocks();
-
-fbMotionAxisCommon();
+      <ST><![CDATA[fbMotionInterlocks();
+fbMotionDrive();
 fbMotionAxisNC();
+fbMotionAxisCommon();
 fbBrake();
 fbPersistentDataStorage();
-fbMotionDrive();
-
+fbMotionLogger();
 
 ]]></ST>
     </Implementation>
