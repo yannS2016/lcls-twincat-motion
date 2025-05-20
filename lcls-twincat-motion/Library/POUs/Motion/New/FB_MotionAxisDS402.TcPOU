@@ -77,19 +77,6 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="Cmd" Id="{f58f9d1c-528d-49a5-9775-2272386a8c25}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Cmd : UINT
-]]></Declaration>
-      <Set Name="Set" Id="{7a3b7187-920e-4e83-a5ef-aa1b2b336e72}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Property Name="CmdAbort" Id="{9ce331c9-1b77-439a-9ca4-cb09648311b1}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY CmdAbort : BOOL
@@ -103,19 +90,6 @@ END_VAR
         </Implementation>
       </Get>
       <Set Name="Set" Id="{3a629277-bae0-473d-875b-aab174fdae76}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdData" Id="{3b0f071f-e3be-460f-8694-307ebfa9b28f}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdData : UINT
-]]></Declaration>
-      <Set Name="Set" Id="{4078ad55-3848-4ae1-8dfe-704fe921975f}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -145,27 +119,6 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="CmdHome" Id="{c395dfdf-d70a-44b4-b28d-92652bde1018}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdHome : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{1420a89c-5b22-4bb0-8e73-12accbb1efb2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{e63353e4-5a93-45b2-be43-809aca83dbc0}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Property Name="CmdMoveAbsolute" Id="{ccca9401-a0a7-46de-8ed6-27a7678f2d56}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY CmdMoveAbsolute : BOOL
@@ -187,6 +140,27 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="CmdMoveHome" Id="{c395dfdf-d70a-44b4-b28d-92652bde1018}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CmdMoveHome : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{1420a89c-5b22-4bb0-8e73-12accbb1efb2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e63353e4-5a93-45b2-be43-809aca83dbc0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Property Name="CmdReset" Id="{0a5c9812-917b-442a-8c51-97e5edb3da25}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY CmdReset : BOOL
@@ -200,6 +174,32 @@ END_VAR
         </Implementation>
       </Get>
       <Set Name="Set" Id="{2c8c8291-1d73-46b5-bb60-826ea66f8d88}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="Command" Id="{f58f9d1c-528d-49a5-9775-2272386a8c25}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Command : UINT
+]]></Declaration>
+      <Set Name="Set" Id="{7a3b7187-920e-4e83-a5ef-aa1b2b336e72}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="CommandData" Id="{3b0f071f-e3be-460f-8694-307ebfa9b28f}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CommandData : UINT
+]]></Declaration>
+      <Set Name="Set" Id="{4078ad55-3848-4ae1-8dfe-704fe921975f}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>

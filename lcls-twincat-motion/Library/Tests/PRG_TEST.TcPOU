@@ -15,7 +15,7 @@ VAR
 
     {attribute 'TcLinkTo' := '.bLimitForwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 1;
                               .bLimitBackwardEnable := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 2' }
-     fbMotionInterlocks: FB_MotionInterlocks := ( PowerSelf := TRUE, EnableMode:=ENUM_StageEnableMode.DURING_MOTION, HardwareEnable:=TRUE);;
+     fbMotionInterlocks: FB_MotionInterlocks (iMotionLogger:=iMotionLogger) := ( PowerSelf := TRUE, EnableMode:=ENUM_StageEnableMode.DURING_MOTION, HardwareEnable:=TRUE);;
      iMotionInterlocks: I_MotionInterlocks := fbMotionInterlocks;
 
     // for DS402 drive
@@ -24,13 +24,13 @@ VAR
      iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisCommon;
 //
 
-     fbMotionAxisDS402NC : FB_MotionAxisDS402NC ( AxisRef:=NcAxis_GVL.testAxis, 
-												  iMotionAxisCommon:= iMotionAxisCommon,
-												  iPersistentDataStorage :=iPersistentDataStorage,
-												  iMotionLogger:=iMotionLogger,
-												 ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE, Name:= 'Module1');
-												 
-     iMotionAxis: I_MotionAxis := fbMotionAxisDS402NC;
+     fbMotionAxisNC : FB_MotionAxisNC ( AxisRef:=NcAxis_GVL.testAxis,
+                                                  iMotionAxisCommon:= iMotionAxisCommon,
+                                                  iPersistentDataStorage :=iPersistentDataStorage,
+                                                  iMotionLogger:=iMotionLogger,
+                                                 ):=(HomePosition := 0.0, HomeMode:=ENUM_EpicsHomeCmd.NONE, Name:= 'Module1');
+
+     iMotionAxis: I_MotionAxis := fbMotionAxisNC;
 //
     fbMotionDrive: FB_MotionDrive ( iMotionAxis:=iMotionAxis,
                                     iBrake:=iBrake,
@@ -45,7 +45,7 @@ END_VAR
 fbMotionInterlocks();
 
 fbMotionAxisCommon();
-fbMotionAxisDS402NC();
+fbMotionAxisNC();
 fbBrake();
 fbPersistentDataStorage();
 fbMotionDrive();
@@ -53,9 +53,5 @@ fbMotionDrive();
 
 ]]></ST>
     </Implementation>
-    <LineIds Name="PRG_TEST">
-      <LineId Id="3" Count="9" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

@@ -169,6 +169,12 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
+    <Property Name="MoveDone" Id="{4c6f2964-50b7-453e-8868-a73dd4159a2d}">
+      <Declaration><![CDATA[PROPERTY MoveDone : BOOL]]></Declaration>
+      <Set Name="Set" Id="{bb507fd3-3547-4579-b7f1-378af88a801c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Property Name="NewMoveReq" Id="{482dbe2c-aada-46e4-a4b0-e1927f9c0bd2}">
       <Declaration><![CDATA[PROPERTY NewMoveReq : BOOL]]></Declaration>
       <Get Name="Get" Id="{4c5cc58e-3e8b-4496-a7da-4d638c7f0868}">

@@ -160,11 +160,15 @@ rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
         stMotionEpicsItf.bDone := TRUE;
         stMotionEpicsItf.bBusy := FALSE;
         stMotionEpicsItf.bExecute := FALSE;
+        // propagate the done condition to interlock block
+        iMotionInterlocks.MoveDone := stMotionEpicsItf.bDone;
         // release the cmds
         stMotionEpicsItf.bHomeCmd:=FALSE;
         THIS^.bMoveCmd:=FALSE;
 
         IF iMotionAxis.Done OR iMotionAxis.ResetDone OR iMotionAxis.HaltDone THEN
+            //
+            stMotionEpicsItf.nCommand := 3;
             eMoveState := E_MoveState.IDLING;
         END_IF
     E_MoveState.MOVE_ERROR:
@@ -204,9 +208,9 @@ stMotionEpicsItf.stAxisStatus.bHomeSensor:=iMotionInterlocks.LimHome;
 stMotionEpicsItf.stAxisStatus.bEnabled:=iMotionInterlocks.EnableDone;
 stMotionEpicsItf.stAxisStatus.bLimitBwd:=iMotionInterlocks.AllBackwardEnabled;
 stMotionEpicsItf.stAxisStatus.bLimitFwd:=iMotionInterlocks.AllForwardEnabled;
-stMotionEpicsItf.stAxisStatus.fActDiff:=iMotionAxis.ActPositionDiff;
-stMotionEpicsItf.stAxisStatus.fActPosition:=iMotionAxis.ActPosition;
-stMotionEpicsItf.stAxisStatus.fActVelocity:=iMotionAxis.ActVelocity;
+stMotionEpicsItf.stAxisStatus.fActDiff:=iMotionAxis.MeasuredPositionDiff;
+stMotionEpicsItf.stAxisStatus.fActPosition:=iMotionAxis.MeasuredPosition;
+stMotionEpicsItf.stAxisStatus.fActVelocity:=iMotionAxis.MeasuredVelocity;
 stMotionEpicsItf.stAxisStatus.fOverride:=iMotionAxis.PowerOverride;
 stMotionEpicsItf.stAxisStatus.bBusy:=iMotionAxis.Busy;
 stMotionEpicsItf.stAxisStatus.bHomed:=iMotionAxis.Done;
@@ -339,8 +343,8 @@ rtNewMoveReq(CLK:=bNewMoveReq);
 // (avoid issues if nCommand or nCmdData are changed during a command)
 rtInterlockExec(CLK:=iMotionInterlocks.InterlockExec);
 IF rtInterlockExec.Q THEN
-  iMotionAxis.CmdData:=INT_TO_UINT(stMotionEpicsItf.nCmdData);
-  iMotionAxis.Cmd:=INT_TO_UINT(stMotionEpicsItf.nCommand);
+  iMotionAxis.CommandData:=INT_TO_UINT(stMotionEpicsItf.nCmdData);
+  iMotionAxis.Command:=INT_TO_UINT(stMotionEpicsItf.nCommand);
 END_IF
 
 

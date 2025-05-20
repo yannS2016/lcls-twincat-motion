@@ -77,6 +77,8 @@ VAR
     {attribute 'hide'}
     bLimHit : BOOL;
     {attribute 'hide'}
+    bMoveDone : BOOL;
+    {attribute 'hide'}
     eAxisState	: MC_AxisStates;
     {attribute 'hide'}
     ftForwardEnabled : F_TRIG;
@@ -161,7 +163,7 @@ IF bPrepareDisable AND ( eAxisState = MC_AXISSTATE_STANDSTILL ) THEN
 END_IF
 
 // Catch reset or error signal
-IF bReset OR bError THEN
+IF bReset OR bError OR bMoveDone THEN
     bInterlockExec := FALSE;
     bEnable := FALSE;
 END_IF]]></ST>
@@ -544,6 +546,18 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="MoveDone" Id="{ae082f24-fe0c-454e-a671-066fd674cfd2}">
+      <Declaration><![CDATA[PROPERTY MoveDone : BOOL
+]]></Declaration>
+      <Set Name="Set" Id="{01b6afeb-4b18-4dda-b4ba-73f6f81f6091}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bMoveDone := MoveDone;]]></ST>
         </Implementation>
       </Set>
     </Property>
