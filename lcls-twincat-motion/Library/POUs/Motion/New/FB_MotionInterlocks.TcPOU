@@ -87,7 +87,7 @@ VAR
     {attribute 'hide'}
     rtEnableMode : R_TRIG;
     {attribute 'hide'}
-    ftStopExec : F_TRIG;
+    rtStopExec : R_TRIG;
     {attribute 'hide'}
     rtNewMoveReq : R_TRIG;
     // reset cmds if done, error or reset
@@ -99,8 +99,9 @@ END_VAR
     <Implementation>
       <ST><![CDATA[bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND bEPSOk;
 bAllForwardEnabled := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGantryAxis) AND bEPSOk;
-///////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 // SoftInterlock is a user defined interloc logic active high
+/////////////////////////////////////////////////////////////////////////////
 bAllEnabled := bEnable AND bHardwareEnable AND bEPSOk AND NOT bSoftInterlock;
 bAllEnabled R= NOT bUserEnable OR bSoftInterlock;
 //// use falling trigger to avoid spaming  sErrorMessage
@@ -119,9 +120,6 @@ IF   ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
     bLimHit := TRUE;
     // will serve later
     bLimOverride := TRUE;
-ELSE
-    bLimOverride := FALSE;
-    bLimHit := FALSE;
 END_IF
 
 bPrepareDisable R= bNewMoveReq;
@@ -152,27 +150,23 @@ CASE eAxisState OF
     ELSE
         bEnableDone := TRUE;
 END_CASE
-
+//rtReset(CLK:=bReset);
 // This is the output interlock check used to allow the requested move
-bInterlockExec:= NOT bError AND bExec AND bAllEnabled AND bEnableDone AND bSafetyReady;
+bInterlockExec:= bExec AND bAllEnabled AND bEnableDone AND bSafetyReady;
 
-ftStopExec(CLK:=bExec);
+// when move is done, interupted or target reached disabled drive after axis has settle
+rtStopExec(CLK:=bMoveDone);
 // Handle auto-disable timing
-bPrepareDisable S= (EnableMode = E_StageEnableMode.DURING_MOTION AND ftStopExec.Q );
+bPrepareDisable S= (EnableMode = E_StageEnableMode.DURING_MOTION ) AND rtStopExec.Q;
 // Delay the disable until we reach standstill, else brake issues or other race conditions
 IF bPrepareDisable AND ( eAxisState = MC_AXISSTATE_STANDSTILL ) THEN
     bPrepareDisable := FALSE;
     bEnable := FALSE;
 END_IF
 
-// Catch reset or error signal
-// reset cmds if done, error or reset
-rtDone(CLK:=bMoveDone);
-rtError(CLK:=bError);
-rtReset(CLK:=bReset);
-IF rtDone.Q OR rtError.Q OR rtReset.Q THEN
-    bInterlockExec := FALSE;
-    bEnable := FALSE;
+IF bError OR bReset OR bMoveDone THEN
+    bLimOverride := FALSE;
+    bLimHit := FALSE;
 END_IF]]></ST>
     </Implementation>
     <Property Name="AllBackwardEnabled" Id="{418fcf62-072d-4be6-9a52-23305e127201}">

@@ -41,6 +41,8 @@ VAR
     {attribute 'hide'}
     rtStopExec 			: R_TRIG;
     {attribute 'hide'}
+    rtResetDone 			: R_TRIG;
+    {attribute 'hide'}
     rtInterlockExec 	: R_TRIG;
     {attribute 'hide'}
     rtReset 			: R_TRIG;
@@ -54,16 +56,6 @@ END_VAR
     <Implementation>
       <ST><![CDATA[(* Critical to inter FBs com, handle events and sync dependends FBs *)
 THIS^.ProcessMoveReq();
-// These define the interface between FB_MotionDrive and FB_MotionInterlocks:
-// all properties participating in these exchanges are hidden from user apps.
-iMotionInterlocks.NewMoveReq := bNewMoveReq;
-iMotionInterlocks.EPSOk :=stMotionEpicsItf.stEPSBackwardEnable.bEPS_OK;;
-iMotionInterlocks.UserEnable:= stMotionEpicsItf.bUserEnable;
-iMotionInterlocks.Error := iMotionAxis.Error;
-iMotionInterlocks.Execute := stMotionEpicsItf.bExecute;
-iMotionInterlocks.MoveBusy :=iMotionAxis.Busy;
-// catch Homing busy interlock
-iMotionInterlocks.HomingBusy := iMotionAxis.HomingBusy;
 // Get the Axis state machine current state for pre and post move interlocks
 //iMotionInterlocks.AxisStates(AxisState := iMotionAxis.AxisState);
 iBrake.MotionState := iMotionAxis.AxisState;
@@ -73,14 +65,14 @@ iMotionInterlocks.AxisState := iMotionAxis.AxisState;
 iMotionAxis.PowerEnable := iMotionInterlocks.AllEnabled;
 iMotionAxis.PowerEnablePositive := iMotionInterlocks.AllEnabled AND iMotionInterlocks.AllForwardEnabled;
 iMotionAxis.PowerEnableNegative := iMotionInterlocks.AllEnabled AND iMotionInterlocks.AllBackwardEnabled;
-// Halt
+// Propagate and reset Halt command
 iMotionAxis.CmdHalt := THIS^.stMotionEpicsItf.bHalt;
-
+THIS^.stMotionEpicsItf.bHalt := FALSE;
+//
 //  Abort move when limits are engaged
-IF iMotionInterlocks.LimHit THEN
-    stMotionEpicsItf.bExecute := FALSE;
+IF iMotionInterlocks.LimHit AND iMotionAxis.CommandAborted THEN
+   stMotionEpicsItf.bExecute := FALSE;
 END_IF
-
 
 /////////////////////////////////////////////////
 // Reset sequence
@@ -94,7 +86,6 @@ IF rtReset.Q THEN
     stMotionEpicsItf.sErrorMessage := '';
     THIS^.bMoveCmd := FALSE;
     // Propagate Reset event
-    iMotionInterlocks.CmdReset := stMotionEpicsItf.bReset;
     iMotionAxis.CmdReset := stMotionEpicsItf.bReset;
     stMotionEpicsItf.bReset := FALSE;
 END_IF
@@ -107,6 +98,9 @@ ftStopExec(CLK:=stMotionEpicsItf.bExecute);
 rtStopExec(CLK:=iMotionAxis.HaltDone);
 rtTarget(CLK:=(iMotionAxis.Done AND bExecMove));
 rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
+rtResetDone(CLK:=iMotionAxis.ResetDone);
+// propagate reset done status
+iMotionInterlocks.CmdReset := iMotionAxis.ResetDone;
 
 // Drive state Machine here
  CASE eMoveState OF
@@ -161,6 +155,7 @@ rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
         stMotionEpicsItf.bDone := TRUE;
         stMotionEpicsItf.bBusy := FALSE;
         stMotionEpicsItf.bExecute := FALSE;
+
         // propagate the done condition to interlock block
         iMotionInterlocks.MoveDone := stMotionEpicsItf.bDone;
         // release the cmds
@@ -192,6 +187,17 @@ rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
         END_IF
 
  END_CASE
+
+ // These define the interface between FB_MotionDrive and FB_MotionInterlocks:
+// all properties participating in these exchanges are hidden from user apps.
+iMotionInterlocks.NewMoveReq := bNewMoveReq;
+iMotionInterlocks.EPSOk :=stMotionEpicsItf.stEPSBackwardEnable.bEPS_OK;;
+iMotionInterlocks.UserEnable:= stMotionEpicsItf.bUserEnable;
+iMotionInterlocks.Error := iMotionAxis.Error;
+iMotionInterlocks.Execute := stMotionEpicsItf.bExecute;
+iMotionInterlocks.MoveBusy :=iMotionAxis.Busy;
+// catch Homing busy interlock
+iMotionInterlocks.HomingBusy := iMotionAxis.HomingBusy;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // Expose axis parameters to the EPICS layer.

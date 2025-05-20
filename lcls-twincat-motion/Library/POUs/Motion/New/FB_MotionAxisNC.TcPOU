@@ -50,6 +50,7 @@ VAR
     // intermediary motion signal: from EPICS interface
     bCmdMoveAbsolute	: BOOL;
     bCmdReset 			: BOOL;
+    bCommandAborted		: BOOL;
     bCmdHalt 			: BOOL;
     bCmdMoveHome			: BOOL;
     nCommand 		: UINT;
@@ -83,7 +84,6 @@ iMotionAxisCommon.PowerOverride := THIS^.fPowerOverride;
 // 2- Motion commands
 iMotionAxisCommon.CommandedHalt := THIS^.bCmdHalt;
 iMotionAxisCommon.CommandedReset := THIS^.bCmdReset;
-iMotionAxisCommon.CommandedMoveAbsolute := THIS^.bCmdMoveAbsolute;
 iMotionAxisCommon.MoveAbsoluteTargetPosition := THIS^.fMoveAbsoluteTargetPosition;
 iMotionAxisCommon.MoveAbsoluteTargetVelocity := THIS^.fMoveAbsoluteTargetVelocity;
 iMotionAxisCommon.MoveAbsoluteTargetAcceleration := THIS^.fMoveAbsoluteTargetAcceleration;
@@ -104,7 +104,7 @@ THIS^.bError := iMotionAxisCommon.Error;
 THIS^.nErrorId := iMotionAxisCommon.ErrorID;
 THIS^.sErrorMessage := iMotionAxisCommon.ErrorMessage;
 THIS^.eAxisState := iMotionAxisCommon.AxisState;
-
+THIS^.bCommandAborted := iMotionAxisCommon.CommandAborted;
 // reset cmds if done, error or reset
 rtDone(CLK:=bDone);
 rtError(CLK:=bError);
@@ -257,6 +257,19 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
+    </Property>
+    <Property Name="CommandAborted" Id="{24dd147f-f50d-4307-b1c0-89f594b76fba}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CommandAborted : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{59a2fb38-c2fb-41c1-b3c3-01807a891bae}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CommandAborted := bCommandAborted;]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <Property Name="CommandData" Id="{2f61ec8e-7923-460c-bb0d-1c4f6bf683f9}">
       <Declaration><![CDATA[PROPERTY CommandData : UINT

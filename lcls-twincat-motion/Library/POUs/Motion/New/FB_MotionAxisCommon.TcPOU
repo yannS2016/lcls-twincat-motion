@@ -57,7 +57,6 @@ VAR
     {attribute 'hide'}
     bReset		: BOOL;
     bCommandedReset : BOOL;
-
     // Power
     fbMcPower 		: MC_Power;
     bPowerEnable	: BOOL;
@@ -269,9 +268,11 @@ ftMoveAbsoluteBusy (CLK:=bMoveAbsoluteBusy);
 ftAbsoluteMoveDone(CLK:=fbMcMoveAbsolute.Done);
 IF ftMoveAbsoluteBusy.Q AND NOT bMoveAbsoluteError THEN
     bMoveAbsoluteDone := TRUE;
+    bCommandedMoveAbsolute := FALSE;
 // Done bit cleared Next cycle
 ELSIF ftAbsoluteMoveDone.Q OR AxisRef.Status.Error THEN
    bMoveAbsoluteDone := FALSE;
+
 END_IF
 
 THIS^.CalibrateRawEncValue();
@@ -409,6 +410,19 @@ END_VAR
           <ST><![CDATA[nCmdDataLocal := CmdData;]]></ST>
         </Implementation>
       </Set>
+    </Property>
+    <Property Name="CommandAborted" Id="{9cfe411f-0171-4bd5-8430-be2bdbd1bb94}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CommandAborted : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{7cbe6dda-d186-4137-bf1f-c8969c66ccb6}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CommandAborted := bCommandAborted;]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <Property Name="CommandedHalt" Id="{5701fdc8-2e51-4874-9fa9-19bda9807780}">
       <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}

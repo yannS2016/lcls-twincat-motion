@@ -68,6 +68,12 @@
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
+    <Property Name="CommandAborted" Id="{6a3f41a9-54f8-4911-83e0-2b60d5028474}">
+      <Declaration><![CDATA[PROPERTY CommandAborted : BOOL]]></Declaration>
+      <Get Name="Get" Id="{18d5e633-3d33-4303-9c88-954f06016b6d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
     <Property Name="CommandData" Id="{0e8b4985-8f01-4f1b-8087-81dc02998277}">
       <Declaration><![CDATA[PROPERTY CommandData : UINT]]></Declaration>
       <Set Name="Set" Id="{e5aa3541-32bf-49db-9fad-772fe065c88c}">
