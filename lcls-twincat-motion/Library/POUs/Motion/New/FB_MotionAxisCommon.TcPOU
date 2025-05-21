@@ -154,7 +154,8 @@ VAR
     bBusy		: BOOL;
     {attribute 'hide'}
     bInTargetPosition	: BOOL;
-
+    {attribute 'hide'}
+    bInterrupted : BOOL;
     // Error handling
     {attribute 'hide'}
     bError				: BOOL;
@@ -163,7 +164,7 @@ VAR
     {attribute 'hide'}
     sErrorMessage		: STRING;
     {attribute 'hide'}
-    ftMoveAbsoluteBusy 			: F_TRIG;
+    rtMoveAbsoluteBusy 			: R_TRIG;
     {attribute 'hide'}
     ftStopExec 		: F_TRIG;
     {attribute 'hide'}
@@ -173,7 +174,7 @@ VAR
     {attribute 'hide'}
     rtTargetReached	: R_TRIG;
     {attribute 'hide'}
-    ftAbsoluteMoveDone	: F_TRIG;
+    rtAbsoluteMoveDone	: R_TRIG;
 
 END_VAR
 
@@ -199,12 +200,15 @@ THIS^.fbMcHalt(
     BufferMode := THIS^.eBufferMode,
     Done => THIS^.bHaltDone,
     Busy => THIS^.bHaltBusy,
-    CommandAborted => THIS^.bCommandAborted,
+    CommandAborted => ,
     Error => THIS^.bHaltError,
     ErrorID => THIS^.nHaltErrorID
 );
 
-THIS^.bCommandedHalt := FALSE;
+IF THIS^.bHaltDone THEN
+    THIS^.bCommandedHalt := FALSE;
+END_IF
+//THIS^.bCommandedHalt := FALSE;
 
 ///////////////////////////////////////////////////////////////
 // Reset the Axis based on signaling event on CommandedReset
@@ -259,32 +263,24 @@ THIS^.fbMcMoveAbsolute(
     Error => THIS^.bMoveAbsoluteError,
     ErrorID => THIS^.nMoveAbsoluteErrorID
 );
-////////////////////////////////////////////////////////////////////////////
-// A neg edge on bMoveAbsoluteBusy comfirm that the previous move is done
-//   either because of an error, an abort or a target reached.
-//   bMoveAbsoluteDone will reset next cycle if done condition was an error
-////////////////////////////////////////////////////////////////////////////
-ftMoveAbsoluteBusy (CLK:=bMoveAbsoluteBusy);
-ftAbsoluteMoveDone(CLK:=fbMcMoveAbsolute.Done);
-IF ftMoveAbsoluteBusy.Q AND NOT bMoveAbsoluteError THEN
-    bMoveAbsoluteDone := TRUE;
-    bCommandedMoveAbsolute := FALSE;
-// Done bit cleared Next cycle
-ELSIF ftAbsoluteMoveDone.Q OR AxisRef.Status.Error THEN
-   bMoveAbsoluteDone := FALSE;
 
+rtMoveAbsoluteBusy (CLK:=bMoveAbsoluteBusy);
+rtAbsoluteMoveDone(CLK:=fbMcMoveAbsolute.Done);
+IF rtMoveAbsoluteBusy.Q  THEN
+    bMoveAbsoluteDone := FALSE;
+ELSIF rtAbsoluteMoveDone.Q THEN
+    bMoveAbsoluteDone := TRUE;
 END_IF
 
 THIS^.CalibrateRawEncValue();
-
-THIS^.ErrorHandling();
 
 THIS^.ExposeNCParams();
 //////////////////////////////////////
 // Handle save and restor
 //////////////////////////////////////
 THIS^.EncSaveRestore(bEnable:=TRUE);
-]]></ST>
+
+THIS^.ErrorHandling();]]></ST>
     </Implementation>
     <Property Name="AxisParameterSetExposed" Id="{bd38f88c-c219-4363-856f-6d4d63c13ec4}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
@@ -763,6 +759,19 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[InTargetPosition := bInTargetPosition;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="Interrupted" Id="{c29ca92e-a8ca-4b58-bd97-403680f7eef7}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Interrupted : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{996707fd-9004-478f-9882-c121c776b80e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Interrupted := bInterrupted ;]]></ST>
         </Implementation>
       </Get>
     </Property>

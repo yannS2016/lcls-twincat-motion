@@ -150,7 +150,7 @@ CASE eAxisState OF
     ELSE
         bEnableDone := TRUE;
 END_CASE
-//rtReset(CLK:=bReset);
+
 // This is the output interlock check used to allow the requested move
 bInterlockExec:= bExec AND bAllEnabled AND bEnableDone AND bSafetyReady;
 
@@ -164,9 +164,19 @@ IF bPrepareDisable AND ( eAxisState = MC_AXISSTATE_STANDSTILL ) THEN
     bEnable := FALSE;
 END_IF
 
-IF bError OR bReset OR bMoveDone THEN
+// Prepare next move
+bMoveDone := FALSE;
+
+// react to reset if the axis is standstill ( clearing error )
+IF bReset THEN
     bLimOverride := FALSE;
     bLimHit := FALSE;
+    bReset := FALSE;
+    bError := FALSE;
+END_IF
+
+IF bError THEN
+    bEnable := FALSE;
 END_IF]]></ST>
     </Implementation>
     <Property Name="AllBackwardEnabled" Id="{418fcf62-072d-4be6-9a52-23305e127201}">
@@ -228,7 +238,7 @@ PROPERTY CmdReset : BOOL
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[CmdReset := bReset;]]></ST>
+          <ST><![CDATA[bReset := CmdReset;]]></ST>
         </Implementation>
       </Set>
     </Property>

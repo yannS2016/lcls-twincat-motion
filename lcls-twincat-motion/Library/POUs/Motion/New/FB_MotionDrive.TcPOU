@@ -39,7 +39,7 @@ VAR
     {attribute 'hide'}
     rtHomed				: R_TRIG;
     {attribute 'hide'}
-    rtStopExec 			: R_TRIG;
+    rtAborted 			: R_TRIG;
     {attribute 'hide'}
     rtResetDone 			: R_TRIG;
     {attribute 'hide'}
@@ -48,9 +48,10 @@ VAR
     rtReset 			: R_TRIG;
     {attribute 'hide'}
     ftStopExec 			: F_TRIG;
-     {attribute 'hide'}
-     ftError 			: F_TRIG;
-
+    {attribute 'hide'}
+    ftError 			: F_TRIG;
+    {attribute 'hide'}
+    rtHalt 			: R_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -65,48 +66,51 @@ iMotionInterlocks.AxisState := iMotionAxis.AxisState;
 iMotionAxis.PowerEnable := iMotionInterlocks.AllEnabled;
 iMotionAxis.PowerEnablePositive := iMotionInterlocks.AllEnabled AND iMotionInterlocks.AllForwardEnabled;
 iMotionAxis.PowerEnableNegative := iMotionInterlocks.AllEnabled AND iMotionInterlocks.AllBackwardEnabled;
-// Propagate and reset Halt command
-iMotionAxis.CmdHalt := THIS^.stMotionEpicsItf.bHalt;
-THIS^.stMotionEpicsItf.bHalt := FALSE;
-//
+
 //  Abort move when limits are engaged
 IF iMotionInterlocks.LimHit AND iMotionAxis.CommandAborted THEN
    stMotionEpicsItf.bExecute := FALSE;
 END_IF
 
+// Propagate and reset Halt command
+iMotionAxis.CmdHalt := THIS^.stMotionEpicsItf.bHalt;
+iMotionAxis.CmdReset := THIS^.stMotionEpicsItf.bReset;
+
+stMotionEpicsItf.bError := iMotionAxis.Error;
+stMotionEpicsItf.nErrorId := iMotionAxis.ErrorID;
+iMotionInterlocks.Error := iMotionAxis.Error;
 /////////////////////////////////////////////////
 // Reset sequence
 ////////////////////////////////////////////////
-// Initiate reset sequence
-rtReset(CLK:=stMotionEpicsItf.bReset);
-IF rtReset.Q THEN
+IF stMotionEpicsItf.bReset THEN
+    // this Neg edge will carry out reset operation
     stMotionEpicsItf.bExecute := FALSE;
     stMotionEpicsItf.bError := FALSE;
     stMotionEpicsItf.nErrorId := 0;
     stMotionEpicsItf.sErrorMessage := '';
+    // Relese motion cmds
     THIS^.bMoveCmd := FALSE;
-    // Propagate Reset event
-    iMotionAxis.CmdReset := stMotionEpicsItf.bReset;
+    stMotionEpicsItf.bHomeCmd := FALSE;
     stMotionEpicsItf.bReset := FALSE;
 END_IF
 
  /////////////////////////////////////////
-// Post Move handlings
+// Motion events
 //////////////////////////////////////////
+//rtHalt (CLK:=
 ftError(CLK:=stMotionEpicsItf.bError);
 ftStopExec(CLK:=stMotionEpicsItf.bExecute);
-rtStopExec(CLK:=iMotionAxis.HaltDone);
+rtAborted(CLK:=iMotionAxis.HaltDone OR iMotionAxis.ResetDone);
 rtTarget(CLK:=(iMotionAxis.Done AND bExecMove));
 rtHomed(CLK:=iMotionAxis.Done AND bExecHome);
-rtResetDone(CLK:=iMotionAxis.ResetDone);
-// propagate reset done status
-iMotionInterlocks.CmdReset := iMotionAxis.ResetDone;
 
 // Drive state Machine here
  CASE eMoveState OF
     E_MoveState.IDLING:;
         IF bExecMove OR bExecHome THEN
             eMoveState := E_MoveState.INIT_MOVE;
+        ELSIF stMotionEpicsItf.bError THEN
+            eMoveState := E_MoveState.MOVE_ERROR;
         END_IF
         // reset error flag
         stMotionEpicsItf.sErrorMessage := '';
@@ -122,7 +126,6 @@ iMotionInterlocks.CmdReset := iMotionAxis.ResetDone;
             iMotionAxis.MoveAbsoluteTargetVelocity := stMotionEpicsItf.fVelocity;
             iMotionAxis.MoveAbsoluteTargetAcceleration := stMotionEpicsItf.fAcceleration;
             iMotionAxis.MoveAbsoluteTargetDeceleration := stMotionEpicsItf.fAcceleration;
-            iMotionAxis.CmdMoveAbsolute := TRUE;
         ELSIF bExecHome THEN
             iMotionAxis.MoveMode := E_MoveMode.HOMING;
         END_IF
@@ -144,7 +147,7 @@ iMotionInterlocks.CmdReset := iMotionAxis.ResetDone;
         IF 	iMotionAxis.Error THEN
             eMoveState := E_MoveState.MOVE_ERROR;
 
-        ELSIF ftStopExec.Q OR rtStopExec.Q OR stMotionEpicsItf.bReset THEN
+        ELSIF ftStopExec.Q OR stMotionEpicsItf.bHalt OR stMotionEpicsItf.bReset THEN
             eMoveState := E_MoveState.MOVE_INTERRUPTED;
 
         ELSIF  rtTarget.Q OR rtHomed.Q  THEN
@@ -152,29 +155,28 @@ iMotionInterlocks.CmdReset := iMotionAxis.ResetDone;
         END_IF
 
     E_MoveState.TARGET_REACHED, E_MoveState.MOVE_INTERRUPTED:
-        stMotionEpicsItf.bDone := TRUE;
-        stMotionEpicsItf.bBusy := FALSE;
-        stMotionEpicsItf.bExecute := FALSE;
 
-        // propagate the done condition to interlock block
-        iMotionInterlocks.MoveDone := stMotionEpicsItf.bDone;
-        // release the cmds
-        stMotionEpicsItf.bHomeCmd:=FALSE;
-        THIS^.bMoveCmd:=FALSE;
-
-        IF iMotionAxis.Done OR iMotionAxis.ResetDone OR iMotionAxis.HaltDone THEN
-            //
+        IF iMotionAxis.Done OR rtAborted.Q THEN
+            stMotionEpicsItf.bDone := TRUE;
+            stMotionEpicsItf.bBusy := FALSE;
+            stMotionEpicsItf.bExecute := FALSE;
+            // propagate the done condition to interlock block
+            iMotionInterlocks.MoveDone := stMotionEpicsItf.bDone;
+            // release the cmds
+            stMotionEpicsItf.bHomeCmd:=FALSE;
+            THIS^.bMoveCmd:=FALSE;
             stMotionEpicsItf.nCommand := 3;
+            // bCommandedMoveAbsolute := FALSE;
             eMoveState := E_MoveState.IDLING;
         END_IF
     E_MoveState.MOVE_ERROR:
         // Pass error state to interlock block
         // latch this flags, as MC_MoveAbsolute will reset erros flags
-        IF NOT stMotionEpicsItf.bError THEN
-            stMotionEpicsItf.bError := iMotionAxis.Error;
-            stMotionEpicsItf.nErrorId := iMotionAxis.ErrorID;
-            iMotionInterlocks.Error := iMotionAxis.Error;
-        END_IF
+//         IF NOT stMotionEpicsItf.bError THEN
+//             stMotionEpicsItf.bError := iMotionAxis.Error;
+//             stMotionEpicsItf.nErrorId := iMotionAxis.ErrorID;
+//             iMotionInterlocks.Error := iMotionAxis.Error;
+//         END_IF
 
         stMotionEpicsItf.bBusy := FALSE;
         stMotionEpicsItf.bDone := FALSE;
@@ -188,6 +190,13 @@ iMotionInterlocks.CmdReset := iMotionAxis.ResetDone;
 
  END_CASE
 
+
+// React to reset while axis is standstill or in error state
+IF iMotionAxis.ResetDone AND NOT iMotionAxis.CommandAborted THEN
+    iMotionInterlocks.CmdReset := iMotionAxis.ResetDone;
+END_IF
+
+THIS^.stMotionEpicsItf.bHalt := FALSE;
  // These define the interface between FB_MotionDrive and FB_MotionInterlocks:
 // all properties participating in these exchanges are hidden from user apps.
 iMotionInterlocks.NewMoveReq := bNewMoveReq;
