@@ -18,8 +18,11 @@
     <Company>SLAC</Company>
     <Released>false</Released>
     <Title>lcls-twincat-motion</Title>
-    <ProjectVersion>0.0.0</ProjectVersion>
+    <ProjectVersion>2.1.2</ProjectVersion>
     <WriteProductVersion>false</WriteProductVersion>
+    <AllowChecksForLibrary>false</AllowChecksForLibrary>
+    <POUsForPropertyAccessIncluded>false</POUsForPropertyAccessIncluded>
+    <GlobalVersionStructureIncluded>false</GlobalVersionStructureIncluded>
     <!--    <OutputType>Exe</OutputType>
     <RootNamespace>MyApplication</RootNamespace>
     <AssemblyName>MyApplication</AssemblyName>-->
@@ -58,7 +61,6 @@
     <Folder Include="tc_mca_std_lib\POUs\Motion" />
     <Folder Include="tc_mca_std_lib\POUs\Motion\Homing" />
     <Folder Include="Tests\Helpers" />
-    <Folder Include="Version" />
     <Folder Include="tc_mca_std_lib\DUTs" />
     <Folder Include="tc_mca_std_lib\POUs" />
     <Folder Include="tc_mca_std_lib\GVLs" />
@@ -106,6 +108,15 @@
     <Compile Include="DUTs\Deprecated\ENUM_StatePMPSStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DUTs\E_HomeStates.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\E_MoveMode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\E_MoveState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DUTs\ST_AxisParameterSetExposed.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -119,6 +130,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\ST_MotionDrive.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\ST_MotionEpicsItf.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\ST_MotionStage.TcDUT">
@@ -181,6 +195,10 @@
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
+    <Compile Include="GVLs\NcAxis_GVL.TcGVL">
+      <SubType>Code</SubType>
+      <LinkAlways>true</LinkAlways>
+    </Compile>
     <Compile Include="PlcTask.TcTTO">
       <SubType>Code</SubType>
     </Compile>
@@ -235,6 +253,9 @@
     <Compile Include="POUs\ImplicitChecks\CheckDivReal.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Motion\FB_Brake.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Motion\FB_EncoderValue.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -244,10 +265,7 @@
     <Compile Include="POUs\Motion\FB_LogMotionError.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\FB_MotionAxisDS402.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\FB_MotionAxisDS402NC.TcPOU">
+    <Compile Include="POUs\Motion\FB_MotionAxisCommon.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\FB_MotionAxisNC.TcPOU">
@@ -260,6 +278,15 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\FB_MotionHoming.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\FB_MotionSyncPrivate.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\FB_MotionInterlocks.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\FB_MotionLogger.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\FB_MotionRequest.TcPOU">
@@ -280,6 +307,9 @@
     <Compile Include="POUs\Motion\FB_MotionVirtualFrame.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Motion\FB_PersistentDataStorage.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Motion\FB_PneumaticAxis.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -293,19 +323,22 @@
     <Compile Include="POUs\Motion\ITFs\I_Brake.TcIO">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Motion\ITFs\I_MotionAxis.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\ITFs\I_MotionAxisCommon.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\ITFs\I_MotionDrive.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Motion\ITFs\I_MotionInterlocks.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\ITFs\I_MotionLogger.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_MotionDrive.TcIO">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_MotionAxis.TcIO">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_PersistantDataStorage.TcIO">
+    <Compile Include="POUs\Motion\ITFs\I_PersistentDataStorage.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\PMPS\FB_EncErrorFFO.TcPOU">
@@ -659,9 +692,6 @@
     <Compile Include="Tests\PRG_TEST.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Version\Global_Version.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <PlaceholderReference Include="LCLS General">
@@ -729,8 +759,8 @@
   <ProjectExtensions>
     <PlcProjectOptions>
       <XmlArchive>
-        <Data>
-          <o xml:space="preserve" t="OptionKey">
+  <Data>
+    <o xml:space="preserve" t="OptionKey">
       <v n="Name">"&lt;ProjectRoot&gt;"</v>
       <d n="SubKeys" t="Hashtable" ckt="String" cvt="OptionKey">
         <v>{192FAD59-8248-4824-A8DE-9177C94C195A}</v>
@@ -797,14 +827,14 @@
       </d>
       <d n="Values" t="Hashtable" />
     </o>
-        </Data>
-        <TypeList>
-          <Type n="Boolean">System.Boolean</Type>
-          <Type n="Hashtable">System.Collections.Hashtable</Type>
-          <Type n="OptionKey">{54dd0eac-a6d8-46f2-8c27-2f43c7e49861}</Type>
-          <Type n="String">System.String</Type>
-        </TypeList>
-      </XmlArchive>
+  </Data>
+  <TypeList>
+    <Type n="Boolean">System.Boolean</Type>
+    <Type n="Hashtable">System.Collections.Hashtable</Type>
+    <Type n="OptionKey">{54dd0eac-a6d8-46f2-8c27-2f43c7e49861}</Type>
+    <Type n="String">System.String</Type>
+  </TypeList>
+</XmlArchive>
     </PlcProjectOptions>
   </ProjectExtensions>
   <!-- 

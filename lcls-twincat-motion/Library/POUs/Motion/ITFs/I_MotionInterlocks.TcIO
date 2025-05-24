@@ -3,5 +3,187 @@
   <Itf Name="I_MotionInterlocks" Id="{7ac89254-d732-4980-b014-871a72f21fa7}">
     <Declaration><![CDATA[INTERFACE I_MotionInterlocks
 ]]></Declaration>
+    <Property Name="AllBackwardEnabled" Id="{44fa7548-c01f-4da3-a333-2275934d3112}">
+      <Declaration><![CDATA[PROPERTY AllBackwardEnabled : BOOL]]></Declaration>
+      <Get Name="Get" Id="{8e243d13-164d-4d5d-8112-387f3a8b0fca}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="AllEnabled" Id="{4d69c415-64ae-45e5-8741-9ee750fa41cf}">
+      <Declaration><![CDATA[PROPERTY AllEnabled : BOOL]]></Declaration>
+      <Get Name="Get" Id="{09b8b64d-72b0-467d-b693-fa3e229ceb18}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="AllForwardEnabled" Id="{3ce5ac2e-1c09-4fd1-941c-2cbe06026596}">
+      <Declaration><![CDATA[PROPERTY AllForwardEnabled : BOOL]]></Declaration>
+      <Get Name="Get" Id="{8ac731aa-4431-4ad2-aad0-76448e67d881}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="EnableDone" Id="{f2d2f74b-7415-4ea0-8340-cc5a7fb4c649}">
+      <Declaration><![CDATA[PROPERTY EnableDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{2a482f56-07c2-47eb-b118-051cd2b9d33a}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="EnableMode" Id="{67601fde-f3ba-4ea2-8dbf-89942a2b645f}">
+      <Declaration><![CDATA[PROPERTY EnableMode : E_StageEnableMode]]></Declaration>
+      <Get Name="Get" Id="{676864db-ffb0-4c69-975c-03ab7e9f4fb5}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{095f7675-4fda-466c-b0d4-7e5b6e751e78}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EPSBackwardEnable" Id="{9b6fa1bd-6512-4d3d-85db-8498ddd7669c}">
+      <Declaration><![CDATA[PROPERTY EPSBackwardEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{e34fca84-01bf-4e87-aa6d-c77abdad8429}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{4ec5e289-3899-4d94-b3b7-ea5f59d60aff}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EPSForwardEnable" Id="{ae0d8c46-3803-4d4d-bfc2-e4e8d9e9b7f4}">
+      <Declaration><![CDATA[PROPERTY EPSForwardEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{4c46cb3f-211f-4da9-a32e-77acf2d34ed0}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{0a7eaec5-5dc1-4ab5-bd95-124bb3e3ced6}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="EPSPowerEnable" Id="{2ab43de3-0abf-4f29-b1d9-776886efae5d}">
+      <Declaration><![CDATA[PROPERTY EPSPowerEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{963baa30-2ed7-4807-8ba8-e09808456204}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{8bc5bd75-07a7-44de-ac8f-1ad8ff551029}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="GantryAxis" Id="{56006ae1-c693-47b5-a7b2-3327681468a5}">
+      <Declaration><![CDATA[PROPERTY GantryAxis : BOOL]]></Declaration>
+      <Get Name="Get" Id="{29ac787b-548b-40c0-aee0-72e462d082cc}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{46c657f3-a086-4fed-b359-12c3fd9d60d1}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="GantryBackwardEnable" Id="{f904ecbf-7926-4b97-a553-c1e262839afe}">
+      <Declaration><![CDATA[PROPERTY GantryBackwardEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{f53ef5a8-39bd-4b60-8938-d7e59932b51a}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{a5df2c27-bd1f-4e41-b211-426d9f0beb2c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="GantryForwardEnable" Id="{a1dbb698-133c-46e9-819b-17b9b9f21b23}">
+      <Declaration><![CDATA[PROPERTY GantryForwardEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{bd086b46-a9ef-4695-a19b-7f1e76359447}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{35f02b45-8b53-4e6a-9812-d446b45c27b1}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="HardwareEnable" Id="{855c6e4b-bfed-49b3-bdec-eafa65093aa9}">
+      <Declaration><![CDATA[PROPERTY HardwareEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{3bc8c738-8360-4ae7-9ad5-cf8bc24dacf1}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{489a79c4-eb9c-4a2f-baad-54d7878ac34a}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="LimBwdEnable" Id="{4f071531-664b-43fb-9b98-46ce706701d6}">
+      <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{9187b4a7-a42c-4364-a237-fe27d1b092b0}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{b9aff11f-e55e-4ea0-a544-b45c3be44f95}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="LimFwdEnable" Id="{63378470-96d4-47b7-a381-4d50609bb5a2}">
+      <Declaration><![CDATA[PROPERTY LimFwdEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{13bb15a4-f20a-4eed-b421-340a7c7204a2}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{7ad36303-dc71-4d7a-b996-eaec00eed2df}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="LimHit" Id="{00f31b83-20b0-4e18-bb57-b84a58adcd1b}">
+      <Declaration><![CDATA[PROPERTY LimHit : BOOL]]></Declaration>
+      <Get Name="Get" Id="{dc48a399-6ef3-4f49-9589-4858181b8029}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimHome" Id="{43b3c4e0-2529-4ca2-94b6-01308791bd0f}">
+      <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
+      <Get Name="Get" Id="{fa4d37b3-5d02-4b73-968e-4a37c39a113f}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{aca26340-7624-4f3a-8bc3-b354a8230aaf}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="PowerSelf" Id="{af7539d4-48fa-4915-a716-1585614bb150}">
+      <Declaration><![CDATA[PROPERTY PowerSelf : BOOL]]></Declaration>
+      <Get Name="Get" Id="{832ea85a-44e1-43f2-84fb-a9a7ce8a9a54}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{3ab08d4c-6e93-4a5c-b644-d0f7e3500942}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="PrepareDisable" Id="{06826ef8-4820-4e0e-99a8-95eabef50bc5}">
+      <Declaration><![CDATA[PROPERTY PrepareDisable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{1218905d-5cb7-4bcc-84f4-3911642dcd18}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="SafetyReady" Id="{c4a49c88-eac4-4e17-84d8-41063fa69887}">
+      <Declaration><![CDATA[PROPERTY SafetyReady : BOOL]]></Declaration>
+      <Get Name="Get" Id="{67ae7808-2d1e-4903-92a5-9e496ca319df}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{6c96cb36-0d7f-4cc1-9cb5-39659c0eaab3}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="SoftInterlock" Id="{84b462fb-97b6-4df9-b44c-e4fc3600b4a1}">
+      <Declaration><![CDATA[PROPERTY SoftInterlock : BOOL]]></Declaration>
+      <Get Name="Get" Id="{4c848c4c-616c-4dea-8b19-c0ad93f2399c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{7e455863-b97d-4ef2-8c0a-175169e8ec44}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="UserEnable" Id="{b04015ea-94bc-4cb0-a1f4-ebb6556cce84}">
+      <Declaration><![CDATA[PROPERTY UserEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{3936eba9-09b5-408d-b793-738e943f6fd9}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="WarnID" Id="{be859d4c-20b0-48fc-90e8-64961601a870}">
+      <Declaration><![CDATA[PROPERTY WarnID : UINT
+]]></Declaration>
+      <Get Name="Get" Id="{aff35a25-4efa-4678-8127-c8619732e505}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="WarningMsg" Id="{bf7b81d5-c154-46fb-b50d-9188e5c9721a}">
+      <Declaration><![CDATA[PROPERTY WarningMsg : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{904bcd85-b16b-4196-9319-f47b5feeb0d9}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
   </Itf>
 </TcPlcObject>

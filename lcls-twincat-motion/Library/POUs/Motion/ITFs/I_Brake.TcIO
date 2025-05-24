@@ -3,5 +3,32 @@
   <Itf Name="I_Brake" Id="{190f63fb-756a-4791-8091-567b83a9d052}">
     <Declaration><![CDATA[INTERFACE I_Brake
 ]]></Declaration>
+    <Property Name="BrakeMode" Id="{0e1c15ff-4c0a-4d96-9240-b1fe98efccae}">
+      <Declaration><![CDATA[PROPERTY BrakeMode : E_StageBrakeMode]]></Declaration>
+      <Get Name="Get" Id="{b15cfe78-2d78-4dcd-917c-25c11507600e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{5bf7a3f4-b227-41be-a6cc-f465ecf3784b}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="BrakeRelease" Id="{f7411daa-c129-4ae6-a363-2bb5ae6bae27}">
+      <Declaration><![CDATA[PROPERTY BrakeRelease : BOOL]]></Declaration>
+      <Get Name="Get" Id="{d25d5972-d184-4b87-bbef-d0f446a0a92a}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{2536a6a9-3571-4972-98d2-90b38510ce0d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="MotionState" Id="{cafc07a5-b9fb-4ac1-ba22-5d5dfe1f79d1}">
+      <Declaration><![CDATA[PROPERTY MotionState : MC_AxisStates]]></Declaration>
+      <Get Name="Get" Id="{78bb5d85-d490-4014-9418-45338b45e88d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{bcda3488-774d-4d84-a2e1-b59faaa350a4}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
   </Itf>
 </TcPlcObject>
