@@ -315,15 +315,6 @@ END_VAR
 ]]></Declaration>
       </Set>
     </Property>
-    <Property Name="MoveMode" Id="{05f924a5-d3a6-4da7-ab50-fcad0580fbfb}">
-      <Declaration><![CDATA[PROPERTY MoveMode : E_MoveMode]]></Declaration>
-      <Get Name="Get" Id="{4e619b19-1227-4aa9-97bd-f7e260dcc6cd}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-      <Set Name="Set" Id="{2987c28d-902f-4e1a-bce2-2b0a7c7390d5}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
     <Property Name="Name" Id="{0c6fd7a6-29c0-4c88-879f-f0f43862e70a}">
       <Declaration><![CDATA[PROPERTY Name : STRING]]></Declaration>
       <Get Name="Get" Id="{0df1c16f-fce7-44ce-a865-4fda8703479c}">

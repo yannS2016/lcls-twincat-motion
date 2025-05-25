@@ -32,7 +32,9 @@ VAR
     bSyncPrvExecMove : BOOL;
     bSyncPrvStart    : BOOL;
     bSyncPrvInterlockOk : BOOL;
+    bSyncPrvAxisError	: BOOL;
     sSyncPrvErrorMessage : STRING;
+    eSyncPrvMoveMode : E_EpicsMotorCmd := E_EpicsMotorCmd.MOVE_ABSOLUTE;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -113,6 +115,25 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[bSyncPrvAllFwdEn := SyncPrvAllFwdEn;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvAxisError" Id="{d604227f-93c9-4397-b79b-f8c609a2d1e7}">
+      <Declaration><![CDATA[PROPERTY SyncPrvAxisError : BOOL]]></Declaration>
+      <Get Name="Get" Id="{2e4959fa-e405-4d0f-b4cd-46d19ee40b79}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvAxisError := bSyncPrvAxisError;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{4db127ff-c579-47d6-8dcb-6bc425060b28}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvAxisError := SyncPrvAxisError;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -417,6 +438,26 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[bSyncPrvMoveDone := SyncPrvMoveDone;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvMoveMode" Id="{69fecb02-d639-4a28-998f-85824e41e103}">
+      <Declaration><![CDATA[PROPERTY SyncPrvMoveMode : E_EpicsMotorCmd
+]]></Declaration>
+      <Get Name="Get" Id="{f695e421-185b-484b-a600-ac5ab58e757f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvMoveMode := eSyncPrvMoveMode;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{ef55c95f-1908-45e9-a9cb-2b8c1f640bfa}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[eSyncPrvMoveMode := SyncPrvMoveMode;]]></ST>
         </Implementation>
       </Set>
     </Property>

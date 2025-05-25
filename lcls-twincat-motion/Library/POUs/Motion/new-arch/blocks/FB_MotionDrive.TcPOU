@@ -6,7 +6,7 @@
 VAR
     // EPICS Interface
     stMotionEpicsItf : REFERENCE TO ST_MotionEpicsItf;
-
+    {attribute 'hide'}
     iMotionAxisCommon 		: I_MotionAxisCommon;
     {attribute 'hide'}
     iBrake 				: I_Brake;
@@ -54,11 +54,9 @@ VAR
     {attribute 'hide'}
     bExecMove 	: BOOL;
     {attribute 'hide'}
-      rtMoveCmdShortcut	: R_TRIG;
+    rtMoveCmdShortcut	: R_TRIG;
     {attribute 'hide'}
     rtHomeCmdShortcut 	: R_TRIG;
-    {attribute 'hide'}
-    rtEpicsExec			: R_TRIG;
     {attribute 'hide'}
     rtUserExec 			: R_TRIG;
     {attribute 'hide'}
@@ -68,10 +66,6 @@ VAR
     {attribute 'hide'}
     rtHomed				: R_TRIG;
     {attribute 'hide'}
-    rtAborted 			: R_TRIG;
-    {attribute 'hide'}
-    rtResetDone			: R_TRIG;
-    {attribute 'hide'}
     rtValidExec 	: R_TRIG;
     {attribute 'hide'}
     rtReset 			: R_TRIG;
@@ -80,18 +74,21 @@ VAR
     {attribute 'hide'}
     ftError 			: F_TRIG;
     {attribute 'hide'}
-    rtHalt 			: R_TRIG;
-    {attribute 'hide'}
     nCommandLocal: UINT;
     {attribute 'hide'}
     nCmdDataLocal: UINT;
-    bLocalStart : BOOL;
+    {attribute 'hide'}
     ftLocalStart : F_TRIG;
+    {attribute 'hide'}
     bInitStart : BOOL;
+    {attribute 'hide'}
     bLocalExec : BOOL;
+    {attribute 'hide'}
     bEnableDone : BOOL;
-bPrepareDisable : BOOL;
+    {attribute 'hide'}
+    bPrepareDisable : BOOL;
     // Determines when we automatically enable the motor
+    {attribute 'hide'}
     nEnableMode: E_StageEnableMode:=E_StageEnableMode.DURING_MOTION;
     {attribute 'hide'}
     rtEnableMode : R_TRIG;
@@ -129,12 +126,13 @@ IF stMotionEpicsItf.bReset THEN
     // this Neg edge will carry out reset operation
     stMotionEpicsItf.bExecute := FALSE;
     // Relese motion cmds
+    THIS^.bInitStart := FALSE;
     THIS^.bMoveCmd := FALSE;
     THIS^.bHomeCmd := FALSE;
     stMotionEpicsItf.bReset := FALSE;
 END_IF
 
-rtAborted(CLK:=iMotionAxisCommon.HaltDone OR iMotionAxisCommon.ResetDone);
+//rtAborted(CLK:=iMotionAxisCommon.HaltDone OR iMotionAxisCommon.ResetDone);
 rtTarget(CLK:=(iMotionAxisCommon.Done AND bExecMove));
 rtHomed(CLK:=iMotionAxisCommon.Done AND bExecHome);
 ftStopExec(CLK:=stMotionEpicsItf.bExecute);
@@ -156,11 +154,11 @@ ftError(CLK:=stMotionEpicsItf.bError);
         stMotionEpicsItf.bDone := FALSE;
         CASE stMotionEpicsItf.nCommand OF
             E_EpicsMotorCmd.MOVE_ABSOLUTE:
-                    iMotionAxisCommon.MoveMode := E_EpicsMotorCmd.MOVE_ABSOLUTE;
+                MotionSyncPrivateRef.SyncPrvMoveMode := E_EpicsMotorCmd.MOVE_ABSOLUTE;
             E_EpicsMotorCmd.MOVE_RELATIVE:
-                    iMotionAxisCommon.MoveMode := E_EpicsMotorCmd.MOVE_RELATIVE;
+                MotionSyncPrivateRef.SyncPrvMoveMode := E_EpicsMotorCmd.MOVE_RELATIVE;
             E_EpicsMotorCmd.HOME:
-                    iMotionAxisCommon.MoveMode := E_EpicsMotorCmd.HOME;
+                MotionSyncPrivateRef.SyncPrvMoveMode := E_EpicsMotorCmd.HOME;
         END_CASE
 
         IF bExecMove THEN
@@ -200,7 +198,7 @@ ftError(CLK:=stMotionEpicsItf.bError);
 
     E_MoveState.TARGET_REACHED, E_MoveState.MOVE_INTERRUPTED:
 
-        IF iMotionAxisCommon.Done OR rtAborted.Q THEN
+        IF iMotionAxisCommon.Done THEN
             stMotionEpicsItf.bDone := TRUE;
             stMotionEpicsItf.bBusy := FALSE;
             stMotionEpicsItf.bExecute := FALSE;
@@ -216,6 +214,7 @@ ftError(CLK:=stMotionEpicsItf.bError);
     E_MoveState.MOVE_ERROR:
         stMotionEpicsItf.bBusy := FALSE;
         stMotionEpicsItf.bDone := FALSE;
+        THIS^.bInitStart := FALSE;
         THIS^.bHomeCmd:=FALSE;
         THIS^.bMoveCmd:=FALSE;
         THIS^.bHalt := FALSE;
@@ -231,9 +230,6 @@ ftError(CLK:=stMotionEpicsItf.bError);
 IF iMotionAxisCommon.ResetDone AND NOT iMotionAxisCommon.CommandAborted THEN
    THIS^.stMotionEpicsItf.bEnable := FALSE;
    THIS^.MotionSyncPrivateRef.SyncPrvReset := iMotionAxisCommon.ResetDone;
-   THIS^.MotionSyncPrivateRef.SyncPrvError := FALSE;
-   THIS^.MotionSyncPrivateRef.SyncPrvErrorID := 0;
-   THIS^.MotionSyncPrivateRef.SyncPrvErrorMessage := '';
 END_IF
 
 // clear halt flag

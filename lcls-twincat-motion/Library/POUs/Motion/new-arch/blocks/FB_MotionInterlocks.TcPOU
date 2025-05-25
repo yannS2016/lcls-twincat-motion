@@ -123,6 +123,8 @@ VAR
      nErrorID: UDINT;
      bInterlockOk : BOOL;
      rtDone : R_TRIG;
+    rtError : R_TRIG;
+    ftError : F_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -149,6 +151,7 @@ IF bReset THEN
     bLimHit := FALSE;
     bReset := FALSE;
     bError := FALSE;
+    sWarningMsg:='';
 END_IF
 
 bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND stEPSForwardEnable.bEPS_OK;
@@ -208,7 +211,8 @@ IF   ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
     bInterlockOk := FALSE;
 END_IF
 
-
+rtError(CLK:=bError);
+ftError(CLK:=bError);
 
 // write external private data
 IF __ISVALIDREF(MotionSyncPrivateRef) THEN
@@ -221,9 +225,13 @@ IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     MotionSyncPrivateRef.SyncPrvHome := bHome;
     MotionSyncPrivateRef.SyncPrvLimHit := bLimHit;
     MotionSyncPrivateRef.SyncPrvInterlockOk := bInterlockOk;
-    IF bError THEN
+    // Axis error have higher priority
+    IF rtError.Q AND NOT MotionSyncPrivateRef.SyncPrvAxisError THEN
         MotionSyncPrivateRef.SyncPrvError := bError;
         MotionSyncPrivateRef.SyncPrvErrorID := nErrorID;
+    ELSIF ftError.Q THEN
+        MotionSyncPrivateRef.SyncPrvError := FALSE;
+        MotionSyncPrivateRef.SyncPrvErrorID := 0;
     END_IF
 END_IF
 ]]></ST>

@@ -228,13 +228,13 @@ VAR
     {attribute 'hide'}
     ftMoveAbsoluteBusy 			: F_TRIG;
     {attribute 'hide'}
-    ftStopExec 		: F_TRIG;
+    //ftStopExec 		: F_TRIG;
     {attribute 'hide'}
-    rtTarget		: R_TRIG;
+    ftError		: F_TRIG;
     {attribute 'hide'}
-    rtHaltedDone	: R_TRIG;
+    //rtHaltedDone	: R_TRIG;
     {attribute 'hide'}
-    rtTargetReached	: R_TRIG;
+    //rtTargetReached	: R_TRIG;
     {attribute 'hide'}
     rtAbsoluteMoveDone	: R_TRIG;
     fbMcBacklashCompensation: MC_BacklashCompensation;
@@ -255,9 +255,6 @@ VAR
     fSetAcceleration	: LREAL := 0.0;
     fSetDeceleration	: LREAL := 0.0;
     fSetJerk	: LREAL := 0.0;
-
-   // eBufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
-    eMoveMode : E_EpicsMotorCmd := E_EpicsMotorCmd.MOVE_ABSOLUTE;
     sName : STRING;
     // Piezo Motion Control
     tholtime		: TIME := T#10S;
@@ -266,17 +263,18 @@ VAR
     nCommand 		: UINT;
     nCommandData		: UINT;
 
-    rtDone 				: R_TRIG;
+    //rtDone 				: R_TRIG;
     rtError				: R_TRIG;
     rtReset				: R_TRIG;
     ftServo				: F_TRIG;
+    rtDone : R_TRIG;
     // This prevent unexpected logical 1 on stMotionStage.bExecute
     bCommandedMoveHome  : BOOL;
     bHomeBusy			: BOOL;
     bHomeDone			: BOOL;
     // get this value from fb_MotionDrive epics interface
     fHomePosition 		: LREAL :=0.0;
-    rtHomed				: R_TRIG;
+    rtHomeDone				: R_TRIG;
     bHomeInterrupted	: BOOL;
     bHomeError 			: BOOL;
     nHomeErrorID 		: UDINT;
@@ -551,15 +549,14 @@ END_VAR
       </Set>
     </Property>
     <Property Name="Done" Id="{8918038f-10a4-43ec-a5f1-e6c676668826}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Done : BOOL
+      <Declaration><![CDATA[PROPERTY Done : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{a36a5686-233b-491f-9bf4-53136cbb788d}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[Done := bDone;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -1148,7 +1145,7 @@ END_IF
 rtMoveAbsoluteBusy (CLK:=bMoveAbsoluteBusy);
 ftMoveAbsoluteBusy(CLK:=bMoveAbsoluteBusy);
 
-bMoveAbsoluteDone S= ftMoveAbsoluteBusy.Q AND NOT THIS^.bResetBusy AND NOT THIS^.bHaltBusy;
+bMoveAbsoluteDone S= ftMoveAbsoluteBusy.Q AND NOT THIS^.bMoveAbsoluteError AND NOT THIS^.bResetBusy AND NOT THIS^.bHaltBusy;
 bMoveAbsoluteDone R= rtMoveAbsoluteBusy.Q;]]></ST>
       </Implementation>
     </Method>
@@ -1307,27 +1304,6 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[fMoveAbsoluteTargetVelocity := MoveAbsoluteTargetVelocity;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="MoveMode" Id="{95d53ee3-3cdd-474f-b2ea-491d56ba529c}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MoveMode : E_MoveMode
-]]></Declaration>
-      <Get Name="Get" Id="{94cbdadb-35a0-497e-a694-966e1ddf437c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{ad918615-9967-4f2d-a750-fbf413265021}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -1742,7 +1718,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[CASE eMoveMode OF
+        <ST><![CDATA[CASE MotionSyncPrivateRef.SyncPrvMoveMode OF
     E_EpicsMotorCmd.MOVE_ABSOLUTE:
         THIS^.bCommandedMoveAbsolute := TRUE;
     E_EpicsMotorCmd.HOME:

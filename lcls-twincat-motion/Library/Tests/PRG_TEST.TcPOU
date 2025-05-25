@@ -21,10 +21,10 @@ VAR
     //
     fbMotionAxisNC : FB_MotionAxisNC ( AxisRef:=NcAxis_GVL.testAxis,
                                         iPersistentDataStorage :=iPersistentDataStorage,
-                                         iMotionLogger:=iMotionLogger):=( 	MotionSyncPrivate:=fbMotionSyncPrivate,
+                                        iMotionLogger:=iMotionLogger):=( 	MotionSyncPrivate:=fbMotionSyncPrivate,
                                                                             PowerOverride:=100.0,
                                                                             HomePosition := 0.0,
-                                                                            HomeMode:=ENUM_EpicsHomeCmd.NONE,
+                                                                            HomeMode:=ENUM_EpicsHomeCmd.ABSOLUTE_SET,
                                                                             Name:= 'Module1'
                                                                         );
     iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisNC;
@@ -39,12 +39,14 @@ VAR
                                     ) := (Name := 'SmarAct MCS2',  EnableMode:=ENUM_StageEnableMode.DURING_MOTION );
     iMotionDrive: I_MotionDrive := fbMotionDrive;
 
+// testing
+    bLimFwd : BOOL;
+    bLimBwd : BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[bHardEnable := iMotionInterlocks.HardwareEnable;
-iMotionInterlocks.LimBwdEnable := TRUE;
-iMotionInterlocks.LimFwdEnable := TRUE;
+      <ST><![CDATA[iMotionInterlocks.LimBwdEnable := bLimBwd;
+iMotionInterlocks.LimFwdEnable := bLimFwd;
 
 fbMotionInterlocks();
 fbMotionSyncPrivate();
