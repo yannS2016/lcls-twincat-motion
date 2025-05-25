@@ -10,6 +10,8 @@ END_VAR
 VAR
     {attribute 'no_copy'}
     AxisRef : REFERENCE TO AXIS_REF;
+    //{attribute 'hide'}
+    MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
     // Raw encoder IO for ULINT (Biss-C)
     nRawEncoderULINT AT %I*: ULINT;
     // Raw encoder IO for UINT (Relative Encoders)
@@ -149,8 +151,7 @@ VAR
     fMoveAbsoluteTargetAcceleration	: LREAL := 0.0;
     fMoveAbsoluteTargetDeceleration	: LREAL := 0.0;
     fMoveAbsoluteTargetJerk	: LREAL := 0.0;
-    nCommandLocal: UINT;
-    nCmdDataLocal: UINT;
+
     eBufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
     // Axis Status
     {attribute 'hide'}
@@ -256,21 +257,12 @@ VAR
     fSetJerk	: LREAL := 0.0;
 
    // eBufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
-    eMoveMode : E_MoveMode;
+    eMoveMode : E_EpicsMotorCmd := E_EpicsMotorCmd.MOVE_ABSOLUTE;
     sName : STRING;
     // Piezo Motion Control
     tholtime		: TIME := T#10S;
     fPowerOverride : LREAL := 100.0;
     {attribute 'hide'}
-    //bRestoreDone : BOOL;
-    {attribute 'hide'}
-    //eAxisState : MC_AxisStates;
-    // intermediary motion signal: from EPICS interface
-    bCmdMoveAbsolute	: BOOL;
-    bCmdReset 			: BOOL;
-    //bCommandAborted		: BOOL;
-    bCmdHalt 			: BOOL;
-    bCmdMoveHome			: BOOL;
     nCommand 		: UINT;
     nCommandData		: UINT;
 
@@ -279,6 +271,7 @@ VAR
     rtReset				: R_TRIG;
     ftServo				: F_TRIG;
     // This prevent unexpected logical 1 on stMotionStage.bExecute
+    bCommandedMoveHome  : BOOL;
     bHomeBusy			: BOOL;
     bHomeDone			: BOOL;
     // get this value from fb_MotionDrive epics interface
@@ -288,6 +281,7 @@ VAR
     bHomeError 			: BOOL;
     nHomeErrorID 		: UDINT;
     nHomeMode:ENUM_EpicsHomeCmd :=ENUM_EpicsHomeCmd.NONE;
+
 END_VAR
 
 
@@ -304,16 +298,11 @@ END_VAR]]></Declaration>
 
 
 
-
-
-
 ]]></ST>
     </Implementation>
-    <Property Name="AxisState" Id="{74147cdb-4b8a-4b74-a37f-eaadafea6e7a}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY AxisState : MC_AxisStates
-]]></Declaration>
-      <Get Name="Get" Id="{5079f451-585f-45fc-ac12-d15b6be4da3e}">
+    <Property Name="AxisState" Id="{8543a64f-cfc1-4464-880f-fb8b0081b8e8}">
+      <Declaration><![CDATA[PROPERTY AxisState : MC_AxisStates]]></Declaration>
+      <Get Name="Get" Id="{2010c811-c440-4e2c-80c8-2541abf98579}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
@@ -326,29 +315,27 @@ END_VAR
       <Declaration><![CDATA[METHOD AxisStatus
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.AxisRef.ReadStatus();
-
-(*Axis id in motion "motor"*)
+        <ST><![CDATA[AxisRef.ReadStatus();
+//
+// (*Axis id in motion "motor"*)
 nAxisId:=AxisRef.NcToPlc.AxisId;
-
-(*Actual Velocity*)
-fMeasuredVelocity:=AxisRef.NcToPlc.ActVelo;
-
-(*Actual Position*)
-IF AxisRef.Status.OpMode.Modulo THEN
-    fMeasuredPosition:=AxisRef.NcToPlc.ModuloActPos;
-ELSE
-    fMeasuredPosition:=AxisRef.NcToPlc.ActPos;
-END_IF
-
-(*Actual Position Diff*)
-fMeasuredPositionDiff:=AxisRef.NcToPlc.PosDiff;
-(*Current Axis state*)
+//
+// (*Actual Velocity*)
+// SUPER^.fMeasuredVelocity:=AxisRef.NcToPlc.ActVelo;
+//
+// (*Actual Position*)
+// IF SUPER^.AxisRef.Status.OpMode.Modulo THEN
+//     SUPER^.fMeasuredPosition:=AxisRef.NcToPlc.ModuloActPos;
+// ELSE
+//     SUPER^.fMeasuredPosition:=AxisRef.NcToPlc.ActPos;
+// END_IF
+//
+// (*Actual Position Diff*)
+// SUPER^.fMeasuredPositionDiff:=SUPER^.AxisRef.NcToPlc.PosDiff;
+// (*Current Axis state*)
 eAxisState := AxisRef.Status.MotionState;
-(*Target Reached*)
-bInTargetPosition := AxisRef.Status.InTargetPosition;
- (*Axis Error*)
-bAxisError := AxisRef.Status.Error;]]></ST>
+// (*Target Reached*)
+// SUPER^.bInTargetPosition := SUPER^.AxisRef.Status.InTargetPosition;]]></ST>
       </Implementation>
     </Method>
     <Method Name="BacklashCompensation" Id="{927638b2-37f4-4736-8328-c9d3bbdf5863}">
@@ -432,118 +419,18 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Property Name="Cmd" Id="{30a03909-94ab-4c48-bbf6-b0a60851a6e1}">
-      <Declaration><![CDATA[PROPERTY Cmd : UINT
-]]></Declaration>
-      <Set Name="Set" Id="{6c0d67c1-1597-4c36-b826-df5509e470ed}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[nCommandLocal := Cmd;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdData" Id="{7ff40bd6-da45-4dd0-ab0a-405875312520}">
-      <Declaration><![CDATA[PROPERTY CmdData : UINT
-]]></Declaration>
-      <Set Name="Set" Id="{8b8d023c-647c-4ba1-9343-2904408a7d08}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[nCmdDataLocal := CmdData;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdHalt" Id="{81f3006a-aece-4414-b96c-837dd599810d}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdHalt : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{8d5f1a5a-5f83-49f8-b7e3-e75c45daccbb}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{64b9cb47-6611-490e-bc44-f662b641a9f7}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdMoveAbsolute" Id="{0c12dd16-d870-42eb-936e-5e07b57c56af}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdMoveAbsolute : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{d1104762-8619-49ac-92e4-f8bb353babf8}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{721312dc-52f6-48a1-9942-41c81581be27}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdMoveHome" Id="{c740297c-57b8-4993-b007-8e093db34b93}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdMoveHome : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{3fadd50d-b449-4cfe-ac7b-3a7a543d8ebb}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{e801ba71-af26-4fe1-bc6b-03ca8640f890}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="CmdReset" Id="{7187883d-1073-4b02-9539-1cee3354acf6}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY CmdReset : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{b30e8c5b-3b4d-41b2-96c4-b844b0070ca4}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{55ff3b05-afd6-4028-bb53-735ef745aeab}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Property Name="Command" Id="{767e1b50-80ff-401a-9efd-9fbb5c2df676}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY Command : UINT
 ]]></Declaration>
+      <Get Name="Get" Id="{756fb936-9b88-431e-b43a-fd44376f47c5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
       <Set Name="Set" Id="{ec7b5008-a3a0-4660-9e12-c53b5f05c192}">
         <Declaration><![CDATA[VAR
 END_VAR
@@ -618,6 +505,27 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[ bCommandedMoveAbsolute := CommandedMoveAbsolute ;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="CommandedMoveHome" Id="{c740297c-57b8-4993-b007-8e093db34b93}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY CommandedMoveHome : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{3fadd50d-b449-4cfe-ac7b-3a7a543d8ebb}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[CommandedMoveHome := bCommandedMoveHome;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e801ba71-af26-4fe1-bc6b-03ca8640f890}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bCommandedMoveHome := CommandedMoveHome;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -738,7 +646,7 @@ ELSIF fbMcBacklashCompensation.Error (*fbMcMoveAbsolute.Active*) THEN
     bError:=fbMcBacklashCompensation.Enable;
     nErrorId:=fbMcBacklashCompensation.ErrorID;
 ELSIF fbMcMoveAbsolute.Error (*fbMcMoveAbsolute.Active*) THEN
-    bError:=fbMcMoveAbsolute.Execute;
+    bError:=fbMcMoveAbsolute.Error;
     nErrorId:=fbMcMoveAbsolute.ErrorID;
 ELSIF THIS^.bHomeError (*Homing error*) THEN
     bError:=bHomeError;
@@ -889,13 +797,13 @@ VAR_INPUT
     AxisRef : REFERENCE TO AXIS_REF;
     iPersistentDataStorage : I_PersistentDataStorage;
     iMotionLogger : I_MotionLogger;
-    iMotionInterlocks: I_MotionInterlocks;
+    //iMotionInterlocks: I_MotionInterlocks;
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[THIS^.AxisRef REF= AxisRef;
 THIS^.iPersistentDataStorage := iPersistentDataStorage;
 THIS^.iMotionLogger := iMotionLogger;
-THIS^.iMotionInterlocks:= iMotionInterlocks;]]></ST>
+//THIS^.iMotionInterlocks:= iMotionInterlocks;]]></ST>
       </Implementation>
     </Method>
     <Method Name="Halt" Id="{bcba91e0-31a4-4a59-8d6a-adf6669aee77}">
@@ -1033,8 +941,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HomeMode" Id="{927946d6-12aa-4cc2-90e9-f2f508eb2a9a}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY HomeMode : E_EpicsHomeCmd
+      <Declaration><![CDATA[PROPERTY HomeMode : E_EpicsHomeCmd
 ]]></Declaration>
       <Get Name="Get" Id="{da5153a4-dddf-42e6-adb8-41f2c29bdcf4}">
         <Declaration><![CDATA[VAR
@@ -1181,6 +1088,25 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="MotionSyncPrivate" Id="{b5e8637a-c5e7-4c86-a8cf-290fe09f805a}">
+      <Declaration><![CDATA[PROPERTY INTERNAL MotionSyncPrivate : REFERENCE TO FB_MotionSyncPrivate]]></Declaration>
+      <Get Name="Get" Id="{17669fe9-077b-4903-8199-fdbbdc33bf42}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MotionSyncPrivateRef := MotionSyncPrivate;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{de12d206-a53c-4167-b1fc-2523a7fe3ef7}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MotionSyncPrivateRef REF= MotionSyncPrivate;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="MoveAbsolute" Id="{bedd8396-b1f3-452f-bba8-1daae2474961}">
       <Declaration><![CDATA[METHOD MoveAbsolute
 VAR_INPUT
@@ -1192,6 +1118,7 @@ END_VAR
 // on CommandedMoveAbsolute
 // clear the done bit after previous move is completed by an error condition
 ///////////////////////////////////////////////////////////////////////////////////
+
 THIS^.fbMcMoveAbsolute(
     Axis := THIS^.AxisRef,
     Execute := THIS^.bCommandedMoveAbsolute,
@@ -1215,11 +1142,13 @@ THIS^.fbMcMoveAbsolute(
     For limit switch we use the set abs move done flag to true after testing that
     The interuption is not from hatling or resetting.
 *)
+IF THIS^.bMoveAbsoluteError THEN
+    //THIS^.bCommandedMoveAbsolute := FALSE;
+END_IF
 rtMoveAbsoluteBusy (CLK:=bMoveAbsoluteBusy);
 ftMoveAbsoluteBusy(CLK:=bMoveAbsoluteBusy);
-//rtAbsoluteMoveDone(CLK:=fbMcMoveAbsolute.Done);
+
 bMoveAbsoluteDone S= ftMoveAbsoluteBusy.Q AND NOT THIS^.bResetBusy AND NOT THIS^.bHaltBusy;
-//bMoveAbsoluteDone S= rtAbsoluteMoveDone.Q OR ( ftMoveAbsoluteBusy.Q AND NOT THIS^.bResetBusy AND NOT THIS^.bHaltBusy );
 bMoveAbsoluteDone R= rtMoveAbsoluteBusy.Q;]]></ST>
       </Implementation>
     </Method>
@@ -1636,37 +1565,13 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="RefVeloSearch" Id="{63c69a7e-3176-46d6-9a27-7c88f514a3c4}">
-      <Declaration><![CDATA[PROPERTY RefVeloSearch : LREAL
-]]></Declaration>
-      <Get Name="Get" Id="{f61fed24-0cb6-411c-a45c-5eb854ff9c9d}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[RefVeloSearch := fRefVeloSearch;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="RefVeloSync" Id="{39b52eb1-ffa4-4a61-80ec-37e011dfb300}">
-      <Declaration><![CDATA[PROPERTY RefVeloSync : LREAL
-]]></Declaration>
-      <Get Name="Get" Id="{75f5e58b-02f6-4a14-8598-d9e882956f3c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[RefVeloSync := fRefVeloSync;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Method Name="Reset" Id="{6a2ae321-d961-46f9-9ef7-70fbe99ba833}">
       <Declaration><![CDATA[METHOD Reset
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[THIS^.fbMcReset(
     Axis := THIS^.AxisRef,
-    Execute := THIS^.bCommandedReset,
+    Execute := THIS^.bCommandedReset (* AND Axis.Status.Error*),
     Done => THIS^.bResetDone,
     Busy => THIS^.bResetBusy,
     Error => THIS^.bResetError,
@@ -1721,27 +1626,6 @@ END_VAR
           <ST><![CDATA[ResetErrorID := bResetErrorID ;]]></ST>
         </Implementation>
       </Get>
-    </Property>
-    <Property Name="RestoreDone" Id="{1c7ebab8-bf9d-41be-8ae1-4fa486ea2515}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY RestoreDone : BOOL]]></Declaration>
-      <Get Name="Get" Id="{8bb5e119-978e-4082-b448-c991ff07ea58}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[RestoreDone := bRestoreDone;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{49fef9a0-0d7f-4b31-9fbf-a44d24d2ef94}">
-        <Declaration><![CDATA[
-VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bRestoreDone := RestoreDone;]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="RestoreError" Id="{c8bc283c-88b2-4008-a719-c60968bbb480}">
       <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
@@ -1859,10 +1743,10 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[CASE eMoveMode OF
-    E_MoveMode.DISCRETE:
-        THIS^.bCmdMoveAbsolute := TRUE;
-    E_MoveMode.HOMING:
-        THIS^.bCmdMoveHome := TRUE;
+    E_EpicsMotorCmd.MOVE_ABSOLUTE:
+        THIS^.bCommandedMoveAbsolute := TRUE;
+    E_EpicsMotorCmd.HOME:
+        THIS^.bCommandedMoveHome:= TRUE;
 END_CASE
 
 // for typical NC axis no further test is needed

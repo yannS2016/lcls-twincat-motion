@@ -7,6 +7,9 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
+    {attribute 'hide'}
+    iMotionLogger 		: I_MotionLogger;
+    {attribute 'hide'}
     MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
     (* Hardware *)
    // NC Forward Limit Switch: TRUE if ok to move
@@ -17,11 +20,15 @@ VAR
     bHome AT %I*: BOOL;
    (* Psuedo-hardware *)
     // Forward enable EPS summary
-    bAllForwardEnable: BOOL:=FALSE;
+    {attribute 'hide'}
+    bAllForwardEnabled: BOOL:=FALSE;
     // Backward enable EPS summary
-    bAllBackwardEnable: BOOL:=FALSE;
+    {attribute 'hide'}
+    bAllBackwardEnabled: BOOL:=FALSE;
+    {attribute 'hide'}
     // Enable EPS summary encapsulating emergency stop button and any additional motion preventive hardware
-    bAllEnable: BOOL:=FALSE;
+    {attribute 'hide'}
+    bAllEnabled: BOOL:=FALSE;
     // Forward virtual gantry limit switch
     bGantryForwardEnable: BOOL:=FALSE;
     // Backward virtual gantry limit switch
@@ -30,8 +37,6 @@ VAR
     bGantryAxis: BOOL:=FALSE;
    // If TRUE, we want to enable the motor independently of PMPS or other safety systems.
     bPowerSelf: BOOL:=FALSE;
-    // Determines when we automatically enable the motor
-    nEnableMode: E_StageEnableMode:=E_StageEnableMode.DURING_MOTION;
     // Determines our encoder homing strategy
     nHomingMode: E_EpicsHomeCmd:=E_EpicsHomeCmd.NONE;
     // TRUE if we have safety permission to move
@@ -80,21 +85,10 @@ VAR
         field: DESC Used to disable power entirely for an axis
     '}
     bUserEnable: BOOL := TRUE;
-
+    {attribute 'hide'}
     bLimOverride : BOOL;
+    {attribute 'hide'}
     bSoftInterlock : BOOL;
-
-    {attribute 'hide'}
-    iMotionLogger 		: I_MotionLogger;
-
-    {attribute 'hide'}
-    bLocalExec : BOOL;
-    {attribute 'hide'}
-    bAllForwardEnabled: BOOL:=FALSE;
-     {attribute 'hide'}
-    bAllBackwardEnabled: BOOL:=FALSE;
-    {attribute 'hide'}
-    bAllEnabled: BOOL:=FALSE;
     {attribute 'hide'}
     bHomeBusy : BOOL;
     {attribute 'hide'}
@@ -104,13 +98,9 @@ VAR
     {attribute 'hide'}
     bEnable: BOOL;
     {attribute 'hide'}
-    bPrepareDisable : BOOL;
-
-    {attribute 'hide'}
     bExecute : BOOL;
     {attribute 'hide'}
     bEPSOk : BOOL;
-
     {attribute 'hide'}
     sWarningMsg : STRING;
     {attribute 'hide'}
@@ -129,35 +119,36 @@ VAR
     ftForwardEnabled : F_TRIG;
     {attribute 'hide'}
     ftBackwardEnabled : F_TRIG;
-    {attribute 'hide'}
-    rtEnableMode : R_TRIG;
-    {attribute 'hide'}
-    rtStopExec : R_TRIG;
-    {attribute 'hide'}
-    rtNewMoveReq : R_TRIG;
-    // reset cmds if done, error or reset
-        {attribute 'hide'}
-    rtDone : R_TRIG;
-    {attribute 'hide'}
-    rtError: R_TRIG;
-    {attribute 'hide'}
-    rtReset: R_TRIG;
-    testVarRef : REFERENCE TO UINT;
+    rtUserExec : R_TRIG;
+     nErrorID: UDINT;
+     bInterlockOk : BOOL;
+     rtDone : R_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[// Read external private data
 IF __ISVALIDREF(MotionSyncPrivateRef) THEN
-    eAxisState := MotionSyncPrivateRef.SynPrvAxisState;
-    bReset := MotionSyncPrivateRef.SynPrvReset;
-    bError := MotionSyncPrivateRef.SynPrvError;
-    bExecute := MotionSyncPrivateRef.SynPrvExec;
-    bError := MotionSyncPrivateRef.SynPrvError;
-    bHomeBusy := MotionSyncPrivateRef.SynPrvHomeBusy;
-    bLocalExec := MotionSyncPrivateRef.SynPrvLocalExec;
-    bMoveBusy := MotionSyncPrivateRef.SynPrvMoveBusy;
-    bMoveDone := MotionSyncPrivateRef.SynPrvMoveDone;
-    bNewMoveReq := MotionSyncPrivateRef.SynPrvNewMoveReq;
+    // some of these vars can be used for addtional interlocks checks in
+    // in this class or in derived implmentation
+    eAxisState := MotionSyncPrivateRef.SyncPrvAxisState;
+    bReset := MotionSyncPrivateRef.SyncPrvReset;
+    bError := MotionSyncPrivateRef.SyncPrvError;
+    nErrorID := MotionSyncPrivateRef.SyncPrvErrorID;
+    bExecute := MotionSyncPrivateRef.SyncPrvExec;
+    bHomeBusy := MotionSyncPrivateRef.SyncPrvHomeBusy;
+    bMoveBusy := MotionSyncPrivateRef.SyncPrvMoveBusy;
+    bMoveDone := MotionSyncPrivateRef.SyncPrvMoveDone;
+    bNewMoveReq := MotionSyncPrivateRef.SyncPrvNewMoveReq;
+    bEnable := MotionSyncPrivateRef.SyncPrvEnable;
+END_IF
+
+// react to external reset
+IF bReset THEN
+    bLimOverride := FALSE;
+    bInterlockOk := FALSE;
+    bLimHit := FALSE;
+    bReset := FALSE;
+    bError := FALSE;
 END_IF
 
 bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND stEPSForwardEnable.bEPS_OK;
@@ -167,9 +158,40 @@ bAllForwardEnabled := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGant
 /////////////////////////////////////////////////////////////////////////////
 bAllEnabled := bEnable AND bHardwareEnable AND stEPSPowerEnable.bEPS_OK AND NOT bSoftInterlock;
 bAllEnabled R= NOT bUserEnable OR bSoftInterlock;
+
+
+// Moves are automatically allowed if no safety hooks. Otherwise, some other code will set this.
+bSafetyReady S= bPowerSelf;
+
+// This tell the other block in seq processing to wait on interlock to do an intial check
+// before they can proceed. checking error only is not enough.
+rtUserExec (CLK:=bNewMoveReq);
+rtDone(CLK := bMoveDone);
+IF rtUserExec.Q AND NOT bError THEN
+    IF NOT bUserEnable THEN
+        bError := TRUE;
+        nErrorID:= 1;
+        bInterlockOk := FALSE;
+        sWarningMsg := 'Move requested, but user enable is disabled!';
+    ELSE
+        bInterlockOk := bPowerSelf;
+    END_IF
+ELSIF rtDone.Q THEN
+    bInterlockOk := FALSE;
+END_IF
+
+// rtUserExec (CLK:=bExecute);
+// IF rtUserExec.Q AND NOT bError AND NOT bUserEnable THEN
+//     bError := TRUE;
+//     nErrorID:= 1;
+// 	bInterlockOk := FALSE;
+//     sWarningMsg := 'Move requested, but user enable is disabled!';
+// END_IF
+
 //// use falling trigger to avoid spaming  sErrorMessage
 ftForwardEnabled(CLK:=bAllForwardEnabled);
 ftBackwardEnabled(CLK:=bAllBackwardEnabled);
+
 ///////////////////////////////////////////////////////////////
 // Raise a warning when limit are hit outisde of homing routine
 ///////////////////////////////////////////////////////////////
@@ -183,76 +205,28 @@ IF   ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
     bLimHit := TRUE;
     // will serve later
     bLimOverride := TRUE;
+    bInterlockOk := FALSE;
 END_IF
 
-bPrepareDisable R= bNewMoveReq;
-// Moves are automatically allowed if no safety hooks. Otherwise, some other code will set this.
-bSafetyReady S= bPowerSelf;
 
-rtNewMoveReq(CLK:=bNewMoveReq);
-rtEnableMode(CLK:=(EnableMode = E_StageEnableMode.DURING_MOTION));
-// Handle auto-enable timing
-CASE EnableMode OF
-    E_StageEnableMode.ALWAYS:
-        bEnable:=TRUE;
-    E_StageEnableMode.DURING_MOTION:
-        IF rtEnableMode.Q THEN
-            bEnable := FALSE;
-        END_IF
-        // Power interlock only enabled with a new move request
-        IF rtNewMoveReq.Q THEN
-            bEnable S= bSafetyReady;
-        END_IF
-END_CASE
-
-// Get a definitive bEnabled reading
-CASE eAxisState OF
-    // We are not enabled if there is an issue
-    MC_AXISSTATE_UNDEFINED, MC_AXISSTATE_DISABLED, MC_AXISSTATE_ERRORSTOP:
-        bEnableDone := FALSE;
-    ELSE
-        bEnableDone := TRUE;
-END_CASE
-
-// This is the output interlock check used to allow the requested move
-bLocalExec:= bExecute AND bAllEnabled AND bEnableDone AND bSafetyReady;
-
-// when move is done, interupted or target reached disabled drive after axis has settle
-rtStopExec(CLK:=bMoveDone);
-// Handle auto-disable timing
-bPrepareDisable S= (EnableMode = E_StageEnableMode.DURING_MOTION ) AND rtStopExec.Q;
-// Delay the disable until we reach standstill, else brake issues or other race conditions
-IF bPrepareDisable AND ( eAxisState = MC_AXISSTATE_STANDSTILL ) THEN
-    bPrepareDisable := FALSE;
-    bEnable := FALSE;
-END_IF
-
-// Prepare next move
-bMoveDone := FALSE;
-
-// react to reset if the axis is standstill ( clearing error )
-IF bReset THEN
-    bLimOverride := FALSE;
-    bLimHit := FALSE;
-    bReset := FALSE;
-    bError := FALSE;
-END_IF
-
-IF bError THEN
-    bEnable := FALSE;
-END_IF
 
 // write external private data
 IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     // control power based on interlocks
-    MotionSyncPrivateRef.SynPrvAllEn := bAllEnable;
-    MotionSyncPrivateRef.SynPrvAllBwdEn := bAllBackwardEnable;
-    MotionSyncPrivateRef.SynPrvAllFwdEn := bAllForwardEnable;
-    MotionSyncPrivateRef.SynPrvLimBwd := bLimitForwardEnable;
-    MotionSyncPrivateRef.SynPrvLimFwd := bLimitBackwardEnable;
-    MotionSyncPrivateRef.SynPrvHome := bHome;
-    MotionSyncPrivateRef.SynPrvLimHit := bLimHit;
-END_IF]]></ST>
+    MotionSyncPrivateRef.SyncPrvAllEn := bAllEnabled;
+    MotionSyncPrivateRef.SyncPrvAllBwdEn := bAllBackwardEnabled;
+    MotionSyncPrivateRef.SyncPrvAllFwdEn := bAllForwardEnabled;
+    MotionSyncPrivateRef.SyncPrvLimBwd := bLimitForwardEnable;
+    MotionSyncPrivateRef.SyncPrvLimFwd := bLimitBackwardEnable;
+    MotionSyncPrivateRef.SyncPrvHome := bHome;
+    MotionSyncPrivateRef.SyncPrvLimHit := bLimHit;
+    MotionSyncPrivateRef.SyncPrvInterlockOk := bInterlockOk;
+    IF bError THEN
+        MotionSyncPrivateRef.SyncPrvError := bError;
+        MotionSyncPrivateRef.SyncPrvErrorID := nErrorID;
+    END_IF
+END_IF
+]]></ST>
     </Implementation>
     <Property Name="AllBackwardEnabled" Id="{418fcf62-072d-4be6-9a52-23305e127201}">
       <Declaration><![CDATA[PROPERTY AllBackwardEnabled : BOOL
@@ -289,40 +263,6 @@ END_VAR
           <ST><![CDATA[AllForwardEnabled  := bAllForwardEnabled ;]]></ST>
         </Implementation>
       </Get>
-    </Property>
-    <Property Name="EnableDone" Id="{e8f686cf-2820-4def-9cf3-b4656f653df8}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY EnableDone : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{08422664-dee5-4efb-b45d-daa37c0a0460}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="EnableMode" Id="{0059a3f0-809f-424e-ade1-142436c73b96}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY EnableMode : E_StageEnableMode
-]]></Declaration>
-      <Get Name="Get" Id="{c252aba3-058d-4c88-b3ae-fd371338d57a}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[EnableMode := nEnableMode;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{d7a5f3e4-7958-4366-80c3-d36a1f1d8bfd}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[nEnableMode := EnableMode;]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="EPSBackwardEnable" Id="{946334c8-7a18-4f9f-949c-41f8e1008952}">
       <Declaration><![CDATA[PROPERTY EPSBackwardEnable : BOOL
@@ -383,6 +323,32 @@ END_VAR
           <ST><![CDATA[stEPSPowerEnable.bEPS_OK := EPSPowerEnable;]]></ST>
         </Implementation>
       </Set>
+    </Property>
+    <Property Name="Error" Id="{e79b16e8-e05d-409e-8cb0-eec460629a0c}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Error : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{718208c9-4347-494f-aa19-485067ff53bb}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="ErrorID" Id="{93eec656-4efc-420b-bf5f-8fa3bf03d7ab}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ErrorID : UDINT
+]]></Declaration>
+      <Get Name="Get" Id="{b8463f11-f873-4ec0-a662-40d8b9f3e374}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <Method Name="FB_Init" Id="{84019423-7ce0-4649-83b3-d87beaa3ba25}">
       <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
@@ -479,6 +445,19 @@ END_VAR
           <ST><![CDATA[bHardwareEnable := HardwareEnable;]]></ST>
         </Implementation>
       </Set>
+    </Property>
+    <Property Name="InterlockOk" Id="{087dfb34-9366-42ef-aed0-104efe23e3e8}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY InterlockOk : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{67a6e044-516c-40e2-9981-fc01183c6b39}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[InterlockOk  := bInterlockOk ;]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <Property Name="LimBwdEnable" Id="{f0c12a5c-c1fb-43de-bba5-3d0b5a489e5e}">
       <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL
@@ -603,19 +582,6 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="PrepareDisable" Id="{74f72c04-fe7f-4e73-bd9e-9da711ed7881}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY PrepareDisable : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{fed14a6f-2527-439a-8476-ab4afab54f62}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[PrepareDisable := bPrepareDisable;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Property Name="SafetyReady" Id="{62e38fe3-a7fb-4294-903f-29b79adc8e09}">
       <Declaration><![CDATA[PROPERTY SafetyReady : BOOL
 ]]></Declaration>
@@ -627,14 +593,6 @@ END_VAR
           <ST><![CDATA[SafetyReady := bSafetyReady;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{f2385fd1-8c86-450d-ac93-4fa797c9b41c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bSafetyReady := SafetyReady;]]></ST>
-        </Implementation>
-      </Set>
     </Property>
     <Property Name="SoftInterlock" Id="{4ee885b6-25d1-4fb2-a46f-f025c9b60b25}">
       <Declaration><![CDATA[PROPERTY SoftInterlock : BOOL
@@ -653,25 +611,6 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[bSoftInterlock := SoftInterlock;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="TestStates" Id="{aaf9585c-9ff4-4821-b470-d1b30fe7326a}">
-      <Declaration><![CDATA[PROPERTY INTERNAL TestStates : MC_AxisStates]]></Declaration>
-      <Get Name="Get" Id="{32fdf0ba-3841-4831-94ee-d0715a7ed1be}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{92293fb7-21b5-47c3-a969-81bb0f21c9c1}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>

@@ -1,0 +1,519 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_MotionSyncPrivate" Id="{c8657e3e-5d0e-4fad-8966-c25217ba52eb}" SpecialFunc="None">
+    <Declaration><![CDATA[//{attribute 'hide_all_locals'}
+FUNCTION_BLOCK FB_MotionSyncPrivate
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    // private vars for data exchange
+    eSyncPrvAxisState : MC_AxisStates;
+    bSyncPrvReset : BOOL;
+    bSyncPrvEnable :BOOL;
+    bSyncPrvPowerEn : BOOL;
+    bSyncPrvExec : BOOL;
+    bSyncPrvError : BOOL;
+    nSyncPrvErrorID : UDINT;
+    bSyncPrvHomeBusy : BOOL;
+    bSyncPrvLimHit : BOOL ;
+    bSyncPrvMoveBusy : BOOL;
+    bSyncPrvMoveDone : BOOL;
+    bSyncPrvNewMoveReq : BOOL;
+    bSyncPrvAllFwdEn: BOOL:=FALSE;
+    bSyncPrvAllBwdEn: BOOL:=FALSE;
+    bSyncPrvAllEn: BOOL:=FALSE;
+    bSyncPrvLimFwd : BOOL:=FALSE;
+    bSyncPrvLimBwd : BOOL:=FALSE;
+    bSyncPrvHome: BOOL:=TRUE;
+    bSyncPrvRestoreDone 	: BOOL;
+    bSyncPrvExecHome : BOOL;
+    bSyncPrvExecMove : BOOL;
+    bSyncPrvStart    : BOOL;
+    bSyncPrvInterlockOk : BOOL;
+    sSyncPrvErrorMessage : STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="StartMove" Id="{3d80e2c0-e431-44a4-a043-3195d6286a28}">
+      <Declaration><![CDATA[(*
+    Check all post condition before updating bCommandedMoveAbsolute
+    The implmentatation will depend on the axis type
+    DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
+    MP NC axis : will immediately write to bCommandedMoveAbsolute
+*)
+METHOD StartMove : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Notified sync FB that a new move request is to be processed
+// the receiving MotionAxis must reset this bit after getting the notification
+bSyncPrvStart := TRUE;
+StartMove := bSyncPrvStart ;]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="SyncPrvAllBwdEn" Id="{f6d0f8df-5d1b-4ff4-8d72-c759807caf80}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvAllBwdEn : BOOL]]></Declaration>
+      <Get Name="Get" Id="{adc014ce-aa13-4a87-97fb-07539f9d4700}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvAllBwdEn := bSyncPrvAllBwdEn;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{eea73574-3241-4bf4-8f79-f7ff5ec72934}">
+        <Declaration><![CDATA[
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvAllBwdEn := SyncPrvAllBwdEn;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvAllEn" Id="{c0de1886-8603-49b1-a42c-e1d3245d918a}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvAllEn : BOOL]]></Declaration>
+      <Get Name="Get" Id="{af6eba22-2060-4acb-8932-1f88130efba2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvAllEn := bSyncPrvAllEn;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{b892ca2e-847f-43ca-a5f0-37792dea5661}">
+        <Declaration><![CDATA[
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvAllEn := SyncPrvAllEn;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvAllFwdEn" Id="{196240ef-5413-416d-b0a0-36403e6a22fd}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvAllFwdEn : BOOL]]></Declaration>
+      <Get Name="Get" Id="{eb353156-a9c5-4bf9-9328-925ec78072c1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvAllFwdEn := bSyncPrvAllFwdEn;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{715a1ed8-f189-490b-b8ae-ee360faed8ef}">
+        <Declaration><![CDATA[
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvAllFwdEn := SyncPrvAllFwdEn;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvAxisState" Id="{60919b8b-a0ee-4b61-b888-5912d190160f}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvAxisState : MC_AxisStates]]></Declaration>
+      <Get Name="Get" Id="{2a6fc420-bce2-4a3d-b8e7-0fc168de1ca2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvAxisState := eSyncPrvAxisState;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{78296327-b508-4ee5-b38e-cefa436e41c3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[eSyncPrvAxisState := SyncPrvAxisState;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvEnable" Id="{8e4e6df9-9450-4554-9644-18f90291d164}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{ea3cbcb5-5d1b-4c6a-9355-ff92c4f664cc}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvEnable := bSyncPrvEnable;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{07e63cf2-67f6-4123-8b33-f12bb7df583a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvEnable := SyncPrvEnable;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvError" Id="{1b6034c0-b26d-469a-a57b-82a6b4ebb40e}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvError : BOOL]]></Declaration>
+      <Get Name="Get" Id="{2090a12b-697a-474d-8f07-02cf7adb2cfa}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvError := bSyncPrvError;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{92c801ed-d007-4f8d-9ca0-37d8d73043c4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvError := SyncPrvError;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvErrorID" Id="{6e1d4074-3daa-45f1-a2e9-668c0069ab66}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvErrorID : UDINT]]></Declaration>
+      <Get Name="Get" Id="{18206adc-d5e9-4f24-b5c5-7f277effca4f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvErrorID := nSyncPrvErrorID;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{d238ce9f-bdaf-46a2-a3c5-3834a8c70f01}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nSyncPrvErrorID := SyncPrvErrorID;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvErrorMessage" Id="{27bea49e-d8e8-4a4f-a7e9-70cf08f0e16c}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvErrorMessage : STRING]]></Declaration>
+      <Get Name="Get" Id="{9dcc7512-a6f2-48db-8247-f4fec5df4b13}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvErrorMessage := sSyncPrvErrorMessage;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{fa436d98-1c26-42f7-8c28-2a12545185c7}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[sSyncPrvErrorMessage := SyncPrvErrorMessage;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvExec" Id="{f59250e2-9c98-4c00-b85c-b271e1e66ae9}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvExec : BOOL]]></Declaration>
+      <Get Name="Get" Id="{889b001c-f145-4973-a9c8-4b26c4b13927}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvExec := bSyncPrvExec;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{415a2309-d0bb-4d9a-be5d-8503058c5b92}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvExec := SyncPrvExec;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvExecHome" Id="{1a442731-ec14-4dff-847a-8a074dcfe1ee}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvExecHome : BOOL]]></Declaration>
+      <Get Name="Get" Id="{0f329710-b157-4376-ba01-676248ccb74b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvExecHome := bSyncPrvExecHome;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{89904ee6-5423-4c23-9689-bd4c17a9adb5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvExecHome := SyncPrvExecHome;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvExecMove" Id="{80544cd9-f976-4f0b-b2c4-bae73dfbe249}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvExecMove : BOOL]]></Declaration>
+      <Get Name="Get" Id="{e91de8ba-593f-4ca1-8426-2d3a28014d84}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvExecMove := bSyncPrvExecMove;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{c58577ca-2583-4536-81f7-9f68513c3f14}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvExecMove := SyncPrvExecMove;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvHome" Id="{4a596f7b-8cd3-4101-8575-8cf898fbea0e}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvHome : BOOL]]></Declaration>
+      <Get Name="Get" Id="{b38e456d-0618-424d-b236-77052140716c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvHome := bSyncPrvHome;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{af0ee15c-32ca-4568-9855-6b4fa1b56389}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvHome := SyncPrvHome;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvHomeBusy" Id="{4dbef2a8-0478-4d7e-8785-7f84f70fd518}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvHomeBusy : BOOL]]></Declaration>
+      <Get Name="Get" Id="{bad28b9c-c267-4ef7-af8c-55a86c0b0457}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvHomeBusy := bSyncPrvHomeBusy ;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{513660d9-a9bd-4d34-a48c-2fbb590949d5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvHomeBusy := SyncPrvHomeBusy;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvInterlockOk" Id="{7dbcb427-dbe7-44b9-a51b-b38b1c27ebb0}">
+      <Declaration><![CDATA[PROPERTY SyncPrvInterlockOk : BOOL]]></Declaration>
+      <Get Name="Get" Id="{e01de09c-6360-4310-97b0-b651daffe994}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvInterlockOk := bSyncPrvInterlockOk;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{b62c9b2a-1f77-4246-b9ff-95f658bd481d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvInterlockOk := SyncPrvInterlockOk;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvLimBwd" Id="{f32a3277-e991-4dbe-b8fd-3c81a0c59dfc}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvLimBwd : BOOL]]></Declaration>
+      <Get Name="Get" Id="{7473e81f-bbcc-4d89-a8c1-2765010f18e7}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvLimBwd := bSyncPrvLimBwd;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{baf2e00b-623d-4734-af90-c7149b700472}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvLimBwd := SyncPrvLimBwd;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvLimFwd" Id="{12a0e278-6936-49c1-85f0-c147c4f8d84a}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvLimFwd : BOOL]]></Declaration>
+      <Get Name="Get" Id="{754501d6-96ab-4a3f-bc61-40e52ad936a5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvLimFwd := bSyncPrvLimFwd;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{91808e78-aeef-4059-9a0d-b2a046ceed2c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvLimFwd := SyncPrvLimFwd;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvLimHit" Id="{48dba4e9-594a-4aa6-8b94-cff3ad033b6c}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvLimHit : BOOL]]></Declaration>
+      <Get Name="Get" Id="{583b7193-cfed-4323-b867-2c22006efc55}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvLimHit := bSyncPrvLimHit;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{7fed7d13-1613-4f0a-95ad-773f423ee6e8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvLimHit :=SyncPrvLimHit;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvMoveBusy" Id="{15420f33-1dbf-440d-ad57-611e93f2e318}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvMoveBusy : BOOL]]></Declaration>
+      <Get Name="Get" Id="{702d2cf3-0c44-4bac-b8a8-197105c16a79}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvMoveBusy := bSyncPrvMoveBusy;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{91e71f84-421a-40b0-8aee-098563bc8eba}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvMoveBusy := SyncPrvMoveBusy;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvMoveDone" Id="{48b7baf8-ed4e-4bb9-847e-f1327eadbca1}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvMoveDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{55f2c259-1d28-4c69-9ed3-51bd0af0ee15}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvMoveDone := bSyncPrvMoveDone;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{96610def-86e6-4cbb-8e04-79b3050eaba1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvMoveDone := SyncPrvMoveDone;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvNewMoveReq" Id="{99d1eaeb-20b7-470e-97ca-8e71ab6dc340}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvNewMoveReq : BOOL]]></Declaration>
+      <Get Name="Get" Id="{b91286bc-c75d-4cbe-81e2-ebc4d5686439}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvNewMoveReq := bSyncPrvNewMoveReq;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{dd931d0f-9513-4185-a887-4ff73f9de3a8}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvNewMoveReq := SyncPrvNewMoveReq;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvPowerEn" Id="{b485bb6e-31db-4da3-a959-a64f2de8176d}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvPowerEn : BOOL]]></Declaration>
+      <Get Name="Get" Id="{ac508b0b-6085-4d54-ba10-918184705e91}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvPowerEn := bSyncPrvPowerEn;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{273113d6-170f-4eaf-8a28-b9222afd00a2}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvPowerEn := SyncPrvPowerEn;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvReset" Id="{115cac90-f6aa-4f95-a966-8d415f1cee88}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvReset : BOOL]]></Declaration>
+      <Get Name="Get" Id="{e76d1538-b8db-4fd9-9610-382e5e0fc2f5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvReset := bSyncPrvReset;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{fa3aab3c-f3be-4f32-a557-a380bd9b85c0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvReset := SyncPrvReset;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvRestoreDone" Id="{bf833be0-1689-4371-bd70-cc4a0bf77765}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvRestoreDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{a6680489-5f82-4020-876d-3a889009fbc1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvRestoreDone := bSyncPrvRestoreDone;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{72546998-d228-4251-9151-7bb114efff40}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvRestoreDone := SyncPrvRestoreDone;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvStart" Id="{a10beacd-7ab3-4f95-9af4-081100f16b6b}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvStart : BOOL]]></Declaration>
+      <Get Name="Get" Id="{f2786676-5c43-4ceb-9f7f-98fcefa36cef}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvStart := bSyncPrvStart;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{673ce4c6-e5e2-49f3-9d75-cb3447c4e950}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvStart := SyncPrvStart;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+  </POU>
+</TcPlcObject>

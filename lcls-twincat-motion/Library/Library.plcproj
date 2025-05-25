@@ -31,7 +31,9 @@
     <Folder Include="DUTs" />
     <Folder Include="DUTs\Deprecated" />
     <Folder Include="GVLs" />
-    <Folder Include="POUs\Motion\ITFs" />
+    <Folder Include="POUs\Motion\new-arch" />
+    <Folder Include="POUs\Motion\new-arch\ITFs" />
+    <Folder Include="POUs\Motion\new-arch\blocks" />
     <Folder Include="POUs\Motion\PMPS" />
     <Folder Include="POUs\Motion\States\Examples" />
     <Folder Include="POUs\Motion\States\Helpers" />
@@ -253,9 +255,6 @@
     <Compile Include="POUs\ImplicitChecks\CheckDivReal.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\FB_Brake.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Motion\FB_EncoderValue.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -265,28 +264,10 @@
     <Compile Include="POUs\Motion\FB_LogMotionError.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\FB_MotionAxisCommon.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\FB_MotionAxisNC.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Motion\FB_MotionBacklashCompensation.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\FB_MotionDrive.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Motion\FB_MotionHoming.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\FB_MotionSyncPrivate.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\FB_MotionInterlocks.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\FB_MotionLogger.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\FB_MotionRequest.TcPOU">
@@ -307,12 +288,6 @@
     <Compile Include="POUs\Motion\FB_MotionVirtualFrame.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\FB_PersistentDataStorage.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\FB_PneumaticAxis.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Motion\Gantry\FB_GantryAutoCoupling.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -320,25 +295,55 @@
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_Brake.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_Brake.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_MotionAxis.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisCommon.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_MotionAxisCommon.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisNC.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_MotionDrive.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionDrive.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_MotionInterlocks.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocks.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_MotionLogger.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionLogger.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\ITFs\I_PersistentDataStorage.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionSyncPrivate.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_PersistentDataStorage.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_PneumaticAxis.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_Brake.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionAxis.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionAxisCommon.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionAxisNC.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionDrive.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionInterlocks.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionLogger.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_PersistentDataStorage.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\PMPS\FB_EncErrorFFO.TcPOU">

@@ -9,7 +9,6 @@ END_VAR
 VAR
     // cathc this from interlock block or send it to interlock block in fb_init or call_after_init
     // catch limit status from motioninterlock block cyclic or just after execHome has pos edge.
-    MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
     bLimitBackwardEnable : BOOL;
     bLimitForwardEnable : BOOL;
     bHome : BOOL;
@@ -42,7 +41,27 @@ END_VAR]]></Declaration>
     RETURN;
 END_IF
 
-// Call NC Homing Method
+// if this ref was set then this object is used synchronously with fbMotionDrive
+// otherwise this is an isolated axis. input and output must then be handle manually by user app
+IF __ISVALIDREF( SUPER^.MotionSyncPrivateRef ) THEN
+    // these are updated in the interlocks fb
+    SUPER^.bPowerEnable := SUPER^.MotionSyncPrivateRef.SyncPrvAllEn;
+    SUPER^.bPowerEnablePositive := SUPER^.MotionSyncPrivateRef.SyncPrvAllFwdEn;
+    SUPER^.bPowerEnableNegative := SUPER^.MotionSyncPrivateRef.SyncPrvAllBwdEn;
+    SUPER^.bExecHome := SUPER^.MotionSyncPrivateRef.SyncPrvExecHome;
+    SUPER^.bExecMove := SUPER^.MotionSyncPrivateRef.SyncPrvExecMove;
+    THIS^.bLimitBackwardEnable := SUPER^.MotionSyncPrivateRef.SyncPrvLimBwd;
+    THIS^.bLimitForwardEnable := SUPER^.MotionSyncPrivateRef.SyncPrvLimFwd;
+    THIS^.bHome := SUPER^.MotionSyncPrivateRef.SyncPrvHome;
+    // catch the start flags and prepare motion
+    IF SUPER^.MotionSyncPrivateRef.SyncPrvStart THEN
+        // here we'll set bMoveAbsolute or bMoveHome
+        IF SUPER^.StartMove() THEN
+            SUPER^.MotionSyncPrivateRef.SyncPrvStart := FALSE;
+        END_IF
+    END_IF
+END_IF
+
 SUPER^.AxisStatus();
 SUPER^.Power();
 SUPER^.Reset();
@@ -61,30 +80,42 @@ SUPER^.EncSave(bEnable:=TRUE);
 
 // readbacks and status update from common worker
 
-SUPER^.bDone := SUPER^.MoveAbsoluteDone OR SUPER^.bHaltDone OR SUPER^.bResetDone OR bHomeDone;
-SUPER^.bBusy := SUPER^.MoveAbsoluteBusy OR SUPER^.bHaltBusy OR SUPER^.bResetBusy OR bHomeBusy;
+SUPER^.bDone := SUPER^.bMoveAbsoluteDone OR SUPER^.bHaltDone OR SUPER^.bResetDone OR bHomeDone;
+SUPER^.bBusy := SUPER^.bMoveAbsoluteBusy OR SUPER^.bHaltBusy OR SUPER^.bResetBusy OR bHomeBusy;
 
+SUPER^.AxisStatus();
 /// error handling not completed yet
 SUPER^.ErrorHandling();
 
-// propagate restore position to EPICS.
-SUPER^.bCmdReset := FALSE;
-SUPER^.bCmdHalt := FALSE;
-SUPER^.bCmdMoveHome := FALSE;
-SUPER^.bCmdMoveAbsolute := FALSE;]]></ST>
+IF  SUPER^.bResetDone THEN
+    SUPER^.bCommandedReset := FALSE;
+    SUPER^.bCommandedHalt := FALSE;
+    SUPER^.bCommandedMoveHome := FALSE;
+    SUPER^.bCommandedMoveAbsolute := FALSE;
+END_IF
+
+
+// optional: sync and encapsulate private data exchange
+IF __ISVALIDREF( SUPER^.MotionSyncPrivateRef ) THEN
+    // This is needed in the interlock block
+    SUPER^.MotionSyncPrivateRef.SyncPrvAxisState := SUPER^.eAxisState;
+    IF SUPER^.bError THEN
+        SUPER^.MotionSyncPrivateRef.SyncPrvError := SUPER^.bError;
+        SUPER^.MotionSyncPrivateRef.SyncPrvErrorID := SUPER^.nErrorID;
+        SUPER^.MotionSyncPrivateRef.SyncPrvErrorMessage := SUPER^.sErrorMessage;
+    END_IF
+    SUPER^.MotionSyncPrivateRef.SyncPrvMoveBusy := SUPER^.bMoveAbsoluteBusy OR THIS^.bHomeBusy;
+    SUPER^.MotionSyncPrivateRef.SyncPrvMoveDone := SUPER^.bMoveAbsoluteDone OR THIS^.bHomeDone;
+END_IF]]></ST>
     </Implementation>
     <Method Name="Home" Id="{33ae7160-6fd9-4351-881c-ff032354b4f0}">
       <Declaration><![CDATA[METHOD Home
 VAR_INPUT
     bExecute: BOOL;
 END_VAR
-
-VAR_INST
-
-END_VAR]]></Declaration>
+]]></Declaration>
       <Implementation>
-        <ST><![CDATA[
-THIS^.fbHomeMcSetPos.Options.ClearPositionLag := TRUE;
+        <ST><![CDATA[THIS^.fbHomeMcSetPos.Options.ClearPositionLag := TRUE;
 THIS^.rtHomeExec(CLK:=bExecute);
 THIS^.ftHomeExec(CLK:=bExecute);
 
@@ -96,11 +127,11 @@ END_IF
 CASE THIS^.nHomeMode OF
     E_EpicsHomeCmd.LOW_LIMIT:
         THIS^.bHomeFirstDir := FALSE;
-        THIS^.bAtHome := NOT SUPER^.iMotionInterlocks.LimBwdEnable;
+        THIS^.bAtHome := NOT THIS^.bLimitBackwardEnable;
         THIS^.bHomeMove := TRUE;
     E_EpicsHomeCmd.HIGH_LIMIT:
         THIS^.bHomeFirstDir := TRUE;
-        THIS^.bAtHome := NOT SUPER^.iMotionInterlocks.LimFwdEnable;
+        THIS^.bAtHome := NOT THIS^.bLimitForwardEnable;
         THIS^.bHomeMove := TRUE;
     E_EpicsHomeCmd.HOME_VIA_LOW:
         THIS^.bHomeFirstDir := FALSE;
@@ -108,7 +139,7 @@ CASE THIS^.nHomeMode OF
         THIS^.bHomeMove := TRUE;
     E_EpicsHomeCmd.HOME_VIA_HIGH:
         THIS^.bHomeFirstDir := TRUE;
-        THIS^.bAtHome := SUPER^.iMotionInterlocks.LimHome;
+        THIS^.bAtHome := THIS^.bHome;
         THIS^.bHomeMove := TRUE;
     E_EpicsHomeCmd.ABSOLUTE_SET:
         THIS^.fbHomeMcSetPos(
@@ -299,22 +330,63 @@ END_IF]]></ST>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Property Name="MotionSyncPrivate" Id="{b5e8637a-c5e7-4c86-a8cf-290fe09f805a}">
-      <Declaration><![CDATA[PROPERTY INTERNAL MotionSyncPrivate : REFERENCE TO FB_MotionSyncPrivate]]></Declaration>
-      <Get Name="Get" Id="{17669fe9-077b-4903-8199-fdbbdc33bf42}">
+    <Property Name="LimBwdEnable" Id="{f1c400e3-1909-4392-b56e-42d18fb82eb5}">
+      <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{387cf336-53ef-4887-867f-689596a32728}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[MotionSyncPrivateRef := MotionSyncPrivate;]]></ST>
+          <ST><![CDATA[LimBwdEnable := bLimitBackwardEnable;]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{de12d206-a53c-4167-b1fc-2523a7fe3ef7}">
+      <Set Name="Set" Id="{3a7e2526-96be-436c-a698-396fafb39ff9}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[MotionSyncPrivateRef REF= MotionSyncPrivate;]]></ST>
+          <ST><![CDATA[bLimitBackwardEnable := LimBwdEnable;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="LimFwdEnable" Id="{4be1f54c-a6b2-47bf-8c3c-4d40bc9a1713}">
+      <Declaration><![CDATA[PROPERTY LimFwdEnable : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{52d07e66-751c-4181-9dfc-b9c3523a2633}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[LimFwdEnable := bLimitForwardEnable;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{d4c954cf-bea3-4254-a851-6a894af44f6c}">
+        <Declaration><![CDATA[
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bLimitForwardEnable := LimFwdEnable;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="LimHome" Id="{2f273079-ccda-4520-984a-f5344492d887}">
+      <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
+      <Get Name="Get" Id="{9dff4bf0-8b8f-4eca-b9a9-23e72d4dbf64}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{4a845969-2a16-420f-8c7a-bd49f84481c0}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
     </Property>

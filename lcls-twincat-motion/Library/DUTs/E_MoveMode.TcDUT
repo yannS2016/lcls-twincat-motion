@@ -6,11 +6,13 @@
 {attribute 'to_string'}
 TYPE E_MoveMode  :
 (
-    DISCRETE:=0,
-    CONTINUOUS:=1,
-    SYNCHRONOUS:=2,
-    HOMING:=3
-);
+    DISCRETE_JOG:=0,
+    DISCRETE_VELOCITY:=1,
+    DISCRETE_RELATIVE:=2,
+    DISCRETE_ABSOLUTE:=3,
+    DISCRETE_MODULO:=4,
+    DISCRETE_HOMING:=10
+)INT;
 END_TYPE
 ]]></Declaration>
   </DUT>

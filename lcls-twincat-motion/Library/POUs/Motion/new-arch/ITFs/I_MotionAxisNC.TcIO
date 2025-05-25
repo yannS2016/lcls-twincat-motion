@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <Itf Name="I_MotionAxisNC" Id="{988e1537-42fa-4f3b-9835-b781579a345f}">
+    <Declaration><![CDATA[INTERFACE I_MotionAxisNC EXTENDS I_MotionAxisCommon
+]]></Declaration>
+    <Property Name="LimBwdEnable" Id="{9b524dc8-ec6b-43f0-b711-98e44add3824}">
+      <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{08bd27e3-9813-40a8-97d1-fba2b5b94922}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{008cffef-5d72-4f01-bef9-dfa538a736c1}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="LimFwdEnable" Id="{8701f4da-08d0-4f0c-97c2-7f7351b1ff2a}">
+      <Declaration><![CDATA[PROPERTY LimFwdEnable : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{ff1dea93-3860-43be-a364-014c90fd8ed5}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{885f42ff-aa99-470c-a0b1-41b648319e83}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+    <Property Name="LimHome" Id="{91a731c7-16ed-42dd-a83a-6787494f1a7f}">
+      <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
+      <Get Name="Get" Id="{6e46de07-f8a9-4f92-98f3-95a9910c688c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{fa7195f6-f66e-4eea-a1f2-9d4ea8913f5d}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+  </Itf>
+</TcPlcObject>

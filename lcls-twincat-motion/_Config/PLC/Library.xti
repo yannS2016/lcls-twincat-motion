@@ -983,7 +983,7 @@ External Setpoint Generation:
 		</DataType>
 	</DataTypes>
 	<Project GUID="{E61EF94A-CFE8-4DDF-B7C9-5F7AD2CF9D83}" Name="Library" PrjFilePath="..\..\Library\Library.plcproj" TmcFilePath="..\..\Library\Library.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{D0ADFFE9-A2DE-0EDE-EF8D-16ADB7A9AD56}" TmcPath="Library\Library.tmc">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{3D8DA1B1-9CA0-AE29-0425-685E5C0C4195}" TmcPath="Library\Library.tmc">
 			<Name>Library Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="8" AreaNo="4">
@@ -1283,4 +1283,12 @@ External Setpoint Generation:
 			</TaskPouOids>
 		</Instance>
 	</Project>
+	<Mappings>
+		<OwnerA Name="Library Instance">
+			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 31">
+				<Link VarA="PlcTask Inputs^NcAxis_GVL.testAxis.NcToPlc" VarB="Outputs^ToPlc"/>
+				<Link VarA="PlcTask Outputs^NcAxis_GVL.testAxis.PlcToNc" VarB="Inputs^FromPlc"/>
+			</OwnerB>
+		</OwnerA>
+	</Mappings>
 </TcSmItem>
