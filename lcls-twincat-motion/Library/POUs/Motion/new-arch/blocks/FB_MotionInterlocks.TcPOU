@@ -104,6 +104,8 @@ VAR
     {attribute 'hide'}
     sWarningMsg : STRING;
     {attribute 'hide'}
+    bWarning : BOOL;
+    {attribute 'hide'}
     nErpicsWarnId : UINT;
     {attribute 'hide'}
     bError : BOOL;
@@ -133,7 +135,7 @@ IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     // some of these vars can be used for addtional interlocks checks in
     // in this class or in derived implmentation
     eAxisState := MotionSyncPrivateRef.SyncPrvAxisState;
-    bReset := MotionSyncPrivateRef.SyncPrvReset;
+    bReset := THIS^.MotionSyncPrivateRef.SyncPrvAbortDone;
     bError := MotionSyncPrivateRef.SyncPrvError;
     nErrorID := MotionSyncPrivateRef.SyncPrvErrorID;
     bExecute := MotionSyncPrivateRef.SyncPrvExec;
@@ -144,16 +146,6 @@ IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     bEnable := MotionSyncPrivateRef.SyncPrvEnable;
 END_IF
 
-// react to external reset
-IF bReset THEN
-    bLimOverride := FALSE;
-    bInterlockOk := FALSE;
-    bLimHit := FALSE;
-    bReset := FALSE;
-    bError := FALSE;
-    sWarningMsg:='';
-END_IF
-
 bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND stEPSForwardEnable.bEPS_OK;
 bAllForwardEnabled := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGantryAxis) AND stEPSBackwardEnable.bEPS_OK;
 /////////////////////////////////////////////////////////////////////////////
@@ -161,58 +153,59 @@ bAllForwardEnabled := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGant
 /////////////////////////////////////////////////////////////////////////////
 bAllEnabled := bEnable AND bHardwareEnable AND stEPSPowerEnable.bEPS_OK AND NOT bSoftInterlock;
 bAllEnabled R= NOT bUserEnable OR bSoftInterlock;
-
-
 // Moves are automatically allowed if no safety hooks. Otherwise, some other code will set this.
 bSafetyReady S= bPowerSelf;
-
 // This tell the other block in seq processing to wait on interlock to do an intial check
 // before they can proceed. checking error only is not enough.
 rtUserExec (CLK:=bNewMoveReq);
-rtDone(CLK := bMoveDone);
-IF rtUserExec.Q AND NOT bError THEN
-    IF NOT bUserEnable THEN
+// react to external reset
+IF bReset THEN
+    bLimOverride := FALSE;
+    bInterlockOk := FALSE;
+    bLimHit := FALSE;
+    bReset := FALSE;
+    bError := FALSE;
+    bWarning := FALSE;
+    sWarningMsg:='';
+END_IF
+
+ftForwardEnabled(CLK:=bAllForwardEnabled);
+ftBackwardEnabled(CLK:=bAllBackwardEnabled);
+
+IF rtUserExec.Q AND NOT bError AND NOT bUserEnable THEN
         bError := TRUE;
         nErrorID:= 1;
         bInterlockOk := FALSE;
-        sWarningMsg := 'Move requested, but user enable is disabled!';
-    ELSE
-        bInterlockOk := bPowerSelf;
-    END_IF
-ELSIF rtDone.Q THEN
-    bInterlockOk := FALSE;
+        sWarningMsg := 'Warning: Move requested, but user enable is disabled!';
 END_IF
 
-// rtUserExec (CLK:=bExecute);
-// IF rtUserExec.Q AND NOT bError AND NOT bUserEnable THEN
-//     bError := TRUE;
-//     nErrorID:= 1;
-// 	bInterlockOk := FALSE;
-//     sWarningMsg := 'Move requested, but user enable is disabled!';
-// END_IF
+bInterlockOk S=  NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
+bInterlockOk R=  bError OR rtDone.Q OR NOT bAllBackwardEnabled OR NOT bAllForwardEnabled;
 
-//// use falling trigger to avoid spaming  sErrorMessage
-ftForwardEnabled(CLK:=bAllForwardEnabled);
-ftBackwardEnabled(CLK:=bAllBackwardEnabled);
+IF rtUserExec.Q AND NOT bInterlockOk THEN
+    bWarning := TRUE;
+    bLimHit := TRUE;
+    sWarningMsg:='Warning: Positive or Negative limit engaged!';
+END_IF
 
 ///////////////////////////////////////////////////////////////
 // Raise a warning when limit are hit outisde of homing routine
 ///////////////////////////////////////////////////////////////
-IF   ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
+IF  NOT bHomeBusy AND  ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
     // Not an error, just a warning
     IF NOT bAllForwardEnabled THEN
         sWarningMsg:='Cannot move past positive limit.';
     ELSIF NOT bAllBackwardEnabled THEN
         sWarningMsg:='Cannot move past Negative limit.';
     END_IF
+    bWarning := TRUE;
     bLimHit := TRUE;
     // will serve later
     bLimOverride := TRUE;
-    bInterlockOk := FALSE;
 END_IF
 
-rtError(CLK:=bError);
-ftError(CLK:=bError);
+rtError(CLK:=bError OR bWarning);
+ftError(CLK:=bError OR bWarning);
 
 // write external private data
 IF __ISVALIDREF(MotionSyncPrivateRef) THEN
@@ -225,13 +218,16 @@ IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     MotionSyncPrivateRef.SyncPrvHome := bHome;
     MotionSyncPrivateRef.SyncPrvLimHit := bLimHit;
     MotionSyncPrivateRef.SyncPrvInterlockOk := bInterlockOk;
+    MotionSyncPrivateRef.SyncPrvReset := bReset;
     // Axis error have higher priority
     IF rtError.Q AND NOT MotionSyncPrivateRef.SyncPrvAxisError THEN
         MotionSyncPrivateRef.SyncPrvError := bError;
         MotionSyncPrivateRef.SyncPrvErrorID := nErrorID;
+         MotionSyncPrivateRef.SyncPrvErrorMessage := sWarningMsg;
     ELSIF ftError.Q THEN
         MotionSyncPrivateRef.SyncPrvError := FALSE;
         MotionSyncPrivateRef.SyncPrvErrorID := 0;
+        MotionSyncPrivateRef.SyncPrvErrorMessage := '';
     END_IF
 END_IF
 ]]></ST>

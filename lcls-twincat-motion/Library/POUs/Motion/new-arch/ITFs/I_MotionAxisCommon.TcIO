@@ -2,6 +2,12 @@
 <TcPlcObject Version="1.1.0.1">
   <Itf Name="I_MotionAxisCommon" Id="{df11a94c-15fb-4aec-9011-b2ef3c6b1fb4}">
     <Declaration><![CDATA[INTERFACE I_MotionAxisCommon]]></Declaration>
+    <Property Name="AbortDone" Id="{24fa763c-711e-45f9-ad36-21f0411e2d0e}">
+      <Declaration><![CDATA[PROPERTY AbortDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{1cce8d93-9e95-4475-82fd-a789709f0900}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
     <Property Name="AxisState" Id="{e2da8c46-04d3-489f-a843-9c14463c6c6f}">
       <Declaration><![CDATA[PROPERTY AxisState : MC_AxisStates]]></Declaration>
       <Get Name="Get" Id="{fa6644a8-f653-4840-9bcc-35037b7b84a0}">
@@ -76,12 +82,6 @@
       <Set Name="Set" Id="{367e203b-5f9b-41d7-9061-a806fa5317d7}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
-    </Property>
-    <Property Name="Done" Id="{7ff11c7c-614b-47cb-baec-d0e1b99b56ef}">
-      <Declaration><![CDATA[PROPERTY Done : BOOL]]></Declaration>
-      <Get Name="Get" Id="{731f59b1-4ebc-46a2-8ec3-b8482a33696e}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
     </Property>
     <Property Name="EncoderCount" Id="{9e7da4f2-c20f-41ff-89bb-b6a6d51aa2c8}">
       <Declaration><![CDATA[PROPERTY EncoderCount : UDINT]]></Declaration>
@@ -315,6 +315,18 @@ END_VAR
 ]]></Declaration>
       </Set>
     </Property>
+    <Property Name="MoveDone" Id="{7ff11c7c-614b-47cb-baec-d0e1b99b56ef}">
+      <Declaration><![CDATA[PROPERTY MoveDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{731f59b1-4ebc-46a2-8ec3-b8482a33696e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="MoveMode" Id="{8296210d-331d-47f8-9867-cdda2026c94f}">
+      <Declaration><![CDATA[PROPERTY MoveMode : E_EpicsMotorCmd]]></Declaration>
+      <Get Name="Get" Id="{3dc195e7-cd73-4b60-a7c9-70e7842f5255}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
     <Property Name="Name" Id="{0c6fd7a6-29c0-4c88-879f-f0f43862e70a}">
       <Declaration><![CDATA[PROPERTY Name : STRING]]></Declaration>
       <Get Name="Get" Id="{0df1c16f-fce7-44ce-a865-4fda8703479c}">
@@ -463,6 +475,12 @@ END_VAR
       <Set Name="Set" Id="{2ae0d9a9-000d-4e26-8a6d-320c30eb8752}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
+    </Property>
+    <Property Name="StandStill" Id="{cbd71f12-5e72-4a9a-9ac1-9289e83cd6a0}">
+      <Declaration><![CDATA[PROPERTY StandStill : BOOL]]></Declaration>
+      <Get Name="Get" Id="{c11ef9dc-0fc1-42e1-b6af-d77ef26ea1e0}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
     </Property>
   </Itf>
 </TcPlcObject>

@@ -9,9 +9,6 @@ END_VAR
 VAR
     // cathc this from interlock block or send it to interlock block in fb_init or call_after_init
     // catch limit status from motioninterlock block cyclic or just after execHome has pos edge.
-    bLimitBackwardEnable : BOOL;
-    bLimitForwardEnable : BOOL;
-    bHome : BOOL;
     fbHomeMcSetPos: MC_SetPosition;
     fbHomeMcJog: MC_Jog;
     rtHomeExec: R_TRIG;
@@ -37,91 +34,13 @@ VAR CONSTANT
     BWD_START: LREAL :=  99999999;
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[IF NOT __ISVALIDREF( SUPER^.AxisRef ) OR (SUPER^.AxisRef.NcToPlc.AxisId = 0)THEN
-    RETURN;
-END_IF
-
-// if this ref was set then this object is used synchronously with fbMotionDrive
-// otherwise this is an isolated axis. input and output must then be handle manually by user app
-IF __ISVALIDREF( SUPER^.MotionSyncPrivateRef ) THEN
-    // these are updated in the interlocks fb
-    SUPER^.bPowerEnable := SUPER^.MotionSyncPrivateRef.SyncPrvAllEn;
-    SUPER^.bPowerEnablePositive := SUPER^.MotionSyncPrivateRef.SyncPrvAllFwdEn;
-    SUPER^.bPowerEnableNegative := SUPER^.MotionSyncPrivateRef.SyncPrvAllBwdEn;
-    SUPER^.bExecHome := SUPER^.MotionSyncPrivateRef.SyncPrvExecHome;
-    SUPER^.bExecMove := SUPER^.MotionSyncPrivateRef.SyncPrvExecMove;
-    THIS^.bLimitBackwardEnable := SUPER^.MotionSyncPrivateRef.SyncPrvLimBwd;
-    THIS^.bLimitForwardEnable := SUPER^.MotionSyncPrivateRef.SyncPrvLimFwd;
-    THIS^.bHome := SUPER^.MotionSyncPrivateRef.SyncPrvHome;
-    // catch the start flags and prepare motion
-    IF SUPER^.MotionSyncPrivateRef.SyncPrvStart THEN
-        // here we'll set bMoveAbsolute or bMoveHome
-        IF SUPER^.StartMove() THEN
-            SUPER^.MotionSyncPrivateRef.SyncPrvStart := FALSE;
-        END_IF
-    END_IF
-END_IF
-
-SUPER^.AxisStatus();
-SUPER^.Power();
-SUPER^.Reset();
-SUPER^.Halt();
-SUPER^.BacklashCompensation();
-SUPER^.MoveAbsolute();
+      <ST><![CDATA[SUPER^.PreCommon();
 
 IF THIS^.bCommandedMoveHome THEN
     THIS^.Home(THIS^.bCommandedMoveHome);
 END_IF
 
-
-SUPER^.CalibrateRawEncValue();
-
-SUPER^.ExposeNCParams();
-//////////////////////////////////////
-// Handle save
-//////////////////////////////////////
-SUPER^.EncSave(bEnable:=TRUE);
-
-SUPER^.AxisStatus();
-/// error handling not completed yet
-SUPER^.ErrorHandling();
-
-// readbacks and status update from common worker
-// When E_EpicsHomeCmd.ABSOLUTE_SET or E_EpicsHomeCmd.NONE
-// bHomeDone is latched true, this will latched bDone.
-rtHomeDone(CLK:=bHomeDone);
-SUPER^.bBusy := SUPER^.bMoveAbsoluteBusy OR THIS^.bHomeBusy;
-SUPER^.bDone S= SUPER^.bMoveAbsoluteDone OR SUPER^.bHaltDone OR SUPER^.bResetDone OR rtHomeDone.Q;
-SUPER^.bDone R= SUPER^.bBusy;
-
-SUPER^.rtDone(CLK:=bDone);
-IF  SUPER^.rtDone.Q THEN
-    SUPER^.bCommandedReset := FALSE;
-    SUPER^.bCommandedHalt := FALSE;
-    SUPER^.bCommandedMoveHome := FALSE;
-    SUPER^.bCommandedMoveAbsolute := FALSE;
-END_IF
-
-rtError(CLK:=bError);
-ftError(CLK:=bError);
-// optional: sync and encapsulate private data exchange
-IF __ISVALIDREF( SUPER^.MotionSyncPrivateRef ) THEN
-    // This is needed in the interlock block
-    SUPER^.MotionSyncPrivateRef.SyncPrvAxisState := SUPER^.eAxisState;
-    IF rtError.Q THEN
-        SUPER^.MotionSyncPrivateRef.SyncPrvError := SUPER^.bError;
-        SUPER^.MotionSyncPrivateRef.SyncPrvAxisError := SUPER^.bError;
-        SUPER^.MotionSyncPrivateRef.SyncPrvErrorID := SUPER^.nErrorID;
-        SUPER^.MotionSyncPrivateRef.SyncPrvErrorMessage := SUPER^.sErrorMessage;
-    ELSIF ftError.Q THEN
-        SUPER^.MotionSyncPrivateRef.SyncPrvAxisError := FALSE;
-        SUPER^.MotionSyncPrivateRef.SyncPrvError := FALSE;
-        SUPER^.MotionSyncPrivateRef.SyncPrvErrorID := 0;
-        SUPER^.MotionSyncPrivateRef.SyncPrvErrorMessage := '';
-    END_IF
-    SUPER^.MotionSyncPrivateRef.SyncPrvMoveBusy := SUPER^.bBusy;
-    SUPER^.MotionSyncPrivateRef.SyncPrvMoveDone := SUPER^.bDone;
-END_IF]]></ST>
+SUPER^.PostCommon();]]></ST>
     </Implementation>
     <Method Name="Home" Id="{33ae7160-6fd9-4351-881c-ff032354b4f0}">
       <Declaration><![CDATA[METHOD Home
@@ -415,7 +334,7 @@ END_VAR
 METHOD StartMove : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.StartMove();]]></ST>
+        <ST><![CDATA[StartMove := SUPER^.StartMove();]]></ST>
       </Implementation>
     </Method>
     <Method Name="StopMove" Id="{88a971d1-aaef-4bb6-b7c2-65b47210b532}">
