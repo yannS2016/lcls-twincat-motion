@@ -197,12 +197,6 @@
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
-    <Property Name="Interrupted" Id="{498fa652-b5b3-4e1f-976d-8ce99932c93a}">
-      <Declaration><![CDATA[PROPERTY Interrupted : BOOL]]></Declaration>
-      <Get Name="Get" Id="{2c6824d4-b3f4-460d-9f3f-bc04fc1c06c7}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
     <Property Name="MeasuredAcceleration" Id="{d4d9e574-a194-4fa2-98b9-07d056a1260a}">
       <Declaration><![CDATA[PROPERTY MeasuredAcceleration : LREAL]]></Declaration>
       <Get Name="Get" Id="{64393f7d-024e-4f33-8143-f1be9ffe5b8f}">

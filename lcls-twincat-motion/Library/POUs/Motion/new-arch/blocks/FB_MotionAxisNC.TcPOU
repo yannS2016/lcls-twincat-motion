@@ -36,9 +36,7 @@ END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[SUPER^.PreCommon();
 
-IF THIS^.bCommandedMoveHome THEN
-    THIS^.Home(THIS^.bCommandedMoveHome);
-END_IF
+THIS^.Home(THIS^.bCommandedMoveHome);
 
 SUPER^.PostCommon();]]></ST>
     </Implementation>
@@ -50,10 +48,11 @@ END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[THIS^.fbHomeMcSetPos.Options.ClearPositionLag := TRUE;
-THIS^.rtHomeExec(CLK:=bExecute);
-THIS^.ftHomeExec(CLK:=bExecute);
+THIS^.rtHomeExec(CLK:=THIS^.bCommandedMoveHome);
+THIS^.ftHomeExec(CLK:=THIS^.bCommandedMoveHome);
+THIS^.rtHomeAborted(CLK:=THIS^.bInterrupted);
 
-SUPER^.bHomeError R= NOT bExecute;
+SUPER^.bHomeError R= NOT THIS^.bCommandedMoveHome;
 IF NOT SUPER^.bHomeError THEN
     SUPER^.nHomeErrorID := 0;
 END_IF
@@ -62,23 +61,23 @@ CASE THIS^.nHomeMode OF
     E_EpicsHomeCmd.LOW_LIMIT:
         THIS^.bHomeFirstDir := FALSE;
         THIS^.bAtHome := NOT THIS^.bLimitBackwardEnable;
-        THIS^.bHomeMove := TRUE;
+        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
     E_EpicsHomeCmd.HIGH_LIMIT:
         THIS^.bHomeFirstDir := TRUE;
         THIS^.bAtHome := NOT THIS^.bLimitForwardEnable;
-        THIS^.bHomeMove := TRUE;
+        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
     E_EpicsHomeCmd.HOME_VIA_LOW:
         THIS^.bHomeFirstDir := FALSE;
         THIS^.bAtHome := bHome;
-        THIS^.bHomeMove := TRUE;
+        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
     E_EpicsHomeCmd.HOME_VIA_HIGH:
         THIS^.bHomeFirstDir := TRUE;
         THIS^.bAtHome := THIS^.bHome;
-        THIS^.bHomeMove := TRUE;
+        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
     E_EpicsHomeCmd.ABSOLUTE_SET:
         THIS^.fbHomeMcSetPos(
             Axis:=AxisRef,
-            Execute:=bExecute,
+            Execute:=THIS^.bCommandedMoveHome,
             // to review, this should come from EPICS Itf
             Position:=SUPER^.fHomePosition);
         SUPER^.bHomeBusy := THIS^.rtHomeExec.Q;
@@ -93,7 +92,7 @@ CASE THIS^.nHomeMode OF
 END_CASE
 
 IF THIS^.bHomeMove THEN
-    IF THIS^.bHomeBusy AND THIS^.ftHomeExec.Q THEN
+    IF THIS^.bHomeBusy AND THIS^.rtHomeAborted.Q THEN
         THIS^.nHomeStateMachine := E_HomeStates.ERROR;
         SUPER^.bHomeInterrupted := TRUE;
     END_IF
@@ -181,7 +180,7 @@ IF THIS^.bHomeMove THEN
             THIS^.fbHomeMcJog(
                 Axis:=AxisRef,
                 JogForward:=FALSE,
-                JogBackwards:=bLimitBackwardEnable AND NOT bATHome,
+                JogBackwards:=bLimitBackwardEnable AND NOT bAtHome,
                 Mode:=E_JogMode.MC_JOGMODE_CONTINOUS,
                 Velocity:=SUPER^.stAxisParameters.fRefVeloSearch);
             IF NOT THIS^.fbHomeMcJog.JogBackwards THEN
@@ -254,7 +253,16 @@ IF THIS^.bHomeMove THEN
                 THIS^.nHomeStateMachine := nHomeStateAfterStop;
             END_IF
     END_CASE
-END_IF]]></ST>
+END_IF
+
+// we should normally do this in interrupted state if moving
+// otherwise we need to reset, the error state should perhaps handle this
+IF SUPER^.bCommandedReset THEN
+    SUPER^.bHomeBusy := FALSE;
+    SUPER^.bHomeDone := FALSE;
+    THIS^.bHomeMove := FALSE;
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="InterruptMove" Id="{3b35232d-04d6-4f22-af2c-874d31217d09}">

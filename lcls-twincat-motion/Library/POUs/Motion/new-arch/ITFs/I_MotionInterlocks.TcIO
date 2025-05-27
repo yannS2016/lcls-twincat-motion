@@ -126,6 +126,18 @@
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
+    <Property Name="LimHitIdling" Id="{a9898372-986c-4ee4-bc98-43640fd003f2}">
+      <Declaration><![CDATA[PROPERTY LimHitIdling : BOOL]]></Declaration>
+      <Get Name="Get" Id="{d9233391-3505-4407-ade5-ca790ab05516}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimHitMoving" Id="{12768a8b-8e2d-462d-ac59-05ed276cdf42}">
+      <Declaration><![CDATA[PROPERTY LimHitMoving : BOOL]]></Declaration>
+      <Get Name="Get" Id="{f40fa498-6562-48ff-8455-7f34f6bbcf01}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
     <Property Name="LimHome" Id="{43b3c4e0-2529-4ca2-94b6-01308791bd0f}">
       <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
       <Get Name="Get" Id="{fa4d37b3-5d02-4b73-968e-4a37c39a113f}">

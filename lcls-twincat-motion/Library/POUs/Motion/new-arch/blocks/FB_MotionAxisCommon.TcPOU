@@ -10,15 +10,20 @@ END_VAR
 VAR
     {attribute 'no_copy'}
     AxisRef : REFERENCE TO AXIS_REF;
-    //{attribute 'hide'}
+    bDummy : BOOL;
     MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
     // Raw encoder IO for ULINT (Biss-C)
+    nCycleCounter : UDINT;
+    nCycleCounterPrev :  UDINT;
     nRawEncoderULINT AT %I*: ULINT;
     // Raw encoder IO for UINT (Relative Encoders)
+
     nRawEncoderUINT AT %I*: UINT;
     // Raw encoder IO for INT (LVDT)
+
     nRawEncoderINT AT %I*: INT;
     // Raw encoder IO for INT (EL5072 LVDT)
+
     nRawEncoderDINT AT %I*: DINT;
     // Encoder count summary, if linked above
     {attribute 'pytmc' := '
@@ -82,174 +87,187 @@ VAR
     stAxisParameterSetExposed : ST_AxisParameterSetExposed;
 
     // MC_ReadParameterSet Output
-    {attribute 'hide'}
+
     mcReadParams: MC_ReadParameterSet;
     //{attribute 'hide'}
+
     stAxisParameters: ST_AxisParameterSet;
 
-    {attribute 'hide'}
+
     bNcParamsReadInit   : BOOL;
 
     (* NC Blocks *)
     // MoveABsolute
+
     fbMcMoveAbsolute : MC_MoveAbsolute;
+
     bCommandedMoveAbsolute : BOOL;
-    {attribute 'hide'}
+
     bMoveAbsoluteBusy : BOOL;
-    {attribute 'hide'}
+
     bMoveAbsoluteDone : BOOL;
-    {attribute 'hide'}
+
     bMoveAbsoluteError : BOOL;
-    {attribute 'hide'}
-    bCommandAborted : BOOL;
-    {attribute 'hide'}
+
+    bCommandedAborted : BOOL;
+
     nMoveAbsoluteErrorID : UDINT;
     // Reset
+
     fbMcReset 	: MC_Reset;
-    {attribute 'hide'}
+
     bResetDone 	: BOOL;
-    {attribute 'hide'}
+
     bResetBusy	: BOOL;
-    {attribute 'hide'}
+
     bResetError	: BOOL;
-    {attribute 'hide'}
+
     bResetErrorID	: UDINT;
-    {attribute 'hide'}
+
     bReset		: BOOL;
+
     bCommandedReset : BOOL;
     // Power
+
     fbMcPower 		: MC_Power;
+
     bPowerEnable	: BOOL;
+
     bPowerEnablePositive : BOOL;
+
     bPowerEnableNegative : BOOL;
-    {attribute 'hide'}
+
     bPowerIsEnabled : BOOL;
-    {attribute 'hide'}
+
     bPowerBusy 		: BOOL;
-    {attribute 'hide'}
+
     bPowerError 	: BOOL;
-    {attribute 'hide'}
+
     nPowerErrorID 	: UDINT;
-    {attribute 'hide'}
+
     fOverride 		: LREAL := 100.0;
     //////////////////
+
     fbMcHalt 		: MC_Halt;
+
     bCommandedHalt 	: BOOL;
-    {attribute 'hide'}
+
     bHaltDone 		: BOOL;
-    {attribute 'hide'}
+
     bHaltError 		: BOOL;
-    {attribute 'hide'}
+
     nHaltErrorID 	: UDINT;
-    {attribute 'hide'}
+
     bHaltBusy 		: BOOL;
+
     bExecHome : BOOL;
+
     bExecMove : BOOL;
     // Move parameters
+
     fMoveAbsoluteTargetPosition	: LREAL;
+
     fMoveAbsoluteTargetVelocity	: LREAL;
+
     fMoveAbsoluteTargetAcceleration	: LREAL := 0.0;
+
     fMoveAbsoluteTargetDeceleration	: LREAL := 0.0;
+
     fMoveAbsoluteTargetJerk	: LREAL := 0.0;
+
     eMoveMode : E_EpicsMotorCmd := E_EpicsMotorCmd.MOVE_ABSOLUTE;
+
     eBufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
     // Axis Status
-    {attribute 'hide'}
+
     nAxisId : UDINT;
-    {attribute 'hide'}
+
     fMeasuredVelocity : LREAL;
-    {attribute 'hide'}
+
     fMeasuredPosition : LREAL;
-    {attribute 'hide'}
+
     fMeasuredPositionDiff : LREAL;
-    {attribute 'hide'}
+
     fMeasuredAcceleration : LREAL;
     // Needed for interlocks checks. please keep this as declared
-    {attribute 'hide'}
+
     eAxisState : MC_AxisStates;
     // save and restore
-    {attribute 'hide'}
+
     fbSetPos: MC_SetPosition;
-    {attribute 'hide'}
+
     bClearPositionLag : BOOL := TRUE;
-    {attribute 'hide'}
+
     bAxisError 		: BOOL;
-    {attribute 'hide'}
+
     bPowerStatus 	: BOOL;
-    {attribute 'hide'}
+
     bRestoreDone 	: BOOL;
-    {attribute 'hide'}
+
     bRestoreError 	: BOOL;
-    {attribute 'hide'}
+
     nRestoreErrorID : UDINT;
 
     // save and Restore
-    {attribute 'hide'}
+
     RestoreTimer: TON;
-    {attribute 'hide'}
+
     bRestoreInit: BOOL;
-    {attribute 'hide'}
+
     bRestoreLoad: BOOL;
-    {attribute 'hide'}
+
     nLatchError: UDINT;
-    {attribute 'hide'}
+
     bEncError: BOOL;
-    {attribute 'hide'}
+
     tRetryDelay: TIME := T#1S;
-    {attribute 'hide'}
+
     nMaxRetries: UINT := 10;
-    {attribute 'hide'}
+
     nCurrTries: UINT := 0;
-    {attribute 'hide'}
+
     bRestoreWaitRetry: BOOL;
-    {attribute 'hide'}
+
     tonRestoreRetry: TON;
-    {attribute 'hide'}
+
     tRefreshTime : TIME := T#1S;
 
     // create a property for some of these
-    {attribute 'hide'}
+
     bMoveDone		: BOOL;
-    {attribute 'hide'}
+
     bMoveBusy		: BOOL;
-    {attribute 'hide'}
+
     bInTargetPosition	: BOOL;
-    {attribute 'hide'}
+
     bInterrupted : BOOL;
     // Error handling
-    {attribute 'hide'}
+
     bError				: BOOL;
-    {attribute 'hide'}
+
     nErrorId			: UDINT:=0;
-    {attribute 'hide'}
+
     sErrorMessage		: STRING;
-    {attribute 'hide'}
+
     rtMoveAbsoluteBusy 			: R_TRIG;
-    {attribute 'hide'}
+
     ftMoveAbsoluteBusy 			: F_TRIG;
-    {attribute 'hide'}
-    //ftStopExec 		: F_TRIG;
-    {attribute 'hide'}
+
     ftError		: F_TRIG;
-    {attribute 'hide'}
-    //rtHaltedDone	: R_TRIG;
-    {attribute 'hide'}
-    //rtTargetReached	: R_TRIG;
-    {attribute 'hide'}
+
     rtAbsoluteMoveDone	: R_TRIG;
+
     fbMcBacklashCompensation: MC_BacklashCompensation;
+
     fPrevCompensation : LREAL := 0.0;
+
     bBacklashCompEnable: BOOL;
+
     fBakclashRampRatio : LREAL := 10.0;
 
-    fRefVeloSearch : LREAL;
-    fRefVeloSync : LREAL;
-    {attribute 'no_copy'}
-   // AxisRef : REFERENCE TO AXIS_REF;
-    //iMotionAxisCommon : I_MotionAxisCommon;
     iPersistentDataStorage : I_PersistentDataStorage;
+
     iMotionLogger : I_MotionLogger;
-     iMotionInterlocks: I_MotionInterlocks;
     fSetPosition	: LREAL;
     fSetVelocity	: LREAL;
     fSetAcceleration	: LREAL := 0.0;
@@ -257,31 +275,51 @@ VAR
     fSetJerk	: LREAL := 0.0;
     sName : STRING;
     // Piezo Motion Control
+
     tholtime		: TIME := T#10S;
+
     fPowerOverride : LREAL := 100.0;
-    {attribute 'hide'}
+
     nCommand 		: UINT;
-    nCommandData		: UINT;
+
+    nCommandData	: UINT;
+
     bAbortDone : BOOL;
-    //rtDone 				: R_TRIG;
+
     rtError				: R_TRIG;
+
     rtReset				: R_TRIG;
+
     ftServo				: F_TRIG;
+
     rtDone : R_TRIG;
-    // This prevent unexpected logical 1 on stMotionStage.bExecute
+
+    rtHomeAborted : R_TRIG;
+
     bCommandedMoveHome  : BOOL;
+
     bHomeBusy			: BOOL;
+
     bHomeDone			: BOOL;
-    // get this value from fb_MotionDrive epics interface
+
     fHomePosition 		: LREAL :=0.0;
+
     rtHomeDone				: R_TRIG;
     bHomeInterrupted	: BOOL;
+
     bHomeError 			: BOOL;
+
     nHomeErrorID 		: UDINT;
+
     nHomeMode:ENUM_EpicsHomeCmd :=ENUM_EpicsHomeCmd.NONE;
+
     bLimitBackwardEnable : BOOL;
+
     bLimitForwardEnable : BOOL;
+
     bHome : BOOL;
+
+    ftEnabled :F_TRIG;
     bStandStill : BOOL;
 END_VAR
 
@@ -323,28 +361,19 @@ END_VAR
       <Declaration><![CDATA[METHOD AxisStatus
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[AxisRef.ReadStatus();
-//
+        <ST><![CDATA[THIS^.AxisRef.ReadStatus();
 // (*Axis id in motion "motor"*)
-nAxisId:=AxisRef.NcToPlc.AxisId;
-//
+THIS^.nAxisId:=AxisRef.NcToPlc.AxisId;
 // (*Actual Velocity*)
-// SUPER^.fMeasuredVelocity:=AxisRef.NcToPlc.ActVelo;
-//
+THIS^.fMeasuredVelocity:=AxisRef.NcToPlc.ActVelo;
 // (*Actual Position*)
-// IF SUPER^.AxisRef.Status.OpMode.Modulo THEN
-//     SUPER^.fMeasuredPosition:=AxisRef.NcToPlc.ModuloActPos;
-// ELSE
-//     SUPER^.fMeasuredPosition:=AxisRef.NcToPlc.ActPos;
-// END_IF
-//
+THIS^.fMeasuredPosition:=AxisRef.NcToPlc.ActPos;
 // (*Actual Position Diff*)
-// SUPER^.fMeasuredPositionDiff:=SUPER^.AxisRef.NcToPlc.PosDiff;
+THIS^.fMeasuredPositionDiff:=THIS^.AxisRef.NcToPlc.PosDiff;
 // (*Current Axis state*)
-eAxisState := AxisRef.Status.MotionState;
-
-// (*Target Reached*)
-// SUPER^.bInTargetPosition := SUPER^.AxisRef.Status.InTargetPosition;]]></ST>
+THIS^.eAxisState := THIS^.AxisRef.Status.MotionState;
+// (* Target Reached *)
+THIS^.bInTargetPosition := THIS^.AxisRef.Status.InTargetPosition;]]></ST>
       </Implementation>
     </Method>
     <Method Name="BacklashCompensation" Id="{927638b2-37f4-4736-8328-c9d3bbdf5863}">
@@ -458,7 +487,7 @@ PROPERTY CommandAborted : BOOL
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[CommandAborted := bCommandAborted;]]></ST>
+          <ST><![CDATA[CommandAborted := THIS^.bCommandedAborted;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -573,7 +602,7 @@ EncErrorCheck := EncError AND EncErrorCode >= 16#4400 AND EncErrorCode <= 16#44F
       </Implementation>
     </Method>
     <Property Name="EncoderCount" Id="{5225d004-dac1-4dfa-90f6-2aa283ea59c1}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY EncoderCount : UDINT
 ]]></Declaration>
       <Get Name="Get" Id="{4699599a-607a-4379-8415-7f67e45880a3}">
@@ -762,8 +791,7 @@ END_IF
 END_IF *)
 
 // Copy axis parameters that we want to expose to the EPICS layer.
-THIS^.fRefVeloSearch :=  THIS^.stAxisParameters.fRefVeloSearch;
-THIS^.fRefVeloSync := THIS^.stAxisParameters.fRefVeloSync;
+
 THIS^.stAxisParameterSetExposed.bCtrlEnablePosDiffControl     := THIS^.stAxisParameters.bCtrlEnablePosDiffControl;
 THIS^.stAxisParameterSetExposed.bEncEnableSoftEndMaxControl   := THIS^.stAxisParameters.bEncEnableSoftEndMaxControl;
 THIS^.stAxisParameterSetExposed.bEncEnableSoftEndMinControl   := THIS^.stAxisParameters.bEncEnableSoftEndMinControl;
@@ -824,7 +852,8 @@ THIS^.fbMcHalt(
       </Implementation>
     </Method>
     <Property Name="HaltBusy" Id="{3729316f-44b8-4fc4-a4b3-679c26ec4375}">
-      <Declaration><![CDATA[PROPERTY HaltBusy : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HaltBusy : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{73cbbd46-fd66-47f4-add3-798f531a9bfa}">
         <Declaration><![CDATA[VAR
@@ -836,7 +865,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HaltDone" Id="{aad1e7f5-ccd7-40f9-ad49-dcb715adbd3c}">
-      <Declaration><![CDATA[PROPERTY HaltDone : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HaltDone : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{4f30d372-5e5c-43d7-85b0-a3893ab82baf}">
         <Declaration><![CDATA[VAR
@@ -848,7 +878,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HaltError" Id="{122f2f3a-178e-4ab7-b626-63e0bfb3c34a}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY HaltError : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{26b0f530-f1ab-41f4-9a14-5442f2137687}">
@@ -861,7 +891,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HaltErrorID" Id="{3b38681c-deb8-4f04-81e3-6de42841d4b4}">
-      <Declaration><![CDATA[PROPERTY HaltErrorID : UDINT
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HaltErrorID : UDINT
 ]]></Declaration>
       <Get Name="Get" Id="{2fe75d12-42ba-4a63-baee-0a8ed41cccbe}">
         <Declaration><![CDATA[VAR
@@ -873,7 +904,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HomeBusy" Id="{94c54454-976e-4e1c-a13b-0a012c7d0d5a}">
-      <Declaration><![CDATA[PROPERTY HomeBusy : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HomeBusy : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{c1a1a9b4-8d7d-4a89-9b9a-6e24f574346b}">
         <Declaration><![CDATA[VAR
@@ -885,7 +917,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HomeDone" Id="{e4f2063a-b5a1-4ed6-ab1a-03863f93c4e0}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY HomeDone : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{43062e66-3224-470e-a403-9878b6a50465}">
@@ -898,7 +930,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HomeError" Id="{f46e0722-13f2-4a56-8549-dca2e6e26022}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY HomeError : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{fecbe6f7-c1fd-4322-8add-faf495d31a38}">
@@ -911,7 +943,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HomeErrorID" Id="{cd25fbea-de74-4c53-8c16-002ca289cfb2}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY HomeErrorID : UDINT
 ]]></Declaration>
       <Get Name="Get" Id="{b39da06c-448d-44e1-ab9e-5b34ac1bedd9}">
@@ -924,7 +956,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HomeInterrupted" Id="{b32eae57-747b-4ef5-84d6-af9acb75b142}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY HomeInterrupted : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{196d5dee-ff71-4355-8198-243b6fba7f14}">
@@ -937,7 +969,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="HomeMode" Id="{927946d6-12aa-4cc2-90e9-f2f508eb2a9a}">
-      <Declaration><![CDATA[PROPERTY HomeMode : E_EpicsHomeCmd
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY HomeMode : E_EpicsHomeCmd
 ]]></Declaration>
       <Get Name="Get" Id="{da5153a4-dddf-42e6-adb8-41f2c29bdcf4}">
         <Declaration><![CDATA[VAR
@@ -957,7 +990,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="HomePosition" Id="{eda1c001-f2dd-4128-aa16-432fcb66d05b}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
 PROPERTY HomePosition : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{20d5b56c-3627-4c8a-8106-4b7ed37e4977}">
@@ -987,19 +1020,6 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[InTargetPosition := bInTargetPosition;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="Interrupted" Id="{c29ca92e-a8ca-4b58-bd97-403680f7eef7}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Interrupted : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{996707fd-9004-478f-9882-c121c776b80e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[Interrupted := bInterrupted ;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -1127,10 +1147,11 @@ THIS^.fbMcMoveAbsolute(
     Done => ,
     Busy => THIS^.bMoveAbsoluteBusy,
     Active => ,
-    CommandAborted => THIS^.bCommandAborted,
+    CommandAborted => THIS^.bCommandedAborted,
     Error => THIS^.bMoveAbsoluteError,
     ErrorID => THIS^.nMoveAbsoluteErrorID
 );
+
 (*a Neg edge on busy does not mean that the cause of that event has completed
     its execution, thus setting done base on it alone is not correct
     Engaging the limit, halting or resetting will cause a neg edge on busy
@@ -1138,9 +1159,15 @@ THIS^.fbMcMoveAbsolute(
     For limit switch we use the set abs move done flag to true after testing that
     The interuption is not from hatling or resetting.
 *)
-IF THIS^.bMoveAbsoluteError THEN
-    //THIS^.bCommandedMoveAbsolute := FALSE;
+IF ftEnabled.Q THEN
+    nCycleCounterPrev := THIS^.AxisRef.Status.CycleCounter;
 END_IF
+IF THIS^.bCommandedAborted THEN
+    bDummy := TRUE;
+    nCycleCounter := THIS^.AxisRef.Status.CycleCounter - nCycleCounterPrev;
+
+END_IF
+
 rtMoveAbsoluteBusy (CLK:=bMoveAbsoluteBusy);
 ftMoveAbsoluteBusy(CLK:=bMoveAbsoluteBusy);
 
@@ -1149,8 +1176,7 @@ bMoveAbsoluteDone R= rtMoveAbsoluteBusy.Q;]]></ST>
       </Implementation>
     </Method>
     <Property Name="MoveAbsoluteBusy" Id="{8bba339d-272b-4575-bd5a-b3466a6e1c1c}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY MoveAbsoluteBusy : BOOL
+      <Declaration><![CDATA[PROPERTY MoveAbsoluteBusy : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{cdf62e84-f8c6-4d30-bda2-e0acfc8d7692}">
         <Declaration><![CDATA[VAR
@@ -1198,8 +1224,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="MoveAbsoluteTargetAcceleration" Id="{23311078-e7b9-4732-95b1-14c4c940a48c}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY MoveAbsoluteTargetAcceleration : LREAL
+      <Declaration><![CDATA[PROPERTY MoveAbsoluteTargetAcceleration : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{30e1e061-024a-4d41-b2b4-6cdae17efcf8}">
         <Declaration><![CDATA[VAR
@@ -1220,8 +1245,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="MoveAbsoluteTargetDeceleration" Id="{ea6189c7-6f42-4b41-b1c5-136e6340b80d}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY MoveAbsoluteTargetDeceleration : LREAL
+      <Declaration><![CDATA[PROPERTY MoveAbsoluteTargetDeceleration : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{62f6fac2-c751-4c95-9e3f-c5a1b02e7a66}">
         <Declaration><![CDATA[VAR
@@ -1241,8 +1265,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="MoveAbsoluteTargetJerk" Id="{feefd4b1-94bf-447b-ab77-5646e681427f}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY MoveAbsoluteTargetJerk : LREAL
+      <Declaration><![CDATA[PROPERTY MoveAbsoluteTargetJerk : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{f61c8aa4-6897-44f1-ae86-bde4382d02e3}">
         <Declaration><![CDATA[VAR
@@ -1263,8 +1286,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="MoveAbsoluteTargetPosition" Id="{a6a2bcd1-7250-4b42-a6c3-9ba60983fbf1}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY MoveAbsoluteTargetPosition : LREAL
+      <Declaration><![CDATA[PROPERTY MoveAbsoluteTargetPosition : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{74ecfcba-8315-4658-96b3-13327f7fbb7f}">
         <Declaration><![CDATA[VAR
@@ -1285,8 +1307,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="MoveAbsoluteTargetVelocity" Id="{9fd3f074-657b-4292-9885-57bed5f0b5b5}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY MoveAbsoluteTargetVelocity : LREAL
+      <Declaration><![CDATA[PROPERTY MoveAbsoluteTargetVelocity : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{4ad245ec-4d06-4905-9c1d-24c221eef44e}">
         <Declaration><![CDATA[VAR
@@ -1307,7 +1328,8 @@ END_VAR
       </Set>
     </Property>
     <Property Name="MoveDone" Id="{8918038f-10a4-43ec-a5f1-e6c676668826}">
-      <Declaration><![CDATA[PROPERTY MoveDone : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY MoveDone : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{a36a5686-233b-491f-9bf4-53136cbb788d}">
         <Declaration><![CDATA[VAR
@@ -1319,7 +1341,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="MoveMode" Id="{8743e3f5-0dc3-4af5-8cb2-d6738b9baba5}">
-      <Declaration><![CDATA[PROPERTY MoveMode : E_EpicsMotorCmd
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY MoveMode : E_EpicsMotorCmd
 ]]></Declaration>
       <Get Name="Get" Id="{0701ec22-f233-4d90-8f0d-4c9f13f58882}">
         <Declaration><![CDATA[VAR
@@ -1394,7 +1417,10 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.CalibrateRawEncValue();
+        <ST><![CDATA[// Get axis status after calling NC blocks
+THIS^.AxisStatus();
+
+THIS^.CalibrateRawEncValue();
 
 THIS^.ExposeNCParams();
 //////////////////////////////////////
@@ -1402,11 +1428,10 @@ THIS^.ExposeNCParams();
 //////////////////////////////////////
 THIS^.EncSave(bEnable:=TRUE);
 
-THIS^.AxisStatus();
 /// error handling not completed yet
 THIS^.ErrorHandling();
 
-bAbortDone := THIS^.bHaltDone OR THIS^.bResetDone;
+THIS^.bAbortDone := THIS^.bHaltDone OR THIS^.bResetDone;
 
 // readbacks and status update from common worker
 // When E_EpicsHomeCmd.ABSOLUTE_SET or E_EpicsHomeCmd.NONE
@@ -1416,18 +1441,17 @@ THIS^.bMoveBusy := THIS^.bMoveAbsoluteBusy OR THIS^.bHomeBusy;
 THIS^.bMoveDone S= THIS^.bMoveAbsoluteDone OR rtHomeDone.Q;
 THIS^.bMoveDone R= THIS^.bMoveBusy;
 
-THIS^.rtDone(CLK:=bMoveDone);
-IF  THIS^.rtDone.Q OR bAbortDone THEN
-    THIS^.bCommandedReset := FALSE;
-    THIS^.bCommandedHalt := FALSE;
-    THIS^.bCommandedMoveHome := FALSE;
-    THIS^.bCommandedMoveAbsolute := FALSE;
-END_IF
-
-rtError(CLK:=bError);
-ftError(CLK:=bError);
-// optional: sync and encapsulate private data exchange
+// PTP with FB_MotionDrive: sync and encapsulate private data exchange
 IF __ISVALIDREF( THIS^.MotionSyncPrivateRef ) THEN
+    THIS^.rtDone(CLK:=bMoveDone);
+    THIS^.rtError(CLK:=bError);
+    THIS^.ftError(CLK:=bError);
+    IF  THIS^.rtDone.Q OR bAbortDone THEN
+        THIS^.bCommandedReset := FALSE;
+        THIS^.bCommandedHalt := FALSE;
+        THIS^.bCommandedMoveHome := FALSE;
+        THIS^.bCommandedMoveAbsolute := FALSE;
+    END_IF
     // This is needed in the interlock block
     THIS^.MotionSyncPrivateRef.SyncPrvAxisState := THIS^.eAxisState;
     IF rtError.Q THEN
@@ -1443,8 +1467,10 @@ IF __ISVALIDREF( THIS^.MotionSyncPrivateRef ) THEN
     END_IF
     // useful for further processing in sync FBs
     THIS^.MotionSyncPrivateRef.SyncPrvMoveBusy := THIS^.bMoveBusy;
+    THIS^.MotionSyncPrivateRef.SyncPrvHomeBusy := THIS^.bHomeBusy;
     THIS^.MotionSyncPrivateRef.SyncPrvMoveDone := THIS^.bMoveDone;
     THIS^.MotionSyncPrivateRef.SyncPrvAbortDone := THIS^.bResetDone;
+    THIS^.MotionSyncPrivateRef.SyncPrvStandStill := THIS^.AxisRef.Status.StandStill;
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -1469,11 +1495,14 @@ THIS^.fbMcPower(
     Busy => THIS^.bPowerBusy,
     Error => THIS^.bPowerError,
     ErrorID => THIS^.nPowerErrorID
-);]]></ST>
+);
+ftEnabled (CLK:=THIS^.bPowerEnablePositive);
+]]></ST>
       </Implementation>
     </Method>
     <Property Name="PowerEnable" Id="{52a6864f-72c8-4689-b02e-2c6a93a6e57f}">
-      <Declaration><![CDATA[PROPERTY PowerEnable : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PowerEnable : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{48500b16-0ce2-49f1-b21f-0533cc814246}">
         <Declaration><![CDATA[VAR
@@ -1493,7 +1522,8 @@ END_VAR
       </Set>
     </Property>
     <Property Name="PowerEnableNegative" Id="{9f868447-67ce-4fa8-8603-0d81dd8e16f8}">
-      <Declaration><![CDATA[PROPERTY PowerEnableNegative : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PowerEnableNegative : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{f8c49fa2-7312-4ebe-af66-a98a5b908ac7}">
         <Declaration><![CDATA[VAR
@@ -1513,7 +1543,8 @@ END_VAR
       </Set>
     </Property>
     <Property Name="PowerEnablePositive" Id="{506de153-294e-4bda-a0dc-d37860a787f4}">
-      <Declaration><![CDATA[PROPERTY PowerEnablePositive : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PowerEnablePositive : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{17b9d9b0-adc5-40b4-bdc8-ed9f3db477a3}">
         <Declaration><![CDATA[VAR
@@ -1533,7 +1564,8 @@ END_VAR
       </Set>
     </Property>
     <Property Name="PowerError" Id="{539da31b-05fd-42ae-90e9-cbefc3f2bcac}">
-      <Declaration><![CDATA[PROPERTY PowerError : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PowerError : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{b7dcf07b-fc82-41ed-8ef8-6b0d511db94d}">
         <Declaration><![CDATA[VAR
@@ -1545,7 +1577,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="PowerErrorID" Id="{0bd4689a-ceb9-4b34-96ab-62db6e708dc9}">
-      <Declaration><![CDATA[PROPERTY PowerErrorID : UDINT
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PowerErrorID : UDINT
 ]]></Declaration>
       <Get Name="Get" Id="{8c377cae-9b9a-4798-9990-ce542ac2a885}">
         <Declaration><![CDATA[VAR
@@ -1570,8 +1603,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="PowerOverride" Id="{b3b04403-4328-4a31-87db-cdf6d088144b}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY PowerOverride : LREAL
+      <Declaration><![CDATA[PROPERTY PowerOverride : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{2fcfe7b8-ee2d-413f-adb0-61ee2d9519f2}">
         <Declaration><![CDATA[VAR
@@ -1592,7 +1624,8 @@ END_VAR
       </Set>
     </Property>
     <Property Name="PowerStatus" Id="{8c236779-ba9c-4491-b5ea-5964867bf7ba}">
-      <Declaration><![CDATA[PROPERTY PowerStatus : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY PowerStatus : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{68f8524d-3388-4d1d-af05-c26bf9bb6cb3}">
         <Declaration><![CDATA[VAR
@@ -1640,7 +1673,9 @@ THIS^.Power();
 THIS^.Reset();
 THIS^.Halt();
 THIS^.BacklashCompensation();
-THIS^.MoveAbsolute();]]></ST>
+THIS^.MoveAbsolute();
+// will be used in derive class or elsewhere.
+THIS^.bInterrupted := THIS^.bCommandedHalt OR THIS^.bCommandedReset;]]></ST>
       </Implementation>
     </Method>
     <Property Name="RefreshDelay" Id="{c668952b-b953-4bf4-ba2d-d28533b1ae8e}">
@@ -1679,7 +1714,8 @@ END_VAR
       </Implementation>
     </Method>
     <Property Name="ResetBusy" Id="{8142dd1d-e6ed-48f9-82bc-40d844e67918}">
-      <Declaration><![CDATA[PROPERTY ResetBusy : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY ResetBusy : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{ae505aa3-2b34-4b62-baf6-2dd558f81f4c}">
         <Declaration><![CDATA[VAR
@@ -1691,7 +1727,8 @@ END_VAR
       </Get>
     </Property>
     <Property Name="ResetDone" Id="{3d5f9615-daf8-4aa9-9a70-1301f4ad44e0}">
-      <Declaration><![CDATA[PROPERTY ResetDone : BOOL
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY ResetDone : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{83ba80a6-41e7-4816-a119-f9c2b92e0fc3}">
         <Declaration><![CDATA[VAR
@@ -1796,8 +1833,7 @@ bRestoreWaitRetry R= tonRestoreRetry.Q;]]></ST>
       </Implementation>
     </Method>
     <Property Name="SavedPosition" Id="{93056f69-2f0d-4972-9127-cac34bdc060c}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY SavedPosition : LREAL
+      <Declaration><![CDATA[PROPERTY SavedPosition : LREAL
 ]]></Declaration>
       <Get Name="Get" Id="{a3a8fa74-a76a-43f6-9563-611f28512797}">
         <Declaration><![CDATA[VAR
@@ -1809,8 +1845,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="Servo" Id="{82295e5d-c599-4c17-9ce3-d6526bb012d0}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Servo : BOOL
+      <Declaration><![CDATA[PROPERTY Servo : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{af265e1e-e217-4bdc-8c1f-114ac95a5662}">
         <Declaration><![CDATA[VAR
@@ -1830,8 +1865,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="StandStill" Id="{29144d6c-60d1-4719-a21b-df5c52598cab}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY StandStill : BOOL
+      <Declaration><![CDATA[PROPERTY StandStill : BOOL
 ]]></Declaration>
       <Get Name="Get" Id="{c18fb66f-f643-49a4-b9ec-e3a8585cc3b4}">
         <Declaration><![CDATA[VAR

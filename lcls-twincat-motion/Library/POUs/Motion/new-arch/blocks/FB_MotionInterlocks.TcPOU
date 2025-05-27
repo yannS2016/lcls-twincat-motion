@@ -127,6 +127,10 @@ VAR
      rtDone : R_TRIG;
     rtError : R_TRIG;
     ftError : F_TRIG;
+    bLimHitIdling : BOOL;
+    bLimHitMoving : BOOL;
+    bStandStill	  : BOOL;
+    rtStandStill : R_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -136,6 +140,7 @@ IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     // in this class or in derived implmentation
     eAxisState := MotionSyncPrivateRef.SyncPrvAxisState;
     bReset := THIS^.MotionSyncPrivateRef.SyncPrvAbortDone;
+    //bReset := THIS^.MotionSyncPrivateRef.SyncPrvAbortDone AND NOT bLimHit;
     bError := MotionSyncPrivateRef.SyncPrvError;
     nErrorID := MotionSyncPrivateRef.SyncPrvErrorID;
     bExecute := MotionSyncPrivateRef.SyncPrvExec;
@@ -143,6 +148,7 @@ IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     bMoveBusy := MotionSyncPrivateRef.SyncPrvMoveBusy;
     bMoveDone := MotionSyncPrivateRef.SyncPrvMoveDone;
     bNewMoveReq := MotionSyncPrivateRef.SyncPrvNewMoveReq;
+    bStandStill := MotionSyncPrivateRef.SyncPrvStandStill;
     bEnable := MotionSyncPrivateRef.SyncPrvEnable;
 END_IF
 
@@ -158,40 +164,18 @@ bSafetyReady S= bPowerSelf;
 // This tell the other block in seq processing to wait on interlock to do an intial check
 // before they can proceed. checking error only is not enough.
 rtUserExec (CLK:=bNewMoveReq);
-// react to external reset
-IF bReset THEN
-    bLimOverride := FALSE;
+
+IF rtUserExec.Q AND NOT bError AND NOT bUserEnable THEN
+    bError := TRUE;
+    nErrorID:= 1;
     bInterlockOk := FALSE;
-    bLimHit := FALSE;
-    bReset := FALSE;
-    bError := FALSE;
-    bWarning := FALSE;
-    sWarningMsg:='';
+    sWarningMsg := 'Warning: Move requested, but user enable is disabled!';
 END_IF
 
 ftForwardEnabled(CLK:=bAllForwardEnabled);
 ftBackwardEnabled(CLK:=bAllBackwardEnabled);
 
-IF rtUserExec.Q AND NOT bError AND NOT bUserEnable THEN
-        bError := TRUE;
-        nErrorID:= 1;
-        bInterlockOk := FALSE;
-        sWarningMsg := 'Warning: Move requested, but user enable is disabled!';
-END_IF
-
-bInterlockOk S=  NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
-bInterlockOk R=  bError OR rtDone.Q OR NOT bAllBackwardEnabled OR NOT bAllForwardEnabled;
-
-IF rtUserExec.Q AND NOT bInterlockOk THEN
-    bWarning := TRUE;
-    bLimHit := TRUE;
-    sWarningMsg:='Warning: Positive or Negative limit engaged!';
-END_IF
-
-///////////////////////////////////////////////////////////////
-// Raise a warning when limit are hit outisde of homing routine
-///////////////////////////////////////////////////////////////
-IF  NOT bHomeBusy AND  ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
+IF NOT bHomeBusy AND  (ftForwardEnabled.Q OR ftBackwardEnabled.Q) THEN
     // Not an error, just a warning
     IF NOT bAllForwardEnabled THEN
         sWarningMsg:='Cannot move past positive limit.';
@@ -200,9 +184,43 @@ IF  NOT bHomeBusy AND  ftForwardEnabled.Q OR ftBackwardEnabled.Q THEN
     END_IF
     bWarning := TRUE;
     bLimHit := TRUE;
+    bLimHitMoving := TRUE;
     // will serve later
     bLimOverride := TRUE;
 END_IF
+
+// If a new Move request is issue, test the state of limit switches.
+IF rtUserExec.Q AND ( NOT bAllForwardEnabled OR NOT bAllBackwardEnabled) THEN
+    bWarning := TRUE;
+    bLimHit := TRUE;
+    bLimHitIdling := TRUE;
+    sWarningMsg:='Warning: Positive or Negative limit engaged!';
+END_IF
+
+// other synced block wait on this signal to valid new move requests.
+bInterlockOk S=  NOT bWarning AND NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
+bInterlockOk R=  bWarning OR bError OR rtDone.Q OR NOT bAllBackwardEnabled OR NOT bAllForwardEnabled;
+
+// react to external reset
+rtDone(CLK:=bMoveDone);
+IF bReset OR rtDone.Q THEN
+    bLimOverride := FALSE;
+    bInterlockOk := FALSE;
+    bLimHit := FALSE;
+    bLimHitMoving := bLimHit;
+    bLimHitIdling := bLimHit;
+END_IF
+
+// Latch the warning message till reset.
+IF  bReset THEN
+    bReset := FALSE;
+    bError := FALSE;
+    bWarning := FALSE;
+    sWarningMsg:='';
+END_IF
+
+bLimHitMoving := bLimHit AND bMoveBusy;
+bLimHitIdling := bLimHit AND NOT bMoveBusy;
 
 rtError(CLK:=bError OR bWarning);
 ftError(CLK:=bError OR bWarning);
@@ -213,8 +231,8 @@ IF __ISVALIDREF(MotionSyncPrivateRef) THEN
     MotionSyncPrivateRef.SyncPrvAllEn := bAllEnabled;
     MotionSyncPrivateRef.SyncPrvAllBwdEn := bAllBackwardEnabled;
     MotionSyncPrivateRef.SyncPrvAllFwdEn := bAllForwardEnabled;
-    MotionSyncPrivateRef.SyncPrvLimBwd := bLimitForwardEnable;
-    MotionSyncPrivateRef.SyncPrvLimFwd := bLimitBackwardEnable;
+    MotionSyncPrivateRef.SyncPrvLimBwd := bLimitBackwardEnable;
+    MotionSyncPrivateRef.SyncPrvLimFwd := bLimitForwardEnable;
     MotionSyncPrivateRef.SyncPrvHome := bHome;
     MotionSyncPrivateRef.SyncPrvLimHit := bLimHit;
     MotionSyncPrivateRef.SyncPrvInterlockOk := bInterlockOk;
@@ -514,6 +532,30 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[LimHit := bLimHit;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimHitIdling" Id="{2ce259a6-fefe-42d9-98e2-e01147ada529}">
+      <Declaration><![CDATA[PROPERTY LimHitIdling : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{7fe9ffa2-060e-4e06-8854-f5eb0a3faf00}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[LimHitIdling := bLimHitIdling;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimHitMoving" Id="{97b5145c-c944-48d3-a772-fa690e5daf7e}">
+      <Declaration><![CDATA[PROPERTY LimHitMoving : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{cc60a310-154d-43a9-a2b0-881d2bb61477}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[LimHitMoving := bLimHitMoving;]]></ST>
         </Implementation>
       </Get>
     </Property>

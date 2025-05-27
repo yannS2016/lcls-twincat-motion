@@ -35,6 +35,7 @@ VAR
     bSyncPrvAxisError	: BOOL;
     bSyncPrvAbortDone : BOOL;
     bSyncPrvCmdExecute : BOOL;
+    bSyncPrvStandStill : BOOL;
     sSyncPrvErrorMessage : STRING;
     eSyncPrvMoveMode : E_EpicsMotorCmd := E_EpicsMotorCmd.MOVE_ABSOLUTE;
 END_VAR
@@ -574,6 +575,25 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[bSyncPrvRestoreDone := SyncPrvRestoreDone;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvStandStill" Id="{7184b3ef-19be-4f90-a720-16199244a90f}">
+      <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvStandStill : BOOL]]></Declaration>
+      <Get Name="Get" Id="{61903ec4-f58a-4936-8623-d12cf9a91c52}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvStandStill := bSyncPrvStandStill;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{84a9c9b0-7716-4203-89dd-029c0cddc13d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvStandStill := bSyncPrvStandStill;]]></ST>
         </Implementation>
       </Set>
     </Property>
