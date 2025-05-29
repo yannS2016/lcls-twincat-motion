@@ -29,12 +29,6 @@ END_VAR]]></Declaration>
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="Busy" Id="{1dc67c19-7944-41b9-ba51-efc9922261f1}">
-      <Declaration><![CDATA[PROPERTY Busy : BOOL]]></Declaration>
-      <Get Name="Get" Id="{a5860cad-3e89-42b7-8b83-9419c9d09efd}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
     <Property Name="CommandAborted" Id="{0fa2c2c2-ee04-43d1-b494-0f4602cb897b}">
       <Declaration><![CDATA[PROPERTY CommandAborted : BOOL]]></Declaration>
       <Get Name="Get" Id="{b918462e-6014-4e11-9e53-215e9c34e70a}">
@@ -360,6 +354,12 @@ END_VAR
 END_VAR
 ]]></Declaration>
       </Set>
+    </Property>
+    <Property Name="MoveBusy" Id="{1dc67c19-7944-41b9-ba51-efc9922261f1}">
+      <Declaration><![CDATA[PROPERTY MoveBusy : BOOL]]></Declaration>
+      <Get Name="Get" Id="{a5860cad-3e89-42b7-8b83-9419c9d09efd}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
     </Property>
     <Property Name="MoveDone" Id="{7ff11c7c-614b-47cb-baec-d0e1b99b56ef}">
       <Declaration><![CDATA[PROPERTY MoveDone : BOOL]]></Declaration>

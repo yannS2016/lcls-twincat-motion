@@ -41,7 +41,7 @@ VAR
     bSafetyReady: BOOL;
     // TRUE if done enabling
     bEnableDone: BOOL;
-
+    bLocalEnable : BOOL;
    // NC STO Input: TRUE if ok to move
     {attribute 'pytmc' := '
         pv: PLC:bHardwareEnable
@@ -145,12 +145,35 @@ bSafetyReady S= bPowerSelf;
 // before they can proceed. checking error only is not enough.
 rtUserExec (CLK:=bNewMoveReq);
 
-IF rtUserExec.Q AND NOT bError AND NOT bUserEnable THEN
-    bError := TRUE;
-    nErrorID:= 1;
-    bInterlockOk := FALSE;
-    sWarningMsg := 'Warning: Move requested, but user enable is disabled!';
+bLocalEnable := bUserEnable AND bHardwareEnable;
+
+IF rtUserExec.Q AND NOT bError THEN
+    IF NOT bLocalEnable THEN
+        bError := TRUE;
+        nErrorID:= 1;
+        bInterlockOk := FALSE;
+        IF NOT bUserEnable THEN
+            sWarningMsg := 'Warning: Move requested, but user enable is disabled!';
+        ELSIF NOT bHardwareEnable THEN
+            sWarningMsg := 'Warning: Move requested, but hardware enable is disabled!';
+        END_IF
+    // If a new Move request is issue, test the state of limit switches.
+    ELSIF NOT bAllForwardEnabled OR NOT bAllBackwardEnabled THEN
+        bWarning := TRUE;
+        bLimHit := TRUE;
+        bLimHitIdling := TRUE;
+        sWarningMsg:='Warning: Positive or Negative limit engaged!';
+    ELSE
+        bLimHit := FALSE;
+        bLimHitMoving := bLimHit;
+        bLimHitIdling := bLimHit;
+        sWarningMsg := '';
+    END_IF
 END_IF
+
+
+
+
 
 ftForwardEnabled(CLK:=bAllForwardEnabled);
 ftBackwardEnabled(CLK:=bAllBackwardEnabled);
@@ -169,20 +192,6 @@ IF NOT bHomeBusy AND  (ftForwardEnabled.Q OR ftBackwardEnabled.Q) THEN
     bLimOverride := TRUE;
 END_IF
 
-// If a new Move request is issue, test the state of limit switches.
-IF rtUserExec.Q  THEN
-    IF NOT bAllForwardEnabled OR NOT bAllBackwardEnabled THEN
-        bWarning := TRUE;
-        bLimHit := TRUE;
-        bLimHitIdling := TRUE;
-        sWarningMsg:='Warning: Positive or Negative limit engaged!';
-    ELSE
-        bLimHit := FALSE;
-        bLimHitMoving := bLimHit;
-        bLimHitIdling := bLimHit;
-        sWarningMsg := '';
-    END_IF
-END_IF
 
 // other synced block wait on this signal to valid new move requests.
 bInterlockOk S=  NOT bWarning AND NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
@@ -267,7 +276,7 @@ PROPERTY Error : BOOL
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[Error := bError;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -280,7 +289,19 @@ PROPERTY ErrorID : UDINT
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[ErrorID := nErrorID;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="ErrorMessage" Id="{c58a222e-888c-449d-acb8-7036a45dc5e8}">
+      <Declaration><![CDATA[PROPERTY ErrorMessage : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{c813683b-22cc-422c-89ed-ba893df5d926}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[ErrorMessage := sWarningMsg;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -393,30 +414,6 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
-    </Property>
-    <Property Name="WarnID" Id="{5598e3c0-c025-4591-a33e-0591f1851621}">
-      <Declaration><![CDATA[PROPERTY WarnID : UINT
-]]></Declaration>
-      <Get Name="Get" Id="{37a33505-3c15-43ab-b9e2-da7fe440eb0c}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[WarnID  := nErpicsWarnId;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="WarningMsg" Id="{c58a222e-888c-449d-acb8-7036a45dc5e8}">
-      <Declaration><![CDATA[PROPERTY WarningMsg : STRING
-]]></Declaration>
-      <Get Name="Get" Id="{c813683b-22cc-422c-89ed-ba893df5d926}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[WarningMsg := sWarningMsg;]]></ST>
-        </Implementation>
-      </Get>
     </Property>
   </POU>
 </TcPlcObject>

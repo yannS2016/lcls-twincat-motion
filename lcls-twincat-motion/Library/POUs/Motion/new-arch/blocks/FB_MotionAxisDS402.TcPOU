@@ -68,19 +68,6 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="Busy" Id="{1545b71c-01db-41e2-94ed-2e6f0f787771}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY Busy : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{32374ede-def9-4df1-bbf1-d4584c2e437e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Property Name="CommandAborted" Id="{5763494c-9b74-424e-9868-5d379db2b5d6}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY CommandAborted : BOOL
@@ -769,6 +756,19 @@ END_VAR
           <ST><![CDATA[]]></ST>
         </Implementation>
       </Set>
+    </Property>
+    <Property Name="MoveBusy" Id="{1545b71c-01db-41e2-94ed-2e6f0f787771}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY MoveBusy : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{32374ede-def9-4df1-bbf1-d4584c2e437e}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <Property Name="MoveDone" Id="{e866679b-b0e3-403a-8dc1-100e77755457}">
       <Declaration><![CDATA[{warning 'Add property implementation'}

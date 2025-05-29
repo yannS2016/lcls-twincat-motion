@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4026.13" ClassName="CNestedPlcProjDef">
+<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4026.15" ClassName="CNestedPlcProjDef">
 	<DataTypes>
 		<DataType>
 			<Name GUID="{CBC83B73-B816-4597-A9E5-2B03263CA131}" Namespace="MC" TcBaseType="true" HideType="true" IecDeclaration="DWORD;">NCTOPLC_AXIS_REF_STATE</Name>
@@ -983,7 +983,7 @@ External Setpoint Generation:
 		</DataType>
 	</DataTypes>
 	<Project GUID="{E61EF94A-CFE8-4DDF-B7C9-5F7AD2CF9D83}" Name="Library" PrjFilePath="..\..\Library\Library.plcproj" TmcFilePath="..\..\Library\Library.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{44E2431F-2B42-3D14-3DE3-2D1BC935A52E}" TmcPath="Library\Library.tmc">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{0FFE239B-BF35-CFD9-83A2-CEC033CCE1F9}" TmcPath="Library\Library.tmc">
 			<Name>Library Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="8" AreaNo="4">
@@ -1009,6 +1009,19 @@ External Setpoint Generation:
 			<Vars VarGrpType="2" AreaNo="1">
 				<Name>PlcTask Outputs</Name>
 				<Var>
+					<Name>PRG_TEST.bLimitFwdEnable</Name>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.bLimitBwdEnable</Name>
+					<Comment><![CDATA[ NC Backward Limit Switch: TRUE if ok to move]]></Comment>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.bHardEnable</Name>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
 					<Name>PRG_TEST.fbBrakeSync.bBrakeRelease</Name>
 					<Comment><![CDATA[ NC Brake Output: TRUE to release brake]]></Comment>
 					<Type>BOOL</Type>
@@ -1020,6 +1033,29 @@ External Setpoint Generation:
 			</Vars>
 			<Vars VarGrpType="1">
 				<Name>PlcTask Inputs</Name>
+				<Var>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderULINT</Name>
+					<Type>ULINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderUINT</Name>
+					<Comment><![CDATA[ Raw encoder IO for UINT (Relative Encoders)]]></Comment>
+					<Type>UINT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderINT</Name>
+					<Comment><![CDATA[ Raw encoder IO for INT (LVDT)]]></Comment>
+					<Type>INT</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderDINT</Name>
+					<Comment><![CDATA[ Raw encoder IO for INT (EL5072 LVDT)]]></Comment>
+					<Type>DINT</Type>
+				</Var>
+				<Var>
+					<Name>NcAxis_GVL.testAxis.NcToPlc</Name>
+					<Type GUID="{25521FAA-EA5F-4C7F-8864-BBCCDACD2E98}" Namespace="MC">NCTOPLC_AXIS_REF</Type>
+				</Var>
 				<Var>
 					<Name>PRG_TEST.fbMotionInterlocksSync.bLimitForwardEnable</Name>
 					<Comment><![CDATA[ Hardware 
@@ -1040,29 +1076,6 @@ External Setpoint Generation:
 					<Name>PRG_TEST.fbMotionInterlocksSync.bHardwareEnable</Name>
 					<Comment><![CDATA[ NC STO Input: TRUE if ok to move]]></Comment>
 					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>NcAxis_GVL.testAxis.NcToPlc</Name>
-					<Type GUID="{25521FAA-EA5F-4C7F-8864-BBCCDACD2E98}" Namespace="MC">NCTOPLC_AXIS_REF</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderULINT</Name>
-					<Type>ULINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderUINT</Name>
-					<Comment><![CDATA[ Raw encoder IO for UINT (Relative Encoders)]]></Comment>
-					<Type>UINT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderINT</Name>
-					<Comment><![CDATA[ Raw encoder IO for INT (LVDT)]]></Comment>
-					<Type>INT</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderDINT</Name>
-					<Comment><![CDATA[ Raw encoder IO for INT (EL5072 LVDT)]]></Comment>
-					<Type>DINT</Type>
 				</Var>
 			</Vars>
 			<UnrestoredVarLinks ImportTime="2023-05-15T16:50:33">
@@ -1287,6 +1300,14 @@ External Setpoint Generation:
 			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 31">
 				<Link VarA="PlcTask Inputs^NcAxis_GVL.testAxis.NcToPlc" VarB="Outputs^ToPlc"/>
 				<Link VarA="PlcTask Outputs^NcAxis_GVL.testAxis.PlcToNc" VarB="Inputs^FromPlc"/>
+			</OwnerB>
+			<OwnerB Name="TIPC^Library^Library Instance">
+				<Link VarA="PlcTask Inputs^PRG_TEST.fbMotionInterlocksSync.bHardwareEnable" VarB="PlcTask Outputs^PRG_TEST.bHardEnable"/>
+				<Link VarA="PlcTask Inputs^PRG_TEST.fbMotionInterlocksSync.bLimitBackwardEnable" VarB="PlcTask Outputs^PRG_TEST.bLimitBwdEnable"/>
+				<Link VarA="PlcTask Inputs^PRG_TEST.fbMotionInterlocksSync.bLimitForwardEnable" VarB="PlcTask Outputs^PRG_TEST.bLimitFwdEnable"/>
+				<Link VarA="PlcTask Outputs^PRG_TEST.bHardEnable" VarB="PlcTask Inputs^PRG_TEST.fbMotionInterlocksSync.bHardwareEnable"/>
+				<Link VarA="PlcTask Outputs^PRG_TEST.bLimitBwdEnable" VarB="PlcTask Inputs^PRG_TEST.fbMotionInterlocksSync.bLimitBackwardEnable"/>
+				<Link VarA="PlcTask Outputs^PRG_TEST.bLimitFwdEnable" VarB="PlcTask Inputs^PRG_TEST.fbMotionInterlocksSync.bLimitForwardEnable"/>
 			</OwnerB>
 		</OwnerA>
 	</Mappings>

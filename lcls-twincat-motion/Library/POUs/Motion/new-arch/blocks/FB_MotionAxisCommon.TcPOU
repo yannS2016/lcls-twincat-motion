@@ -576,19 +576,6 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Property Name="Busy" Id="{dbe7370a-96f9-4293-8d7a-aa83479a93ec}">
-      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
-PROPERTY Busy : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{cf057b51-ea7a-4a6d-80b9-c1ff9ed546dd}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[Busy := bMoveBusy;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Method Name="CalibrateRawEncValue" Id="{1731f1b4-fc8d-48cd-81d7-d75b2a571773}">
       <Declaration><![CDATA[METHOD INTERNAL CalibrateRawEncValue
 ]]></Declaration>
@@ -1514,6 +1501,19 @@ END_VAR
           <ST><![CDATA[fMoveAbsoluteTargetVelocity := MoveAbsoluteTargetVelocity;]]></ST>
         </Implementation>
       </Set>
+    </Property>
+    <Property Name="MoveBusy" Id="{dbe7370a-96f9-4293-8d7a-aa83479a93ec}">
+      <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}
+PROPERTY MoveBusy : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{cf057b51-ea7a-4a6d-80b9-c1ff9ed546dd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MoveBusy := bMoveBusy;]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <Property Name="MoveDone" Id="{8918038f-10a4-43ec-a5f1-e6c676668826}">
       <Declaration><![CDATA[{attribute 'monitoring':= 'variable'}

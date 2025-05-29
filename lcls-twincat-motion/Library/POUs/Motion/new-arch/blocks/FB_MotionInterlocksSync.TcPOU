@@ -22,7 +22,7 @@ SUPER^.bHomeBusy :=  THIS^.MotionSyncPrivateRef.SyncPrvHomeBusy;
 SUPER^.bMoveBusy :=  THIS^.MotionSyncPrivateRef.SyncPrvMoveBusy;
 SUPER^.bMoveDone :=  THIS^.MotionSyncPrivateRef.SyncPrvMoveDone;
 SUPER^.bNewMoveReq :=  THIS^.MotionSyncPrivateRef.SyncPrvNewMoveReq;
-
+SUPER^.bEnable :=  THIS^.MotionSyncPrivateRef.bSyncPrvEnable;
 // Call based class body
 SUPER^();
 

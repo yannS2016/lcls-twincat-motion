@@ -6,7 +6,7 @@
 VAR
     // EPICS Interface
     stMotionEpicsItf : REFERENCE TO ST_MotionEpicsItf;
-    eMoveMode : E_MoveMode;
+    eMoveMode : E_EpicsMotorCmd;
     iMotionAxisCommon 	: I_MotionAxisCommon;
     {attribute 'hide'}
     iBrake 				: I_BrakeCommon;
@@ -114,12 +114,18 @@ IF THIS^.MotionSyncPrivateRef.SyncPrvRestoreDone THEN
     THIS^.MotionSyncPrivateRef.SyncPrvRestoreDone := FALSE;
 END_IF
 
-// catch generalised errors
-stMotionEpicsItf.bError := THIS^.MotionSyncPrivateRef.SyncPrvError;
-stMotionEpicsItf.nErrorId := THIS^.MotionSyncPrivateRef.SyncPrvErrorID;
-stMotionEpicsItf.sErrorMessage := THIS^.MotionSyncPrivateRef.SyncPrvErrorMessage;
+// catch high priority message
+// an extended error message from FB_MotionLogger will display cyclic errors and warning
+IF iMotionAxisCommon.Error THEN
+    stMotionEpicsItf.bError := iMotionAxisCommon.Error;
+    stMotionEpicsItf.nErrorId := iMotionAxisCommon.ErrorID;
+    stMotionEpicsItf.sErrorMessage := iMotionAxisCommon.ErrorMessage;
+ELSIF iMotionInterlocks.Error THEN
+    stMotionEpicsItf.bError := iMotionInterlocks.Error;
+    stMotionEpicsItf.nErrorId := iMotionInterlocks.ErrorID;
+    stMotionEpicsItf.sErrorMessage := iMotionInterlocks.ErrorMessage;
+END_IF
 
-(* Critical to inter FBs com, handle events and sync dependends FBs *)
 THIS^.PreMoveReq();
 
 //  Abort while moving if:
@@ -130,21 +136,16 @@ IF rtReset.Q OR rtLimitAbort.Q THEN
     stMotionEpicsItf.bExecute := FALSE;
 END_IF
 
+ftError(CLK:=stMotionEpicsItf.bError);
 rtTarget(CLK:=(iMotionAxisCommon.MoveDone AND bExecMove));
 rtHomed(CLK:=iMotionAxisCommon.MoveDone AND bExecHome);
-// this tell us that a move request was initiated and either completed or
-// was aborted.
 ftStopExec(CLK:=stMotionEpicsItf.bExecute);
-ftError(CLK:=stMotionEpicsItf.bError);
-// Halt is always a user stop.
 
-THIS^.bHalt := ftStopExec.Q AND NOT stMotionEpicsItf.bReset AND NOT iMotionInterlocks.LimHit;
-iMotionAxisCommon.CommandedHalt := THIS^.bHalt  AND ((iMotionAxisCommon.MoveAbsoluteBusy AND (nCommandLocal=3))
-                                                  OR (iMotionAxisCommon.HomeBusy AND (nCommandLocal=10)));
 // Drive state Machine here
  CASE eMoveState OF
     E_MoveState.IDLING:;
-        // Delay the disable until we reach standstill, else brake issues or other race conditions
+        // Delay the disable until axis reach standstill
+        // and this state machine is idling
         IF THIS^.bPrepareDisable AND ( THIS^.iMotionAxisCommon.AxisState = MC_AXISSTATE_STANDSTILL ) THEN
             THIS^.bPrepareDisable := FALSE;
             THIS^.stMotionEpicsItf.bEnable := FALSE;
@@ -164,13 +165,10 @@ iMotionAxisCommon.CommandedHalt := THIS^.bHalt  AND ((iMotionAxisCommon.MoveAbso
         stMotionEpicsItf.sErrorMessage := '';
         CASE stMotionEpicsItf.nCommand OF
             E_EpicsMotorCmd.MOVE_ABSOLUTE:
-                MotionSyncPrivateRef.SyncPrvMoveMode := E_EpicsMotorCmd.MOVE_ABSOLUTE;
+                eMoveMode := E_EpicsMotorCmd.MOVE_ABSOLUTE;
                 bCmdExecute := bExecMove AND (nCommandLocal=3);
-            E_EpicsMotorCmd.MOVE_RELATIVE:
-                MotionSyncPrivateRef.SyncPrvMoveMode := E_EpicsMotorCmd.MOVE_RELATIVE;
-                bCmdExecute := bExecMove AND (nCommandLocal=2);
             E_EpicsMotorCmd.HOME:
-                MotionSyncPrivateRef.SyncPrvMoveMode := E_EpicsMotorCmd.HOME;
+                eMoveMode := E_EpicsMotorCmd.HOME;
                 bCmdExecute := nCommandLocal=10 AND bExecHome;
         END_CASE
 
@@ -180,27 +178,20 @@ iMotionAxisCommon.CommandedHalt := THIS^.bHalt  AND ((iMotionAxisCommon.MoveAbso
             iMotionAxisCommon.MoveAbsoluteTargetAcceleration := stMotionEpicsItf.fAcceleration;
             iMotionAxisCommon.MoveAbsoluteTargetDeceleration := stMotionEpicsItf.fDeceleration;
         END_IF
-        //send start notification to MotionAxis
-        THIS^.MotionSyncPrivateRef.SyncPrvStart := TRUE;
-        THIS^.MotionSyncPrivateRef.SyncPrvCmdExecute := bCmdExecute;
-        eMoveState := E_MoveState.START_MOVE;
-
-    E_MoveState.START_MOVE:
-        // post request check:
-        // DS402 set/Reset mode of operation and Set bMoveAbsolute or bMoveHome
-        // NC: Set bMoveAbsolute or bMoveHome
-
-        IF stMotionEpicsItf.bError THEN
-            //THIS^.MotionSyncPrivateRef.SyncPrvStart := FALSE;
-            eMoveState := E_MoveState.MOVE_ERROR;
-        ELSIF NOT bInitStart THEN
-            //THIS^.MotionSyncPrivateRef.SyncPrvStart := TRUE;
-            bInitStart := TRUE;
-        ELSIF ftLocalStart.Q THEN
+        // configure and start move.
+        IF iMotionAxisCommon.StartMove( eMoveMode, bCmdExecute ) THEN
             eMoveState := E_MoveState.MOVE_IN_PROGRESS;
         END_IF
-       // ftLocalStart (CLK:=THIS^.MotionSyncPrivateRef.SyncPrvStart);
-    E_MoveState.MOVE_IN_PROGRESS :;
+
+    E_MoveState.START_MOVE:
+        IF stMotionEpicsItf.bError THEN
+            eMoveState := E_MoveState.MOVE_ERROR;
+        // Move Started.
+        ELSIF iMotionAxisCommon.MoveBusy THEN
+            eMoveState := E_MoveState.MOVE_IN_PROGRESS;
+        END_IF
+
+    E_MoveState.MOVE_IN_PROGRESS :
 
         IF 	stMotionEpicsItf.bError THEN
             eMoveState := E_MoveState.MOVE_ERROR;
@@ -214,9 +205,7 @@ iMotionAxisCommon.CommandedHalt := THIS^.bHalt  AND ((iMotionAxisCommon.MoveAbso
         END_IF
 
     E_MoveState.MOVE_INTERRUPTED:
-        // AbortDone: wait for halt or reset abort to complete
-        // LimHit: while moving immediately completed the mvoe with a warning
-        // LimHit : while idling latch in this state till a reset is issue.
+
         IF THIS^.iMotionInterlocks.LimHitMoving THEN
             eMoveState := E_MoveState.TARGET_REACHED;
         END_IF
@@ -241,6 +230,11 @@ iMotionAxisCommon.CommandedHalt := THIS^.bHalt  AND ((iMotionAxisCommon.MoveAbso
 
 END_CASE
 
+// Halt is always a user stop but not a limit hit or reset.
+THIS^.bHalt := ftStopExec.Q AND NOT stMotionEpicsItf.bReset AND NOT iMotionInterlocks.LimHit;
+iMotionAxisCommon.CommandedHalt := THIS^.bHalt  AND ((iMotionAxisCommon.MoveAbsoluteBusy AND (nCommandLocal=3))
+                                                  OR (iMotionAxisCommon.HomeBusy AND (nCommandLocal=10)));
+
 // Move done, or aborted? prepare disable.
 // we'll wait for axis to be in standstill and this state machine to be idling.
 THIS^.bPrepareDisable S= (nEnableMode = E_StageEnableMode.DURING_MOTION ) AND THIS^.ftStopExec.Q;
@@ -253,19 +247,24 @@ IF THIS^.stMotionEpicsItf.bReset THEN
 END_IF
 
 // When reset is done axis is standstill
-// we safe to remove power
+// safe to remove power
 IF iMotionAxisCommon.ResetDone THEN
     THIS^.stMotionEpicsItf.bEnable := FALSE;
 END_IF
 
-// Get a valid start response: wait for iMotionAxisCommon to reset this bit.
-ftLocalStart(CLK:=THIS^.MotionSyncPrivateRef.SyncPrvStart);
 
 // update EPICS status
 THIS^.UpdateEpicsStatus();
 
-// Post Move processing
-THIS^.PostMoveReq();]]></ST>
+
+// These define the interface between FB_MotionDrive and FB_MotionInterlocks:
+// all properties participating in these exchanges are hidden from user apps.
+THIS^.MotionSyncPrivateRef.SyncPrvNewMoveReq := bNewMoveReq;
+THIS^.MotionSyncPrivateRef.SyncPrvExec := stMotionEpicsItf.bExecute;
+// Propagate the validated command for other synced FB use
+THIS^.MotionSyncPrivateRef.SyncPrvExecHome := bExecHome;
+THIS^.MotionSyncPrivateRef.SyncPrvExecMove := bExecMove;
+THIS^.MotionSyncPrivateRef.SyncPrvEnable := stMotionEpicsItf.bEnable;]]></ST>
     </Implementation>
     <Method Name="ClearVars" Id="{f1592abc-f575-4d24-88ea-967cd68d3de0}">
       <Declaration><![CDATA[METHOD ClearVars
@@ -405,12 +404,13 @@ END_IF
 rtUserExec(CLK:=stMotionEpicsItf.bExecute);
 // if a Move/Home Goal is comfirmed and there is no persistant
 // error conditions, then we have a valid move request.
-bNewMoveReq S= rtUserExec.Q AND NOT iMotionAxisCommon.Busy;
+bNewMoveReq S= rtUserExec.Q AND NOT iMotionAxisCommon.MoveBusy;
 // this Move request is valid till an error occurs or the currently move is done
 bNewMoveReq R= NOT stMotionEpicsItf.bExecute OR stMotionEpicsItf.bError;
 bPrepareDisable R= bNewMoveReq;
 // We need the interlock ready flag before we can enable power
 // this will will be set if no error and a new move request was issued
+// ToDo: add a warning message after a time out if this not set
 rtNewMoveReq(CLK:=bNewMoveReq AND THIS^.iMotionInterlocks.InterlockOk);
 
 rtEnableMode(CLK:=(nEnableMode = E_StageEnableMode.DURING_MOTION));
@@ -475,7 +475,7 @@ stMotionEpicsItf.stAxisStatus.fActDiff:=iMotionAxisCommon.MeasuredPositionDiff;
 stMotionEpicsItf.stAxisStatus.fActPosition:=iMotionAxisCommon.MeasuredPosition;
 stMotionEpicsItf.stAxisStatus.fActVelocity:=iMotionAxisCommon.MeasuredVelocity;
 stMotionEpicsItf.stAxisStatus.fOverride:=iMotionAxisCommon.PowerOverride;
-stMotionEpicsItf.stAxisStatus.bBusy:=iMotionAxisCommon.Busy;
+stMotionEpicsItf.stAxisStatus.bBusy:=iMotionAxisCommon.MoveBusy;
 stMotionEpicsItf.stAxisStatus.bHomed:=iMotionAxisCommon.MoveDone;
 //stMotionEpicsInterface.stAxisStatus.bJogBwd:=bJogBwd;
 //stMotionEpicsInterface.stAxisStatus.bJogFwd:=bJogFwd;
