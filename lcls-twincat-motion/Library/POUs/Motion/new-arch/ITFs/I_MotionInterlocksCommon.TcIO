@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <Itf Name="I_MotionInterlocksCommon" Id="{7ac89254-d732-4980-b014-871a72f21fa7}">
+    <Declaration><![CDATA[INTERFACE I_MotionInterlocksCommon
+]]></Declaration>
+    <Property Name="AllBackwardEnabled" Id="{44fa7548-c01f-4da3-a333-2275934d3112}">
+      <Declaration><![CDATA[PROPERTY AllBackwardEnabled : BOOL]]></Declaration>
+      <Get Name="Get" Id="{8e243d13-164d-4d5d-8112-387f3a8b0fca}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="AllEnabled" Id="{4d69c415-64ae-45e5-8741-9ee750fa41cf}">
+      <Declaration><![CDATA[PROPERTY AllEnabled : BOOL]]></Declaration>
+      <Get Name="Get" Id="{09b8b64d-72b0-467d-b693-fa3e229ceb18}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="AllForwardEnabled" Id="{3ce5ac2e-1c09-4fd1-941c-2cbe06026596}">
+      <Declaration><![CDATA[PROPERTY AllForwardEnabled : BOOL]]></Declaration>
+      <Get Name="Get" Id="{8ac731aa-4431-4ad2-aad0-76448e67d881}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="Error" Id="{e7bf6778-c6b9-4c5a-b105-4d2a2c94dadc}">
+      <Declaration><![CDATA[PROPERTY Error : BOOL]]></Declaration>
+      <Get Name="Get" Id="{e4d10e81-4cda-4fea-b6c9-9cbe365e367c}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="ErrorID" Id="{052a5e61-bd0b-473b-8c73-0685a48edd45}">
+      <Declaration><![CDATA[PROPERTY ErrorID : UDINT]]></Declaration>
+      <Get Name="Get" Id="{f9a6101a-75a4-46b6-a241-3924343635ff}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="InterlockOk" Id="{1f6b357a-4433-42e5-8fa2-bf574bca239f}">
+      <Declaration><![CDATA[PROPERTY InterlockOk : BOOL]]></Declaration>
+      <Get Name="Get" Id="{9855daed-54fd-4c0d-8687-1dc62a376c17}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimBwdEnable" Id="{4f071531-664b-43fb-9b98-46ce706701d6}">
+      <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{9187b4a7-a42c-4364-a237-fe27d1b092b0}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimFwdEnable" Id="{63378470-96d4-47b7-a381-4d50609bb5a2}">
+      <Declaration><![CDATA[PROPERTY LimFwdEnable : BOOL]]></Declaration>
+      <Get Name="Get" Id="{13bb15a4-f20a-4eed-b421-340a7c7204a2}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimHit" Id="{00f31b83-20b0-4e18-bb57-b84a58adcd1b}">
+      <Declaration><![CDATA[PROPERTY LimHit : BOOL]]></Declaration>
+      <Get Name="Get" Id="{dc48a399-6ef3-4f49-9589-4858181b8029}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimHitIdling" Id="{a9898372-986c-4ee4-bc98-43640fd003f2}">
+      <Declaration><![CDATA[PROPERTY LimHitIdling : BOOL]]></Declaration>
+      <Get Name="Get" Id="{d9233391-3505-4407-ade5-ca790ab05516}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimHitMoving" Id="{12768a8b-8e2d-462d-ac59-05ed276cdf42}">
+      <Declaration><![CDATA[PROPERTY LimHitMoving : BOOL]]></Declaration>
+      <Get Name="Get" Id="{f40fa498-6562-48ff-8455-7f34f6bbcf01}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="LimHome" Id="{43b3c4e0-2529-4ca2-94b6-01308791bd0f}">
+      <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
+      <Get Name="Get" Id="{fa4d37b3-5d02-4b73-968e-4a37c39a113f}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="WarnID" Id="{be859d4c-20b0-48fc-90e8-64961601a870}">
+      <Declaration><![CDATA[PROPERTY WarnID : UINT
+]]></Declaration>
+      <Get Name="Get" Id="{aff35a25-4efa-4678-8127-c8619732e505}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="WarningMsg" Id="{bf7b81d5-c154-46fb-b50d-9188e5c9721a}">
+      <Declaration><![CDATA[PROPERTY WarningMsg : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{904bcd85-b16b-4196-9319-f47b5feeb0d9}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+  </Itf>
+</TcPlcObject>

@@ -1,0 +1,422 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_MotionInterlocksCommon" Id="{875748a6-e3b4-4780-a711-0e1eb4182bc0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionInterlocksCommon IMPLEMENTS I_MotionInterlocksCommon
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    {attribute 'hide'}
+    iMotionLogger 		: I_MotionLogger;
+    (* Hardware *)
+   // NC Forward Limit Switch: TRUE if ok to move
+    bLimitForwardEnable AT %I*: BOOL;
+    // NC Backward Limit Switch: TRUE if ok to move
+    bLimitBackwardEnable AT %I*: BOOL;
+    // NO Home Switch: TRUE if at home
+    bHome AT %I*: BOOL;
+   (* Psuedo-hardware *)
+    // Forward enable EPS summary
+    {attribute 'hide'}
+    bAllForwardEnabled: BOOL:=FALSE;
+    // Backward enable EPS summary
+    {attribute 'hide'}
+    bAllBackwardEnabled: BOOL:=FALSE;
+    {attribute 'hide'}
+    // Enable EPS summary encapsulating emergency stop button and any additional motion preventive hardware
+    {attribute 'hide'}
+    bAllEnabled: BOOL:=FALSE;
+    // Forward virtual gantry limit switch
+    bGantryForwardEnable: BOOL:=FALSE;
+    // Backward virtual gantry limit switch
+    bGantryBackwardEnable: BOOL:=FALSE;
+    // Set true to activate gantry EPS
+    bGantryAxis: BOOL:=FALSE;
+   // If TRUE, we want to enable the motor independently of PMPS or other safety systems.
+    bPowerSelf: BOOL:=FALSE;
+    // Determines our encoder homing strategy
+    nHomingMode: E_EpicsHomeCmd:=E_EpicsHomeCmd.NONE;
+    // TRUE if we have safety permission to move
+    bSafetyReady: BOOL;
+    // TRUE if done enabling
+    bEnableDone: BOOL;
+
+   // NC STO Input: TRUE if ok to move
+    {attribute 'pytmc' := '
+        pv: PLC:bHardwareEnable
+        io: i
+        field: ZNAM FALSE
+        field: ONAM TRUE
+        field: DESC TRUE if STO not hit
+    '}
+    bHardwareEnable AT %I*: BOOL ;
+
+    // Forward Enable EPS struct
+    {attribute 'pytmc' := '
+        pv: PLC:stEPSF
+        io: i
+        field: DESC Forward Enable Interlocks
+    '}
+    stEPSForwardEnable: DUT_EPS;
+    // Backward Enable EPS struct
+    {attribute 'pytmc' := '
+        pv: PLC:stEPSB
+        io: i
+        field: DESC Backward Enable Interlocks
+    '}
+    stEPSBackwardEnable: DUT_EPS;
+    // Power Enable EPS struct
+    {attribute 'pytmc' := '
+        pv: PLC:stEPSP
+        io: i
+        field: DESC Power Interlocks
+    '}
+    stEPSPowerEnable: DUT_EPS;
+
+    // Used by the IOC to disable an axis
+    {attribute 'pytmc' := '
+        pv: PLC:bUserEnable
+        io: io
+        field: ZNAM DISABLE
+        field: ONAM ENABLE
+        field: DESC Used to disable power entirely for an axis
+    '}
+    bUserEnable: BOOL := TRUE;
+    {attribute 'hide'}
+    bLimOverride : BOOL;
+    {attribute 'hide'}
+    bSoftInterlock : BOOL;
+    {attribute 'hide'}
+    bHomeBusy : BOOL;
+    {attribute 'hide'}
+    bMoveBusy	: BOOL;
+    {attribute 'hide'}
+    bNewMoveReq	: BOOL;
+    {attribute 'hide'}
+    bEnable: BOOL;
+    {attribute 'hide'}
+    bExecute : BOOL;
+    {attribute 'hide'}
+    bEPSOk : BOOL;
+    {attribute 'hide'}
+    sWarningMsg : STRING;
+    {attribute 'hide'}
+    bWarning : BOOL;
+    {attribute 'hide'}
+    nErpicsWarnId : UINT;
+    {attribute 'hide'}
+    bError : BOOL;
+    {attribute 'hide'}
+    bReset : BOOL;
+    {attribute 'hide'}
+    bLimHit : BOOL;
+    {attribute 'hide'}
+    bMoveDone : BOOL;
+    {attribute 'hide'}
+    eAxisState	: MC_AxisStates;
+    {attribute 'hide'}
+    ftForwardEnabled : F_TRIG;
+    {attribute 'hide'}
+    ftBackwardEnabled : F_TRIG;
+    rtUserExec : R_TRIG;
+     nErrorID: UDINT;
+     bInterlockOk : BOOL;
+     rtDone : R_TRIG;
+    rtError : R_TRIG;
+    ftError : F_TRIG;
+    bLimHitIdling : BOOL;
+    bLimHitMoving : BOOL;
+    bStandStill	  : BOOL;
+    rtStandStill : R_TRIG;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND stEPSForwardEnable.bEPS_OK;
+bAllForwardEnabled := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGantryAxis) AND stEPSBackwardEnable.bEPS_OK;
+/////////////////////////////////////////////////////////////////////////////
+// SoftInterlock is a user defined interloc logic active high
+/////////////////////////////////////////////////////////////////////////////
+bAllEnabled := bEnable AND bHardwareEnable AND stEPSPowerEnable.bEPS_OK AND NOT bSoftInterlock;
+bAllEnabled R= NOT bUserEnable OR bSoftInterlock;
+// Moves are automatically allowed if no safety hooks. Otherwise, some other code will set this.
+bSafetyReady S= bPowerSelf;
+// This tell the other block in seq processing to wait on interlock to do an intial check
+// before they can proceed. checking error only is not enough.
+rtUserExec (CLK:=bNewMoveReq);
+
+IF rtUserExec.Q AND NOT bError AND NOT bUserEnable THEN
+    bError := TRUE;
+    nErrorID:= 1;
+    bInterlockOk := FALSE;
+    sWarningMsg := 'Warning: Move requested, but user enable is disabled!';
+END_IF
+
+ftForwardEnabled(CLK:=bAllForwardEnabled);
+ftBackwardEnabled(CLK:=bAllBackwardEnabled);
+
+IF NOT bHomeBusy AND  (ftForwardEnabled.Q OR ftBackwardEnabled.Q) THEN
+    // Not an error, just a warning
+    IF NOT bAllForwardEnabled THEN
+        sWarningMsg:='Cannot move past positive limit.';
+    ELSIF NOT bAllBackwardEnabled THEN
+        sWarningMsg:='Cannot move past Negative limit.';
+    END_IF
+    bWarning := TRUE;
+    bLimHit := TRUE;
+    bLimHitMoving := TRUE;
+    // will serve later
+    bLimOverride := TRUE;
+END_IF
+
+// If a new Move request is issue, test the state of limit switches.
+IF rtUserExec.Q  THEN
+    IF NOT bAllForwardEnabled OR NOT bAllBackwardEnabled THEN
+        bWarning := TRUE;
+        bLimHit := TRUE;
+        bLimHitIdling := TRUE;
+        sWarningMsg:='Warning: Positive or Negative limit engaged!';
+    ELSE
+        bLimHit := FALSE;
+        bLimHitMoving := bLimHit;
+        bLimHitIdling := bLimHit;
+        sWarningMsg := '';
+    END_IF
+END_IF
+
+// other synced block wait on this signal to valid new move requests.
+bInterlockOk S=  NOT bWarning AND NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
+bInterlockOk R=  bWarning OR bError OR rtDone.Q OR NOT bAllBackwardEnabled OR NOT bAllForwardEnabled;
+
+// react to external reset
+// rtDone(CLK:=bMoveDone);
+// IF bReset OR rtDone.Q THEN
+//     bLimOverride := FALSE;
+//     bInterlockOk := FALSE;
+//     bLimHit := FALSE;
+//     bLimHitMoving := bLimHit;
+//     bLimHitIdling := bLimHit;
+// END_IF
+//
+// // Latch the warning message till reset.
+// IF  bReset THEN
+//     bReset := FALSE;
+//     bError := FALSE;
+//     bWarning := FALSE;
+//     sWarningMsg:='';
+// END_IF
+
+IF bReset THEN
+    bReset := FALSE;
+    bError := FALSE;
+    bWarning := FALSE;
+    bLimOverride := FALSE;
+    bInterlockOk := FALSE;
+    bLimHit := FALSE;
+    bLimHitMoving := bLimHit;
+    bLimHitIdling := bLimHit;
+    sWarningMsg:='';
+END_IF
+
+rtError(CLK:=bError OR bWarning);
+ftError(CLK:=bError);
+]]></ST>
+    </Implementation>
+    <Property Name="AllBackwardEnabled" Id="{418fcf62-072d-4be6-9a52-23305e127201}">
+      <Declaration><![CDATA[PROPERTY AllBackwardEnabled : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{55a054b8-413b-4eb9-bcde-040b97b12037}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[AllBackwardEnabled  := bAllBackwardEnabled ;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="AllEnabled" Id="{b8e0c844-5e14-430a-80f0-4b68fea05847}">
+      <Declaration><![CDATA[PROPERTY AllEnabled : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{6ea43e2c-0382-4571-9cfc-7bb729ee79e3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[AllEnabled := bAllEnabled;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="AllForwardEnabled" Id="{2f7747e3-44e7-42e0-9a1c-83d2d1a76054}">
+      <Declaration><![CDATA[PROPERTY AllForwardEnabled : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{1ca1d849-7776-4ef6-9a28-190e986cc112}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[AllForwardEnabled  := bAllForwardEnabled ;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="Error" Id="{e79b16e8-e05d-409e-8cb0-eec460629a0c}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Error : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{718208c9-4347-494f-aa19-485067ff53bb}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="ErrorID" Id="{93eec656-4efc-420b-bf5f-8fa3bf03d7ab}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY ErrorID : UDINT
+]]></Declaration>
+      <Get Name="Get" Id="{b8463f11-f873-4ec0-a662-40d8b9f3e374}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="FB_Init" Id="{84019423-7ce0-4649-83b3-d87beaa3ba25}">
+      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
+//The return value is not evaluated. For a specific influence, you can also declare the
+//methods explicitly and provide additional code there with the standard initialization
+//code. You can evaluate the return value.
+METHOD FB_Init: BOOL
+VAR_INPUT
+    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+    iMotionLogger 		: I_MotionLogger;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.iMotionLogger := iMotionLogger;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="InterlockOk" Id="{087dfb34-9366-42ef-aed0-104efe23e3e8}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY InterlockOk : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{67a6e044-516c-40e2-9981-fc01183c6b39}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[InterlockOk  := bInterlockOk ;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimBwdEnable" Id="{ab74ce54-8975-47c7-8b0e-4ed78f861a4e}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY LimBwdEnable : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{f8b2b3f0-7813-49b7-803e-6b4f8c5c1262}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimFwdEnable" Id="{a777cdc7-8831-459c-8cd1-cec146bdfe16}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY LimFwdEnable : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{1953f4e8-8125-4bde-840f-2fa9614fd586}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimHit" Id="{42c9b53e-e670-4408-8538-d34ff8b98535}">
+      <Declaration><![CDATA[PROPERTY LimHit : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{a3588f8d-5778-455b-960b-1464f8c08488}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[LimHit := bLimHit;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimHitIdling" Id="{2ce259a6-fefe-42d9-98e2-e01147ada529}">
+      <Declaration><![CDATA[PROPERTY LimHitIdling : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{7fe9ffa2-060e-4e06-8854-f5eb0a3faf00}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[LimHitIdling := bLimHitIdling;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimHitMoving" Id="{97b5145c-c944-48d3-a772-fa690e5daf7e}">
+      <Declaration><![CDATA[PROPERTY LimHitMoving : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{cc60a310-154d-43a9-a2b0-881d2bb61477}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[LimHitMoving := bLimHitMoving;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="LimHome" Id="{98a7960f-d5b5-4afa-a6d4-836668115fc2}">
+      <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
+      <Get Name="Get" Id="{f1ca984e-77a2-439a-be50-7890b12815a4}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{390937c7-0fb9-46a6-a140-1f6dc26be67b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="WarnID" Id="{5598e3c0-c025-4591-a33e-0591f1851621}">
+      <Declaration><![CDATA[PROPERTY WarnID : UINT
+]]></Declaration>
+      <Get Name="Get" Id="{37a33505-3c15-43ab-b9e2-da7fe440eb0c}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[WarnID  := nErpicsWarnId;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="WarningMsg" Id="{c58a222e-888c-449d-acb8-7036a45dc5e8}">
+      <Declaration><![CDATA[PROPERTY WarningMsg : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{c813683b-22cc-422c-89ed-ba893df5d926}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[WarningMsg := sWarningMsg;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+  </POU>
+</TcPlcObject>

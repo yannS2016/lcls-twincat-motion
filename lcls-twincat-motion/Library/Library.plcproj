@@ -18,7 +18,7 @@
     <Company>SLAC</Company>
     <Released>false</Released>
     <Title>lcls-twincat-motion</Title>
-    <ProjectVersion>2.1.2</ProjectVersion>
+    <ProjectVersion>2.1.3</ProjectVersion>
     <WriteProductVersion>false</WriteProductVersion>
     <AllowChecksForLibrary>false</AllowChecksForLibrary>
     <POUsForPropertyAccessIncluded>false</POUsForPropertyAccessIncluded>
@@ -110,6 +110,15 @@
     <Compile Include="DUTs\Deprecated\ENUM_StatePMPSStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DUTs\E_DS402HomingMethod.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\E_DS402OpMode.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\ST_DS402DriveStatus.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DUTs\E_HomeStates.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -141,6 +150,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\ST_MotionEpicsInterface.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\ST_DS402Drive.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\ST_PositionState.TcDUT">
@@ -295,19 +307,34 @@
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_Brake.TcPOU">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_BrakeCommon.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisCommon.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisDS402.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisDS402NCSync.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisNC.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisNCSync.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisDS402NC.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionDrive.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocks.TcPOU">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocksCommon.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocksSync.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionLogger.TcPOU">
@@ -319,10 +346,16 @@
     <Compile Include="POUs\Motion\new-arch\blocks\FB_PersistentDataStorage.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_DS402DriveCommon.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_PneumaticAxis.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\ITFs\I_Brake.TcIO">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_BrakeSync.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_BrakeCommon.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionAxis.TcIO">
@@ -337,13 +370,16 @@
     <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionDrive.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionInterlocks.TcIO">
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionInterlocksCommon.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionLogger.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\ITFs\I_PersistentDataStorage.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_DS402DriveCommon.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\PMPS\FB_EncErrorFFO.TcPOU">

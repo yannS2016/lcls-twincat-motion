@@ -6,12 +6,12 @@
 VAR
     // EPICS Interface
     stMotionEpicsItf : REFERENCE TO ST_MotionEpicsItf;
-
-    iMotionAxisCommon 		: I_MotionAxisCommon;
+    eMoveMode : E_MoveMode;
+    iMotionAxisCommon 	: I_MotionAxisCommon;
     {attribute 'hide'}
-    iBrake 				: I_Brake;
+    iBrake 				: I_BrakeCommon;
     {attribute 'hide'}
-    iMotionInterlocks	: I_MotionInterlocks;
+    iMotionInterlocks	: I_MotionInterlocksCommon;
     {attribute 'hide'}
     iMotionLogger 		: I_MotionLogger;
     {attribute 'hide'}
@@ -285,19 +285,6 @@ THIS^.binitStart := FALSE;
 THIS^.bCmdExecute := FALSE;]]></ST>
       </Implementation>
     </Method>
-    <Property Name="EnableDone" Id="{38a20af0-a3ec-4d49-9fb9-22ab43b13bac}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY EnableDone : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{9f3d8d03-a2d2-4116-a02c-52278d428c1e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Property Name="EnableMode" Id="{b0611f43-0b6f-494c-896b-8021bef9e4d4}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY EnableMode : E_StageEnableMode
@@ -330,8 +317,8 @@ VAR_INPUT
     bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
     //Declaration
     iMotionAxisCommon: I_MotionAxisCommon;
-    iBrake : I_Brake;
-    iMotionInterlocks : I_MotionInterlocks;
+    iBrake : I_BrakeCommon;
+    iMotionInterlocks : I_MotionInterlocksCommon;
     iMotionLogger : I_MotionLogger;
     stMotionEpicsItf : REFERENCE TO ST_MotionEpicsItf;
     MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
@@ -348,19 +335,6 @@ THIS^.MotionSyncPrivateRef REF= MotionSyncPrivateRef;
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="LocalExec" Id="{d9de2c79-3096-4636-879e-808139f97d91}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY LocalExec : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{c22d0951-96bd-4c53-ade3-b80505947ee2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Property Name="Name" Id="{2d9876f4-b697-4cac-84f8-82078aa58de7}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY Name : STRING
@@ -388,18 +362,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// // Handle auto-disable timing
-// THIS^.bPrepareDisable S= (nEnableMode = E_StageEnableMode.DURING_MOTION ) AND THIS^.ftStopExec.Q;
-// // Delay the disable until we reach standstill, else brake issues or other race conditions
-// IF THIS^.bPrepareDisable AND ( THIS^.iMotionAxisCommon.AxisState = MC_AXISSTATE_STANDSTILL ) THEN
-//     THIS^.bPrepareDisable := FALSE;
-//    // THIS^.stMotionEpicsItf.bEnable := FALSE;
-// END_IF
-//
-// IF THIS^.stMotionEpicsItf.bError THEN
-//     THIS^.stMotionEpicsItf.bEnable := FALSE;
-// END_IF
-
+        <ST><![CDATA[
 // These define the interface between FB_MotionDrive and FB_MotionInterlocks:// all properties participating in these exchanges are hidden from user apps.
 THIS^.MotionSyncPrivateRef.SyncPrvNewMoveReq := bNewMoveReq;
 THIS^.MotionSyncPrivateRef.SyncPrvExec := stMotionEpicsItf.bExecute;
@@ -448,7 +411,7 @@ bNewMoveReq R= NOT stMotionEpicsItf.bExecute OR stMotionEpicsItf.bError;
 bPrepareDisable R= bNewMoveReq;
 // We need the interlock ready flag before we can enable power
 // this will will be set if no error and a new move request was issued
-rtNewMoveReq(CLK:=bNewMoveReq AND THIS^.MotionSyncPrivateRef.SyncPrvInterlockOk);
+rtNewMoveReq(CLK:=bNewMoveReq AND THIS^.iMotionInterlocks.InterlockOk);
 
 rtEnableMode(CLK:=(nEnableMode = E_StageEnableMode.DURING_MOTION));
 // Handle auto-enable timing
@@ -461,7 +424,7 @@ CASE nEnableMode OF
         END_IF
         // Power interlock only enabled with a new move request
         IF rtNewMoveReq.Q THEN
-            stMotionEpicsItf.bEnable S= iMotionInterlocks.SafetyReady;
+            stMotionEpicsItf.bEnable S= bNewMoveReq (*iMotionInterlocks.SafetyReady*);
         END_IF
 END_CASE
 
@@ -475,7 +438,7 @@ CASE iMotionAxisCommon.AxisState OF
 END_CASE
 
 // This is the output interlock check used to allow the requested move
-bLocalExec:= stMotionEpicsItf.bExecute AND iMotionInterlocks.AllEnabled AND THIS^.bEnableDone AND iMotionInterlocks.SafetyReady;
+bLocalExec:= stMotionEpicsItf.bExecute AND iMotionInterlocks.AllEnabled AND THIS^.bEnableDone (*AND iMotionInterlocks.SafetyReady*);
 
 bExecHome:=THIS^.bLocalExec AND stMotionEpicsItf.nCommand = 10;
 bExecMove:=THIS^.bLocalExec AND NOT bExecHome;
@@ -491,19 +454,6 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="PrepareDisable" Id="{2aeb0d21-61be-4a28-b091-2a9bc9a82c1c}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY PrepareDisable : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{2bd22fbb-3d84-481e-9b60-e68657378c4e}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Method Name="UpdateEpicsStatus" Id="{4de2eb27-ad9f-4648-b7f6-c1750633f344}">
       <Declaration><![CDATA[METHOD INTERNAL UpdateEpicsStatus
 VAR_INPUT

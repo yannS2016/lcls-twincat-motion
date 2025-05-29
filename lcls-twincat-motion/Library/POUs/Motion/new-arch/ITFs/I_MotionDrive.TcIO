@@ -2,12 +2,6 @@
 <TcPlcObject Version="1.1.0.1">
   <Itf Name="I_MotionDrive" Id="{4f84f724-7938-4847-ac53-18866323f75e}">
     <Declaration><![CDATA[INTERFACE I_MotionDrive]]></Declaration>
-    <Property Name="EnableDone" Id="{f2d2f74b-7415-4ea0-8340-cc5a7fb4c649}">
-      <Declaration><![CDATA[PROPERTY EnableDone : BOOL]]></Declaration>
-      <Get Name="Get" Id="{2a482f56-07c2-47eb-b118-051cd2b9d33a}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
     <Property Name="EnableMode" Id="{a11604e5-8855-4fe5-9483-d83f51949d40}">
       <Declaration><![CDATA[PROPERTY EnableMode : E_StageEnableMode]]></Declaration>
       <Get Name="Get" Id="{fe8256e3-91a5-4246-b854-e9e12e84b160}">
@@ -17,12 +11,6 @@
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="LocalExec" Id="{e2d1e7c7-fd14-49f7-a2b9-fa5d2378a3e8}">
-      <Declaration><![CDATA[PROPERTY LocalExec : BOOL]]></Declaration>
-      <Get Name="Get" Id="{405f69ad-1f31-46b3-9531-bef5f11b8337}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
     <Property Name="Name" Id="{808bc845-b6e4-4963-ab8f-244d15a3cc40}">
       <Declaration><![CDATA[PROPERTY Name : STRING]]></Declaration>
       <Get Name="Get" Id="{eef700d5-67cb-4093-abd3-49b2850feb0c}">
@@ -31,12 +19,6 @@
       <Set Name="Set" Id="{a8ad97b6-7dbe-4ad8-a2ac-9e24c41ccebb}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
-    </Property>
-    <Property Name="PrepareDisable" Id="{06826ef8-4820-4e0e-99a8-95eabef50bc5}">
-      <Declaration><![CDATA[PROPERTY PrepareDisable : BOOL]]></Declaration>
-      <Get Name="Get" Id="{1218905d-5cb7-4bcc-84f4-3911642dcd18}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
     </Property>
   </Itf>
 </TcPlcObject>

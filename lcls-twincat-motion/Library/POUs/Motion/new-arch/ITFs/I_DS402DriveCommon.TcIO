@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <Itf Name="I_DS402DriveCommon" Id="{5cfa6b6b-bfba-4af4-97dd-dc8ae67741ad}">
+    <Declaration><![CDATA[INTERFACE I_DS402DriveCommon
+]]></Declaration>
+  </Itf>
+</TcPlcObject>

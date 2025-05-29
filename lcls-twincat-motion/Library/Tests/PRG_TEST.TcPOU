@@ -11,47 +11,57 @@ VAR
     iPersistentDataStorage:  I_PersistentDataStorage := fbPersistentDataStorage;
     //
     fbMotionSyncPrivate : FB_MotionSyncPrivate;
-     //Brakes : brake fb participate in sync comm with fbMotionDrive, fbMotionAxis and fbMotionInterlocks
-    fbBrake : FB_Brake := (MotionSyncPrivateRef:=fbMotionSyncPrivate, BrakeMode := E_StageBrakeMode.IF_MOVING);
-    iBrake : I_Brake := fbBrake;
 
-    fbMotionInterlocks: FB_MotionInterlocks ( iMotionLogger:=iMotionLogger) := ( MotionSyncPrivateRef:=fbMotionSyncPrivate, PowerSelf := TRUE, HardwareEnable:=TRUE);;
-    iMotionInterlocks : I_MotionInterlocks := fbMotionInterlocks;
-    bHardEnable : BOOL;
-    //
-    fbMotionAxisNC : FB_MotionAxisNC ( AxisRef:=NcAxis_GVL.testAxis,
-                                        iPersistentDataStorage :=iPersistentDataStorage,
-                                        iMotionLogger:=iMotionLogger):=( 	MotionSyncPrivate:=fbMotionSyncPrivate,
-                                                                            PowerOverride:=100.0,
-                                                                            HomePosition := 0.0,
-                                                                            HomeMode:=ENUM_EpicsHomeCmd.LOW_LIMIT,
-                                                                            Name:= 'Module1'
-                                                                        );
-    iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisNC;
+    //Brakes : brake fb participate in sync comm with fbMotionDrive, fbMotionAxis and fbMotionInterlocks
+    fbBrakeSync : FB_BrakeSync(MotionSyncPrivateRef:=fbMotionSyncPrivate) := (BrakeMode := E_StageBrakeMode.IF_MOVING);
+    iBrakeSync : I_BrakeCommon := fbBrakeSync;
+
+    fbMotionInterlocksSync: FB_MotionInterlocksSync ( iMotionLogger:=iMotionLogger, MotionSyncPrivateRef:=fbMotionSyncPrivate);
+    iMotionInterlocksSync : I_MotionInterlocksCommon := fbMotionInterlocksSync;
+
+    fbMotionAxisNCSync : FB_MotionAxisNCSync  ( AxisRef:=NcAxis_GVL.testAxis,
+                                                        iPersistentDataStorage :=iPersistentDataStorage,
+                                                        iMotionLogger:=iMotionLogger,
+                                                        MotionSyncPrivateRef:=fbMotionSyncPrivate ) := ( PowerOverride:=100.0,HomePosition := 0.0,HomeMode:=ENUM_EpicsHomeCmd.LOW_LIMIT, Name:= 'Module1');
+   iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisNCSync;
 
     M1 : ST_MotionEpicsItf := (sName:='Main Axis', fPosition:=10000.0, fVelocity:=50.0, fAcceleration:=50.0, fDeceleration:=50.0);
     fbMotionDrive: FB_MotionDrive ( stMotionEpicsItf := M1,
                                     MotionSyncPrivateRef := fbMotionSyncPrivate,
                                     iMotionAxisCommon:=iMotionAxisCommon,
-                                    iBrake:=iBrake,
-                                    iMotionInterlocks:=iMotionInterlocks,
+                                    iBrake:=iBrakeSync,
+                                    iMotionInterlocks:=iMotionInterlocksSync,
                                     iMotionLogger:=iMotionLogger,
                                     ) := (Name := 'SmarAct MCS2',  EnableMode:=ENUM_StageEnableMode.DURING_MOTION );
     iMotionDrive: I_MotionDrive := fbMotionDrive;
 
-// testing
-    bLimFwd : BOOL :=TRUE;
-    bLimBwd : BOOL :=TRUE;
+
+//     fbMotionAxisNC : FB_MotionAxisNC ( AxisRef:=NcAxis_GVL.testAxis,
+//                                         iPersistentDataStorage :=iPersistentDataStorage,
+//                                         iMotionLogger:=iMotionLogger):=( 	MotionSyncPrivate:=fbMotionSyncPrivate,
+//                                                                             PowerOverride:=100.0,
+//                                                                             HomePosition := 0.0,
+//                                                                             HomeMode:=ENUM_EpicsHomeCmd.LOW_LIMIT,
+//                                                                             Name:= 'Module1'
+//                                                                         );
+//     iMotionAxisCommon : I_MotionAxisCommon := fbMotionAxisNC;
+//
+
+//
+//
+//   bLimFwd  AT %Q*: BOOL := TRUE;
+//    // NC Backward Limit Switch: TRUE if ok to move
+//   bLimBwd  AT %Q*: BOOL := TRUE;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[iMotionInterlocks.LimBwdEnable := bLimBwd;
-iMotionInterlocks.LimFwdEnable := bLimFwd;
+      <ST><![CDATA[//iMotionInterlocks.LimBwdEnable := bLimBwd;
+//iMotionInterlocks.LimFwdEnable := bLimFwd;
 
-fbMotionInterlocks();
-fbMotionSyncPrivate();
-fbMotionAxisNC();
-fbMotionDrive();
+//fbMotionInterlocks();
+//fbMotionSyncPrivate();
+//fbMotionAxisNC();
+//fbMotionDrive();
 ]]></ST>
     </Implementation>
   </POU>

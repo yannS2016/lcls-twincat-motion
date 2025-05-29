@@ -1,7 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_MotionSyncPrivate" Id="{c8657e3e-5d0e-4fad-8966-c25217ba52eb}" SpecialFunc="None">
-    <Declaration><![CDATA[//{attribute 'hide_all_locals'}
+    <Declaration><![CDATA[(*
+    private sync block removes the needs for circular interfaces variable passing amongs dependant Fbs
+    that would otherwise lessen readability and complicate code scability and maintianing
+    This block adds needed encapsulation for passing private data in write mode.
+    it create a a communication buffer amongs synched function blocks; can also hold shareable feature implementation
+    thus limititing the needs for addtional interface instantiation.
+*)
+{attribute 'hide_all_locals'}
 FUNCTION_BLOCK FB_MotionSyncPrivate
 VAR_INPUT
 END_VAR
@@ -159,6 +166,43 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Method Name="SyncPrvAxisShareRead" Id="{f2860416-e42f-45e1-9d20-c49a4c2fcb7b}">
+      <Declaration><![CDATA[METHOD INTERNAL SyncPrvAxisShareRead : BOOL
+// add more as needed
+VAR_INPUT
+    AxisState : MC_AxisStates;
+    MoveBusy : BOOL;
+    HomeBusy : BOOL;
+    MoveDone : BOOL;
+    AbortDone : BOOL;
+END_VAR
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SyncPrvAxisShareWrite" Id="{977956b4-a644-4c8a-896b-b6a892853915}">
+      <Declaration><![CDATA[METHOD INTERNAL SyncPrvAxisShareWrite
+// add more as needed
+VAR_INPUT
+    AxisState : MC_AxisStates;
+    MoveBusy : BOOL;
+    HomeBusy : BOOL;
+    MoveDone : BOOL;
+    AbortDone : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// This is needed in the interlock and brake blocks (no ref to this block there)
+THIS^.SyncPrvAxisState := AxisState;
+THIS^.SyncPrvMoveBusy := MoveBusy;
+THIS^.SyncPrvHomeBusy := HomeBusy;
+THIS^.SyncPrvMoveDone := MoveDone;
+THIS^.SyncPrvAbortDone := AbortDone;
+]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="SyncPrvAxisState" Id="{60919b8b-a0ee-4b61-b888-5912d190160f}">
       <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvAxisState : MC_AxisStates]]></Declaration>
       <Get Name="Get" Id="{2a6fc420-bce2-4a3d-b8e7-0fc168de1ca2}">

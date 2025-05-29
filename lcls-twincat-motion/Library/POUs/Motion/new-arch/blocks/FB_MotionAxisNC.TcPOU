@@ -7,109 +7,105 @@ END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-    // cathc this from interlock block or send it to interlock block in fb_init or call_after_init
-    // catch limit status from motioninterlock block cyclic or just after execHome has pos edge.
-    fbHomeMcSetPos: MC_SetPosition;
-    fbHomeMcJog: MC_Jog;
-    rtHomeExec: R_TRIG;
-    ftHomeExec: F_TRIG;
-    nHomeStateMachine: E_HomeStates;
-    nHomeStateAfterStop: E_HomeStates;
-    nHomeMoves: INT;
-    bHomeFirstDir: BOOL;
-    bAtHome: BOOL;
-    bHomeMove: BOOL;
-    nHomeErrCount: INT;
+
 END_VAR
-VAR CONSTANT
-    (*
-        This is a simpler way of disabling the soft limits that ends up being really obvious if something has gone wrong.
-        If you turn the limits off/on, not only do you need to keep track of if you had soft limits set,
-        but you need to always restore this properly or risk some issue.
-        Instead, I set position to a ridiculous value that can always move forward or backward.
-        If this gets stuck for any reason it's very clear that something has gone wrong,
-        rather than a silent failure of the soft limit marks.
-    *)
-    FWD_START: LREAL := -99999999;
-    BWD_START: LREAL :=  99999999;
-END_VAR]]></Declaration>
+]]></Declaration>
     <Implementation>
-      <ST><![CDATA[SUPER^.PreCommon();
-
-THIS^.Home(THIS^.bCommandedMoveHome);
-
-SUPER^.PostCommon();]]></ST>
+      <ST><![CDATA[THIS^.HomeNC(THIS^.bCommandedMoveHome);
+// Call base class body
+SUPER^();
+]]></ST>
     </Implementation>
-    <Method Name="Home" Id="{33ae7160-6fd9-4351-881c-ff032354b4f0}">
-      <Declaration><![CDATA[METHOD Home
+    <Method Name="FB_Init" Id="{77133afc-c7e9-4d68-9e55-a5f682bc52af}">
+      <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
+The return value is not evaluated. For a specific influence, you can also declare the
+methods explicitly and provide additional code there with the standard initialization
+code. You can evaluate the return value.*)
+METHOD FB_Init : BOOL
+VAR_INPUT
+    (* TRUE: the retain variables are initialized (reset warm / reset cold)*)
+    bInitRetains	: BOOL;
+    (* TRUE: the instance will be copied to the copy code afterward (online change)*)
+    bInCopyCode	: BOOL;
+    AxisRef	: REFERENCE TO AXIS_REF;
+    iPersistentDataStorage	: I_PersistentDataStorage;
+    iMotionLogger : I_MotionLogger;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="HomeNC" Id="{33ae7160-6fd9-4351-881c-ff032354b4f0}">
+      <Declaration><![CDATA[METHOD HomeNC
 VAR_INPUT
     bExecute: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.fbHomeMcSetPos.Options.ClearPositionLag := TRUE;
-THIS^.rtHomeExec(CLK:=THIS^.bCommandedMoveHome);
-THIS^.ftHomeExec(CLK:=THIS^.bCommandedMoveHome);
-THIS^.rtHomeAborted(CLK:=THIS^.bInterrupted);
+        <ST><![CDATA[SUPER^.fbHomeMcSetPos.Options.ClearPositionLag := TRUE;
+SUPER^.rtHomeExec(CLK:=SUPER^.bCommandedMoveHome);
+SUPER^.ftHomeExec(CLK:=SUPER^.bCommandedMoveHome);
+SUPER^.rtHomeAborted(CLK:=SUPER^.bInterrupted);
 
-SUPER^.bHomeError R= NOT THIS^.bCommandedMoveHome;
+SUPER^.bHomeError R= NOT SUPER^.bCommandedMoveHome;
 IF NOT SUPER^.bHomeError THEN
     SUPER^.nHomeErrorID := 0;
 END_IF
 
-CASE THIS^.nHomeMode OF
+CASE SUPER^.nHomeMode OF
     E_EpicsHomeCmd.LOW_LIMIT:
-        THIS^.bHomeFirstDir := FALSE;
-        THIS^.bAtHome := NOT THIS^.bLimitBackwardEnable;
-        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
+        SUPER^.bHomeFirstDir := FALSE;
+        SUPER^.bAtHome := NOT SUPER^.bLimitBackwardEnable;
+        SUPER^.bHomeMove := SUPER^.bCommandedMoveHome;
     E_EpicsHomeCmd.HIGH_LIMIT:
-        THIS^.bHomeFirstDir := TRUE;
-        THIS^.bAtHome := NOT THIS^.bLimitForwardEnable;
-        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
+        SUPER^.bHomeFirstDir := TRUE;
+        SUPER^.bAtHome := NOT SUPER^.bLimitForwardEnable;
+        SUPER^.bHomeMove := SUPER^.bCommandedMoveHome;
     E_EpicsHomeCmd.HOME_VIA_LOW:
-        THIS^.bHomeFirstDir := FALSE;
-        THIS^.bAtHome := bHome;
-        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
+        SUPER^.bHomeFirstDir := FALSE;
+        SUPER^.bAtHome := bHome;
+        SUPER^.bHomeMove := SUPER^.bCommandedMoveHome;
     E_EpicsHomeCmd.HOME_VIA_HIGH:
-        THIS^.bHomeFirstDir := TRUE;
-        THIS^.bAtHome := THIS^.bHome;
-        THIS^.bHomeMove := THIS^.bCommandedMoveHome;
+        SUPER^.bHomeFirstDir := TRUE;
+        SUPER^.bAtHome := SUPER^.bHome;
+        SUPER^.bHomeMove := SUPER^.bCommandedMoveHome;
     E_EpicsHomeCmd.ABSOLUTE_SET:
-        THIS^.fbHomeMcSetPos(
+        SUPER^.fbHomeMcSetPos(
             Axis:=AxisRef,
-            Execute:=THIS^.bCommandedMoveHome,
+            Execute:=SUPER^.bCommandedMoveHome,
             // to review, this should come from EPICS Itf
             Position:=SUPER^.fHomePosition);
-        SUPER^.bHomeBusy := THIS^.rtHomeExec.Q;
-        SUPER^.bHomeDone := NOT THIS^.rtHomeExec.Q;
-        THIS^.bHomeMove := FALSE;
+        SUPER^.bHomeBusy := SUPER^.rtHomeExec.Q;
+        SUPER^.bHomeDone := NOT SUPER^.rtHomeExec.Q;
+        SUPER^.bHomeMove := FALSE;
     E_EpicsHomeCmd.NONE:
-        THIS^.bHomeMove := FALSE;
-        SUPER^.bHomeBusy := THIS^.rtHomeExec.Q;
-        SUPER^.bHomeDone := NOT THIS^.rtHomeExec.Q;
+        SUPER^.bHomeMove := FALSE;
+        SUPER^.bHomeBusy := SUPER^.rtHomeExec.Q;
+        SUPER^.bHomeDone := NOT SUPER^.rtHomeExec.Q;
     ELSE
-        THIS^.bHomeMove := FALSE;
+        SUPER^.bHomeMove := FALSE;
 END_CASE
 
-IF THIS^.bHomeMove THEN
-    IF THIS^.bHomeBusy AND THIS^.rtHomeAborted.Q THEN
-        THIS^.nHomeStateMachine := E_HomeStates.ERROR;
+IF SUPER^.bHomeMove THEN
+    IF SUPER^.bHomeBusy AND SUPER^.rtHomeAborted.Q THEN
+        SUPER^.nHomeStateMachine := E_HomeStates.ERROR;
         SUPER^.bHomeInterrupted := TRUE;
     END_IF
-    CASE THIS^.nHomeStateMachine OF
+    CASE SUPER^.nHomeStateMachine OF
         // Wait for a rising edge
         E_HomeStates.IDLE:
             SUPER^.bHomeBusy := FALSE;
-            THIS^.nHomeErrCount := 0;
-            THIS^.fbHomeMcSetPos(
+            SUPER^.nHomeErrCount := 0;
+            SUPER^.fbHomeMcSetPos(
                 Axis:=AxisRef,
                 Execute:=FALSE);
-            THIS^.fbHomeMcJog(
+            SUPER^.fbHomeMcJog(
                 Axis:=AxisRef,
                 JogForward:=FALSE,
                 JogBackwards:=FALSE);
-            IF THIS^.rtHomeExec.Q THEN
-                THIS^.nHomeStateMachine := E_HomeStates.NEXT_MOVE;
+            IF SUPER^.rtHomeExec.Q THEN
+                SUPER^.nHomeStateMachine := E_HomeStates.NEXT_MOVE;
                 nHomeMoves := 0;
                 SUPER^.bHomeDone := FALSE;
                 SUPER^.bHomeBusy := TRUE;
@@ -119,22 +115,22 @@ IF THIS^.bHomeMove THEN
             END_IF
         // Figure out whether to move forward, move backward, or give up
         E_HomeStates.NEXT_MOVE:
-            THIS^.fbHomeMcSetPos(
+            SUPER^.fbHomeMcSetPos(
                 Axis:=AxisRef,
                 Execute:=FALSE);
-            THIS^.fbHomeMcJog(
+            SUPER^.fbHomeMcJog(
                 Axis:=AxisRef,
                 JogForward:=FALSE,
                 JogBackwards:=FALSE);
             CASE nHomeMoves OF
                 0:
-                    IF THIS^.bHomeFirstDir THEN
+                    IF SUPER^.bHomeFirstDir THEN
                         nHomeStateAfterStop := E_HomeStates.CHECK_FWD;
                     ELSE
                         nHomeStateAfterStop := E_HomeStates.CHECK_BWD;
                     END_IF
                 1:
-                    IF NOT THIS^.bHomeFirstDir THEN
+                    IF NOT SUPER^.bHomeFirstDir THEN
                         nHomeStateAfterStop := E_HomeStates.CHECK_FWD;
                     ELSE
                         nHomeStateAfterStop := E_HomeStates.CHECK_BWD;
@@ -143,104 +139,104 @@ IF THIS^.bHomeMove THEN
                     nHomeStateAfterStop := E_HomeStates.ERROR;
             END_CASE
             nHomeMoves := nHomeMoves + 1;
-            IF THIS^.bAtHome THEN
+            IF SUPER^.bAtHome THEN
                 nHomeStateAfterStop := E_HomeStates.FINAL_MOVE;
             END_IF
-            THIS^.nHomeStateMachine := E_HomeStates.WAIT_STOP;
+            SUPER^.nHomeStateMachine := E_HomeStates.WAIT_STOP;
         // Move forward until we find the home signal or reach end of travel
         E_HomeStates.CHECK_FWD:
-            THIS^.fbHomeMcSetPos(
+            SUPER^.fbHomeMcSetPos(
                 Axis:=AxisRef,
                 Execute:=TRUE,
                 Position:=FWD_START);
-            THIS^.fbHomeMcJog(
+            SUPER^.fbHomeMcJog(
                 Axis:=AxisRef,
                 JogForward:=bLimitForwardEnable AND NOT bATHome,
                 JogBackwards:=FALSE,
                 Mode:=E_JogMode.MC_JOGMODE_CONTINOUS,
                 Velocity:=SUPER^.stAxisParameters.fRefVeloSearch);
-            IF NOT THIS^.fbHomeMcJog.JogForward THEN
-                THIS^.nHomeStateMachine := E_HomeStates.NEXT_MOVE;
-            ELSIF THIS^.fbHomeMcJog.Error THEN
-                THIS^.fbHomeMcJog(
+            IF NOT SUPER^.fbHomeMcJog.JogForward THEN
+                SUPER^.nHomeStateMachine := E_HomeStates.NEXT_MOVE;
+            ELSIF SUPER^.fbHomeMcJog.Error THEN
+                SUPER^.fbHomeMcJog(
                     Axis:=AxisRef,
                     JogForward:=FALSE,
                     JogBackwards:=FALSE);
-                THIS^.nHomeErrCount := THIS^.nHomeErrCount + 1;
-                IF THIS^.nHomeErrCount >= 3 THEN
-                    THIS^.nHomeStateMachine := E_HomeStates.ERROR;
+                SUPER^.nHomeErrCount := SUPER^.nHomeErrCount + 1;
+                IF SUPER^.nHomeErrCount >= 3 THEN
+                    SUPER^.nHomeStateMachine := E_HomeStates.ERROR;
                 END_IF
             END_IF
         // Move backward until we find the home signal or reach end of travel
         E_HomeStates.CHECK_BWD:
-            THIS^.fbHomeMcSetPos(
+            SUPER^.fbHomeMcSetPos(
                 Axis:=AxisRef,
                 Execute:=TRUE,
                 Position:=BWD_START);
-            THIS^.fbHomeMcJog(
+            SUPER^.fbHomeMcJog(
                 Axis:=AxisRef,
                 JogForward:=FALSE,
                 JogBackwards:=bLimitBackwardEnable AND NOT bAtHome,
                 Mode:=E_JogMode.MC_JOGMODE_CONTINOUS,
                 Velocity:=SUPER^.stAxisParameters.fRefVeloSearch);
-            IF NOT THIS^.fbHomeMcJog.JogBackwards THEN
-                THIS^.nHomeStateMachine := E_HomeStates.NEXT_MOVE;
-            ELSIF THIS^.fbHomeMcJog.Error THEN
-                THIS^.fbHomeMcJog(
+            IF NOT SUPER^.fbHomeMcJog.JogBackwards THEN
+                SUPER^.nHomeStateMachine := E_HomeStates.NEXT_MOVE;
+            ELSIF SUPER^.fbHomeMcJog.Error THEN
+                SUPER^.fbHomeMcJog(
                     Axis:=AxisRef,
                     JogForward:=FALSE,
                     JogBackwards:=FALSE);
-                THIS^.nHomeErrCount := THIS^.nHomeErrCount + 1;
-                IF THIS^.nHomeErrCount >= 3 THEN
-                    THIS^.nHomeStateMachine := E_HomeStates.ERROR;
+                SUPER^.nHomeErrCount := SUPER^.nHomeErrCount + 1;
+                IF SUPER^.nHomeErrCount >= 3 THEN
+                    SUPER^.nHomeStateMachine := E_HomeStates.ERROR;
                 END_IF
             END_IF
         // Set position to get within soft lims, move slowly off signal
         E_HomeStates.FINAL_MOVE:
-            THIS^.fbHomeMcSetPos(
+            SUPER^.fbHomeMcSetPos(
                 Axis:=AxisRef,
                 Execute:=TRUE,
                 Position:=SUPER^.fHomePosition);
-            IF THIS^.bAtHome THEN
-                THIS^.fbHomeMcJog(
+            IF SUPER^.bAtHome THEN
+                SUPER^.fbHomeMcJog(
                     Axis:=AxisRef,
                     JogForward:=NOT bHomeFirstDir,
                     JogBackwards:=bHomeFirstDir,
                     Mode:=E_JogMode.MC_JOGMODE_CONTINOUS,
                     Velocity:=SUPER^.stAxisParameters.fRefVeloSync);
-            ELSIF THIS^.fbHomeMcJog.Error THEN
-                THIS^.fbHomeMcJog(
+            ELSIF SUPER^.fbHomeMcJog.Error THEN
+                SUPER^.fbHomeMcJog(
                     Axis:=AxisRef,
                     JogForward:=FALSE,
                     JogBackwards:=FALSE);
-                THIS^.nHomeErrCount := THIS^.nHomeErrCount + 1;
-                IF THIS^.nHomeErrCount >= 3 THEN
-                    THIS^.nHomeStateMachine := E_HomeStates.ERROR;
+                SUPER^.nHomeErrCount := SUPER^.nHomeErrCount + 1;
+                IF SUPER^.nHomeErrCount >= 3 THEN
+                    SUPER^.nHomeStateMachine := E_HomeStates.ERROR;
                 END_IF
             ELSE
-                THIS^.fbHomeMcJog(
+                SUPER^.fbHomeMcJog(
                     Axis:=AxisRef,
                     JogForward:=FALSE,
                     JogBackwards:=FALSE);
-                THIS^.fbHomeMcSetPos(
+                SUPER^.fbHomeMcSetPos(
                     Axis:=AxisRef,
                     Execute:=FALSE);
-                THIS^.nHomeStateMachine := E_HomeStates.WAIT_STOP;
+                SUPER^.nHomeStateMachine := E_HomeStates.WAIT_STOP;
                 nHomeStateAfterStop := E_HomeStates.FINAL_SETPOS;
             END_IF
         E_HomeStates.FINAL_SETPOS:
-            THIS^.fbHomeMcSetPos(
+            SUPER^.fbHomeMcSetPos(
                 Axis:=AxisRef,
                 Execute:=TRUE,
                 Position:=SUPER^.fHomePosition);
-            THIS^.nHomeStateMachine := E_HomeStates.IDLE;
+            SUPER^.nHomeStateMachine := E_HomeStates.IDLE;
             SUPER^.bHomeBusy := FALSE;
             SUPER^.bHomeDone := TRUE;
         E_HomeStates.ERROR:
             SUPER^.bHomeError := TRUE;
-            SUPER^.nHomeErrorID := THIS^.fbHomeMcJog.ErrorID;
+            SUPER^.nHomeErrorID := SUPER^.fbHomeMcJog.ErrorID;
             nHomeStateMachine := E_HomeStates.FINAL_SETPOS;
-            THIS^.fbHomeMcSetPos(
+            SUPER^.fbHomeMcSetPos(
                 Axis:=AxisRef,
                 Execute:=FALSE);
             IF bHomeInterrupted THEN
@@ -250,7 +246,7 @@ IF THIS^.bHomeMove THEN
             END_IF
         E_HomeStates.WAIT_STOP:
             IF AxisRef.Status.NotMoving THEN
-                THIS^.nHomeStateMachine := nHomeStateAfterStop;
+                SUPER^.nHomeStateMachine := nHomeStateAfterStop;
             END_IF
     END_CASE
 END_IF
@@ -260,79 +256,12 @@ END_IF
 IF SUPER^.bCommandedReset THEN
     SUPER^.bHomeBusy := FALSE;
     SUPER^.bHomeDone := FALSE;
-    THIS^.bHomeMove := FALSE;
+    SUPER^.bHomeMove := FALSE;
 END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="InterruptMove" Id="{3b35232d-04d6-4f22-af2c-874d31217d09}">
-      <Declaration><![CDATA[METHOD InterruptMove
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="LimBwdEnable" Id="{f1c400e3-1909-4392-b56e-42d18fb82eb5}">
-      <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{387cf336-53ef-4887-867f-689596a32728}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[LimBwdEnable := bLimitBackwardEnable;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{3a7e2526-96be-436c-a698-396fafb39ff9}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bLimitBackwardEnable := LimBwdEnable;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="LimFwdEnable" Id="{4be1f54c-a6b2-47bf-8c3c-4d40bc9a1713}">
-      <Declaration><![CDATA[PROPERTY LimFwdEnable : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{52d07e66-751c-4181-9dfc-b9c3523a2633}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[LimFwdEnable := bLimitForwardEnable;]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{d4c954cf-bea3-4254-a851-6a894af44f6c}">
-        <Declaration><![CDATA[
-VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bLimitForwardEnable := LimFwdEnable;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="LimHome" Id="{2f273079-ccda-4520-984a-f5344492d887}">
-      <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
-      <Get Name="Get" Id="{9dff4bf0-8b8f-4eca-b9a9-23e72d4dbf64}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Get>
-      <Set Name="Set" Id="{4a845969-2a16-420f-8c7a-bd49f84481c0}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Method Name="StartMove" Id="{96c9c828-de26-4c5b-86fc-b06f69f3ecce}">
+    <Method Name="StartMove" Id="{6b48bf3f-d4fb-45cd-9d32-402ebab4e029}">
       <Declaration><![CDATA[(*
     Check all post condition before updating bCommandedMoveAbsolute
     The implmentatation will depend on the axis type
@@ -340,16 +269,20 @@ END_VAR
     MP NC axis : will immediately write to bCommandedMoveAbsolute
 *)
 METHOD StartMove : BOOL
+VAR_INPUT
+    MoveMode	: E_EpicsMotorCmd;
+    CmdExecute	: BOOL;
+END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[StartMove := SUPER^.StartMove();]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="StopMove" Id="{88a971d1-aaef-4bb6-b7c2-65b47210b532}">
-      <Declaration><![CDATA[METHOD StopMove
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[CASE MoveMode  OF
+    E_EpicsMotorCmd.MOVE_ABSOLUTE:
+        SUPER^.bCommandedMoveAbsolute := CmdExecute;
+    E_EpicsMotorCmd.HOME:
+        SUPER^.bCommandedMoveHome:= CmdExecute;
+END_CASE
+// for typical NC axis no further test is needed
+StartMove := CmdExecute;]]></ST>
       </Implementation>
     </Method>
   </POU>

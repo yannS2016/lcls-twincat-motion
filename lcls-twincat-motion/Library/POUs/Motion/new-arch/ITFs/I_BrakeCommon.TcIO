@@ -1,32 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <Itf Name="I_Brake" Id="{190f63fb-756a-4791-8091-567b83a9d052}">
-    <Declaration><![CDATA[INTERFACE I_Brake
+  <Itf Name="I_BrakeCommon" Id="{2fdedca0-5e5a-409f-9adf-ce2c06cc3a8d}">
+    <Declaration><![CDATA[INTERFACE I_BrakeCommon
 ]]></Declaration>
-    <Property Name="BrakeMode" Id="{0e1c15ff-4c0a-4d96-9240-b1fe98efccae}">
+    <Property Name="BrakeMode" Id="{bc3ee5d0-39c0-4532-b6ec-0f218e94da1d}">
       <Declaration><![CDATA[PROPERTY BrakeMode : E_StageBrakeMode]]></Declaration>
-      <Get Name="Get" Id="{b15cfe78-2d78-4dcd-917c-25c11507600e}">
+      <Get Name="Get" Id="{bb8eee33-95ff-47b4-ae9c-75dfd9e983cc}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{5bf7a3f4-b227-41be-a6cc-f465ecf3784b}">
+      <Set Name="Set" Id="{5ef7ad5b-660a-44fd-9989-042719c95522}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="BrakeRelease" Id="{f7411daa-c129-4ae6-a363-2bb5ae6bae27}">
+    <Property Name="BrakeRelease" Id="{d596e907-6a18-4f27-ae07-5b2cff71925d}">
       <Declaration><![CDATA[PROPERTY BrakeRelease : BOOL]]></Declaration>
-      <Get Name="Get" Id="{d25d5972-d184-4b87-bbef-d0f446a0a92a}">
+      <Get Name="Get" Id="{cb57d797-17ac-4557-972a-6f4a4092e8eb}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{2536a6a9-3571-4972-98d2-90b38510ce0d}">
+      <Set Name="Set" Id="{353d321f-9514-4662-a4bd-09bd63c1da7a}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
-    <Property Name="MotionState" Id="{cafc07a5-b9fb-4ac1-ba22-5d5dfe1f79d1}">
+    <Property Name="MotionState" Id="{ba097a17-7813-4cd5-8d3b-6799b9ffbe35}">
       <Declaration><![CDATA[PROPERTY MotionState : MC_AxisStates]]></Declaration>
-      <Get Name="Get" Id="{78bb5d85-d490-4014-9418-45338b45e88d}">
+      <Get Name="Get" Id="{a2b9a892-bb8b-475b-bda0-a7d3aa1d87df}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{bcda3488-774d-4d84-a2e1-b59faaa350a4}">
+      <Set Name="Set" Id="{5c7edbbc-b12b-4c70-9c97-5290f90b805b}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>

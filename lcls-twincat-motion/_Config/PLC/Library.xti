@@ -983,7 +983,7 @@ External Setpoint Generation:
 		</DataType>
 	</DataTypes>
 	<Project GUID="{E61EF94A-CFE8-4DDF-B7C9-5F7AD2CF9D83}" Name="Library" PrjFilePath="..\..\Library\Library.plcproj" TmcFilePath="..\..\Library\Library.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{28BF67BF-3FA1-137E-E3C6-254D8F66AB71}" TmcPath="Library\Library.tmc">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{44E2431F-2B42-3D14-3DE3-2D1BC935A52E}" TmcPath="Library\Library.tmc">
 			<Name>Library Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="8" AreaNo="4">
@@ -1009,7 +1009,7 @@ External Setpoint Generation:
 			<Vars VarGrpType="2" AreaNo="1">
 				<Name>PlcTask Outputs</Name>
 				<Var>
-					<Name>PRG_TEST.fbBrake.bBrakeRelease</Name>
+					<Name>PRG_TEST.fbBrakeSync.bBrakeRelease</Name>
 					<Comment><![CDATA[ NC Brake Output: TRUE to release brake]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
@@ -1021,23 +1021,23 @@ External Setpoint Generation:
 			<Vars VarGrpType="1">
 				<Name>PlcTask Inputs</Name>
 				<Var>
-					<Name>PRG_TEST.fbMotionInterlocks.bLimitForwardEnable</Name>
+					<Name>PRG_TEST.fbMotionInterlocksSync.bLimitForwardEnable</Name>
 					<Comment><![CDATA[ Hardware 
  NC Forward Limit Switch: TRUE if ok to move]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_TEST.fbMotionInterlocks.bLimitBackwardEnable</Name>
+					<Name>PRG_TEST.fbMotionInterlocksSync.bLimitBackwardEnable</Name>
 					<Comment><![CDATA[ NC Backward Limit Switch: TRUE if ok to move]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_TEST.fbMotionInterlocks.bHome</Name>
+					<Name>PRG_TEST.fbMotionInterlocksSync.bHome</Name>
 					<Comment><![CDATA[ NO Home Switch: TRUE if at home]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
 				<Var>
-					<Name>PRG_TEST.fbMotionInterlocks.bHardwareEnable</Name>
+					<Name>PRG_TEST.fbMotionInterlocksSync.bHardwareEnable</Name>
 					<Comment><![CDATA[ NC STO Input: TRUE if ok to move]]></Comment>
 					<Type>BOOL</Type>
 				</Var>
@@ -1046,21 +1046,21 @@ External Setpoint Generation:
 					<Type GUID="{25521FAA-EA5F-4C7F-8864-BBCCDACD2E98}" Namespace="MC">NCTOPLC_AXIS_REF</Type>
 				</Var>
 				<Var>
-					<Name>PRG_TEST.fbMotionAxisNC.nRawEncoderULINT</Name>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderULINT</Name>
 					<Type>ULINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_TEST.fbMotionAxisNC.nRawEncoderUINT</Name>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderUINT</Name>
 					<Comment><![CDATA[ Raw encoder IO for UINT (Relative Encoders)]]></Comment>
 					<Type>UINT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_TEST.fbMotionAxisNC.nRawEncoderINT</Name>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderINT</Name>
 					<Comment><![CDATA[ Raw encoder IO for INT (LVDT)]]></Comment>
 					<Type>INT</Type>
 				</Var>
 				<Var>
-					<Name>PRG_TEST.fbMotionAxisNC.nRawEncoderDINT</Name>
+					<Name>PRG_TEST.fbMotionAxisNCSync.nRawEncoderDINT</Name>
 					<Comment><![CDATA[ Raw encoder IO for INT (EL5072 LVDT)]]></Comment>
 					<Type>DINT</Type>
 				</Var>
