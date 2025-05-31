@@ -31,7 +31,12 @@ SUPER^();
 
 // PTP with FB_MotionDrive: sync and encapsulate private data exchange
 // This is needed in the interlock and brake blocks (no ref to this block there)
-THIS^.MotionSyncPrivateRef.SyncPrvAxisShareWrite( SUPER^.eAxisState, SUPER^.bMoveBusy, SUPER^.bHomeBusy, SUPER^.bMoveDone, SUPER^.bResetDone );
+// This is needed in the interlock and brake blocks (no ref to this block there)
+THIS^.MotionSyncPrivateRef.SyncPrvAxisState := THIS^.eAxisState;
+THIS^.MotionSyncPrivateRef.SyncPrvMoveBusy := THIS^.bMoveBusy;
+THIS^.MotionSyncPrivateRef.SyncPrvHomeBusy := THIS^.bHomeBusy;
+THIS^.MotionSyncPrivateRef.SyncPrvMoveDone := THIS^.bMoveDone;
+THIS^.MotionSyncPrivateRef.SyncPrvAbortDone := THIS^.bCommandedReset;
 ]]></ST>
     </Implementation>
     <Method Name="FB_Init" Id="{a75d0e18-791c-4a12-ac24-96cd017f8cf2}">

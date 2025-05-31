@@ -193,8 +193,8 @@ IF NOT bHomeBusy AND  (ftForwardEnabled.Q OR ftBackwardEnabled.Q) THEN
 END_IF
 
 
-// other synced block wait on this signal to valid new move requests.
-bInterlockOk S=  NOT bWarning AND NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
+// other synced block wait on this signal to validate a new move request.
+bInterlockOk S=  rtUserExec.Q AND NOT bWarning AND NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
 bInterlockOk R=  bWarning OR bError OR rtDone.Q OR NOT bAllBackwardEnabled OR NOT bAllForwardEnabled;
 
 // react to external reset

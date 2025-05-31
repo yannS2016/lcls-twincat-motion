@@ -194,13 +194,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// This is needed in the interlock and brake blocks (no ref to this block there)
-THIS^.SyncPrvAxisState := AxisState;
-THIS^.SyncPrvMoveBusy := MoveBusy;
-THIS^.SyncPrvHomeBusy := HomeBusy;
-THIS^.SyncPrvMoveDone := MoveDone;
-THIS^.SyncPrvAbortDone := AbortDone;
-]]></ST>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Property Name="SyncPrvAxisState" Id="{60919b8b-a0ee-4b61-b888-5912d190160f}">
