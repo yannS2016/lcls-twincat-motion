@@ -44,6 +44,8 @@ VAR
     bSyncPrvCmdExecute : BOOL;
     bSyncPrvStandStill : BOOL;
     sSyncPrvErrorMessage : STRING;
+	bSyncPrvPositiveDirection : BOOL;
+	bSyncPrvNegativeDirection : BOOL;
     eSyncPrvMoveMode : E_EpicsMotorCmd := E_EpicsMotorCmd.MOVE_ABSOLUTE;
 END_VAR
 ]]></Declaration>
@@ -540,6 +542,25 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="SyncPrvNegativeDirection" Id="{27c14f33-5b4f-47cd-aab8-b8d0c488a5f1}">
+      <Declaration><![CDATA[PROPERTY SyncPrvNegativeDirection : BOOL]]></Declaration>
+      <Get Name="Get" Id="{0287ec26-a780-4af6-b4b6-dbc27e3f59fd}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvNegativeDirection := bSyncPrvNegativeDirection;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{59b93041-be82-4756-b0e6-d7af6822d922}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvNegativeDirection := SyncPrvNegativeDirection;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Property Name="SyncPrvNewMoveReq" Id="{99d1eaeb-20b7-470e-97ca-8e71ab6dc340}">
       <Declaration><![CDATA[PROPERTY INTERNAL SyncPrvNewMoveReq : BOOL]]></Declaration>
       <Get Name="Get" Id="{b91286bc-c75d-4cbe-81e2-ebc4d5686439}">
@@ -556,6 +577,25 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[bSyncPrvNewMoveReq := SyncPrvNewMoveReq;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="SyncPrvPositiveDirection" Id="{578441ab-da43-4e60-80b2-5e4fcde65064}">
+      <Declaration><![CDATA[PROPERTY SyncPrvPositiveDirection : BOOL]]></Declaration>
+      <Get Name="Get" Id="{727045a9-cf79-43d2-baaa-9cadf7625b60}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SyncPrvPositiveDirection := bSyncPrvPositiveDirection;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{5bb35419-2893-49c5-9c6d-54f92fb3a11a}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[bSyncPrvPositiveDirection := SyncPrvPositiveDirection;]]></ST>
         </Implementation>
       </Set>
     </Property>
@@ -654,5 +694,204 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <LineIds Name="FB_MotionSyncPrivate">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.StartMove">
+      <LineId Id="3" Count="2" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAbortDone.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAbortDone.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAllBwdEn.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAllBwdEn.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAllEn.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAllEn.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAllFwdEn.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAllFwdEn.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAxisError.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAxisError.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAxisShareRead">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAxisShareWrite">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAxisState.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvAxisState.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvCmdExecute.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvCmdExecute.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvEnable.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvEnable.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvError.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvError.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvErrorID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvErrorID.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvErrorMessage.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvErrorMessage.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvExec.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvExec.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvExecHome.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvExecHome.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvExecMove.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvExecMove.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvHome.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvHome.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvHomeBusy.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvHomeBusy.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvInterlockOk.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvInterlockOk.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvLimBwd.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvLimBwd.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvLimFwd.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvLimFwd.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvLimHit.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvLimHit.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvMoveBusy.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvMoveBusy.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvMoveDone.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvMoveDone.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvMoveMode.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvMoveMode.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvNegativeDirection.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvNegativeDirection.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvNewMoveReq.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvNewMoveReq.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvPositiveDirection.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvPositiveDirection.Set">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvPowerEn.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvPowerEn.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvReset.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvReset.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvRestoreDone.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvRestoreDone.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvStandStill.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvStandStill.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvStart.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionSyncPrivate.SyncPrvStart.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

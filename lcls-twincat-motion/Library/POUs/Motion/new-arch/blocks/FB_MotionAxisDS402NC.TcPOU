@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_MotionAxisDS402NC" Id="{89fef5ac-f21f-4b51-b225-9ff16c28749c}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionAxisDS402NC EXTENDS FB_MotionAxisCommon
+    <Declaration><![CDATA[{attribute 'call_after_init'}
+FUNCTION_BLOCK FB_MotionAxisDS402NC EXTENDS FB_MotionAxisCommon
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
@@ -85,5 +86,16 @@ END_IF
 StartMove := THIS^.bStartReady;]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_MotionAxisDS402NC">
+      <LineId Id="3" Count="17" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisDS402NC.StartMove">
+      <LineId Id="3" Count="12" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

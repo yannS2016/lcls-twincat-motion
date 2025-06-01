@@ -33,19 +33,6 @@
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
-    <Property Name="ErrorMessage" Id="{bf7b81d5-c154-46fb-b50d-9188e5c9721a}">
-      <Declaration><![CDATA[PROPERTY ErrorMessage : STRING
-]]></Declaration>
-      <Get Name="Get" Id="{904bcd85-b16b-4196-9319-f47b5feeb0d9}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
-    <Property Name="InterlockOk" Id="{1f6b357a-4433-42e5-8fa2-bf574bca239f}">
-      <Declaration><![CDATA[PROPERTY InterlockOk : BOOL]]></Declaration>
-      <Get Name="Get" Id="{9855daed-54fd-4c0d-8687-1dc62a376c17}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
     <Property Name="LimBwdEnable" Id="{4f071531-664b-43fb-9b98-46ce706701d6}">
       <Declaration><![CDATA[PROPERTY LimBwdEnable : BOOL]]></Declaration>
       <Get Name="Get" Id="{9187b4a7-a42c-4364-a237-fe27d1b092b0}">
@@ -79,6 +66,25 @@
     <Property Name="LimHome" Id="{43b3c4e0-2529-4ca2-94b6-01308791bd0f}">
       <Declaration><![CDATA[PROPERTY LimHome : BOOL]]></Declaration>
       <Get Name="Get" Id="{fa4d37b3-5d02-4b73-968e-4a37c39a113f}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="Message" Id="{bf7b81d5-c154-46fb-b50d-9188e5c9721a}">
+      <Declaration><![CDATA[PROPERTY Message : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{904bcd85-b16b-4196-9319-f47b5feeb0d9}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="MoveOk" Id="{1f6b357a-4433-42e5-8fa2-bf574bca239f}">
+      <Declaration><![CDATA[PROPERTY MoveOk : BOOL]]></Declaration>
+      <Get Name="Get" Id="{9855daed-54fd-4c0d-8687-1dc62a376c17}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+    <Property Name="Warning" Id="{60f6cdd0-7107-4156-a4fe-1398afee5756}">
+      <Declaration><![CDATA[PROPERTY Warning : BOOL]]></Declaration>
+      <Get Name="Get" Id="{5bd77011-8837-4dd7-830c-f32b52bfcb55}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>

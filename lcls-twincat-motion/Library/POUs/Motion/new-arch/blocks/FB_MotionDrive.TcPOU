@@ -6,7 +6,7 @@
 VAR
     // EPICS Interface
     stMotionEpicsItf : REFERENCE TO ST_MotionEpicsItf;
-    eMoveMode : E_EpicsMotorCmd;
+    eMoveMode : E_EpicsMotorCmd := E_EpicsMotorCmd.MOVE_ABSOLUTE;
     iMotionAxisCommon 	: I_MotionAxisCommon;
     {attribute 'hide'}
     iBrake 				: I_BrakeCommon;
@@ -102,16 +102,12 @@ VAR
     bHaltAbort : BOOL;
     {attribute 'hide'}
     ftHaltAbort : F_TRIG;
+	rtRestoreDone : R_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT __ISVALIDREF( THIS^.stMotionEpicsItf ) OR NOT __ISVALIDREF( THIS^.MotionSyncPrivateRef )THEN
     RETURN;
-END_IF
-
-IF THIS^.MotionSyncPrivateRef.SyncPrvRestoreDone THEN
-    THIS^.stMotionEpicsItf.fPosition := iMotionAxisCommon.SavedPosition;
-    THIS^.MotionSyncPrivateRef.SyncPrvRestoreDone := FALSE;
 END_IF
 
 // catch high priority message
@@ -123,23 +119,17 @@ IF iMotionAxisCommon.Error THEN
 ELSIF iMotionInterlocks.Error THEN
     stMotionEpicsItf.bError := iMotionInterlocks.Error;
     stMotionEpicsItf.nErrorId := iMotionInterlocks.ErrorID;
-    stMotionEpicsItf.sErrorMessage := iMotionInterlocks.ErrorMessage;
+    stMotionEpicsItf.sErrorMessage := iMotionInterlocks.Message;
+// Warnings have lowest priority
+ELSIF iMotionInterlocks.Warning THEN
+    stMotionEpicsItf.sErrorMessage := iMotionInterlocks.Message;
+ELSE
+    stMotionEpicsItf.bError := FALSE;
+    stMotionEpicsItf.nErrorId := 0;
+    stMotionEpicsItf.sErrorMessage := '';
 END_IF
 
-THIS^.PreMoveReq();
-
-//  Abort while moving if:
-// 1- Reset, 2-Halt/UserStop, 3-Limit hit
-rtLimitAbort(CLK:=iMotionInterlocks.LimHit);
-rtReset(CLK:=stMotionEpicsItf.bReset);
-IF rtReset.Q OR rtLimitAbort.Q THEN
-    stMotionEpicsItf.bExecute := FALSE;
-END_IF
-
-ftError(CLK:=stMotionEpicsItf.bError);
-rtTarget(CLK:=(iMotionAxisCommon.MoveDone AND bExecMove));
-rtHomed(CLK:=iMotionAxisCommon.MoveDone AND bExecHome);
-ftStopExec(CLK:=stMotionEpicsItf.bExecute);
+THIS^.PreMoveHandling();
 
 // Drive state Machine here
  CASE eMoveState OF
@@ -153,8 +143,6 @@ ftStopExec(CLK:=stMotionEpicsItf.bExecute);
             eMoveState := E_MoveState.INIT_MOVE;
         ELSIF stMotionEpicsItf.bError THEN
             eMoveState := E_MoveState.MOVE_ERROR;
-        ELSIF rtLimitAbort.Q THEN
-            eMoveState := E_MoveState.MOVE_INTERRUPTED;
         END_IF
 
     E_MoveState.INIT_MOVE:
@@ -197,7 +185,7 @@ ftStopExec(CLK:=stMotionEpicsItf.bExecute);
             eMoveState := E_MoveState.MOVE_ERROR;
 
         // Move interupted
-        ELSIF ftStopExec.Q  OR iMotionInterlocks.LimHit THEN
+        ELSIF ftStopExec.Q OR iMotionAxisCommon.CommandedAborted(* OR iMotionInterlocks.LimHit*) THEN
             eMoveState := E_MoveState.MOVE_INTERRUPTED;
 
         ELSIF  rtTarget.Q OR rtHomed.Q  THEN
@@ -210,7 +198,7 @@ ftStopExec(CLK:=stMotionEpicsItf.bExecute);
             eMoveState := E_MoveState.TARGET_REACHED;
         END_IF
         // Wait here for halt or reset done or clearing limit state to be restored
-        IF iMotionAxisCommon.AbortDone OR NOT THIS^.iMotionInterlocks.LimHitIdling THEN
+        IF iMotionAxisCommon.AbortDone (* OR NOT THIS^.iMotionInterlocks.LimHitIdling *) THEN
             THIS^.ClearVars(Done:=TRUE);
             eMoveState := E_MoveState.IDLING;;
         END_IF
@@ -222,8 +210,6 @@ ftStopExec(CLK:=stMotionEpicsItf.bExecute);
     E_MoveState.MOVE_ERROR:
         THIS^.ClearVars(Done:=FALSE);
         THIS^.stMotionEpicsItf.bEnable := FALSE;
-        // stay here till errors are cleared
-        // wait for a failling edge after reset
         IF ftError.Q THEN
             eMoveState := E_MoveState.IDLING;
         END_IF
@@ -252,19 +238,7 @@ IF iMotionAxisCommon.ResetDone THEN
     THIS^.stMotionEpicsItf.bEnable := FALSE;
 END_IF
 
-
-// update EPICS status
-THIS^.UpdateEpicsStatus();
-
-
-// These define the interface between FB_MotionDrive and FB_MotionInterlocks:
-// all properties participating in these exchanges are hidden from user apps.
-THIS^.MotionSyncPrivateRef.SyncPrvNewMoveReq := bNewMoveReq;
-THIS^.MotionSyncPrivateRef.SyncPrvExec := stMotionEpicsItf.bExecute;
-// Propagate the validated command for other synced FB use
-THIS^.MotionSyncPrivateRef.SyncPrvExecHome := bExecHome;
-THIS^.MotionSyncPrivateRef.SyncPrvExecMove := bExecMove;
-THIS^.MotionSyncPrivateRef.SyncPrvEnable := stMotionEpicsItf.bEnable;]]></ST>
+THIS^.PostMoveHandling();]]></ST>
     </Implementation>
     <Method Name="ClearVars" Id="{f1592abc-f575-4d24-88ea-967cd68d3de0}">
       <Declaration><![CDATA[METHOD ClearVars
@@ -355,14 +329,17 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Method Name="PostMoveReq" Id="{7222a4c1-9995-4958-bf9c-8ee4b036a492}">
-      <Declaration><![CDATA[METHOD INTERNAL PostMoveReq
+    <Method Name="PostMoveHandling" Id="{7222a4c1-9995-4958-bf9c-8ee4b036a492}">
+      <Declaration><![CDATA[METHOD INTERNAL PostMoveHandling
 VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[
-// These define the interface between FB_MotionDrive and FB_MotionInterlocks:// all properties participating in these exchanges are hidden from user apps.
+        <ST><![CDATA[// update EPICS status
+THIS^.UpdateParamAndStatus();
+
+// These define the interface between FB_MotionDrive and FB_MotionInterlocks:
+// all properties participating in these exchanges are hidden from user apps.
 THIS^.MotionSyncPrivateRef.SyncPrvNewMoveReq := bNewMoveReq;
 THIS^.MotionSyncPrivateRef.SyncPrvExec := stMotionEpicsItf.bExecute;
 // Propagate the validated command for other synced FB use
@@ -371,8 +348,8 @@ THIS^.MotionSyncPrivateRef.SyncPrvExecMove := bExecMove;
 THIS^.MotionSyncPrivateRef.SyncPrvEnable := stMotionEpicsItf.bEnable;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="PreMoveReq" Id="{1da2dc9d-4406-4cb4-be2e-a29a35f201c7}">
-      <Declaration><![CDATA[METHOD INTERNAL PreMoveReq
+    <Method Name="PreMoveHandling" Id="{1da2dc9d-4406-4cb4-be2e-a29a35f201c7}">
+      <Declaration><![CDATA[METHOD INTERNAL PreMoveHandling
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[(*
@@ -402,17 +379,12 @@ END_IF
 // External (EPICS) Move Requests
 ////////////////////////////////////////////////////////
 rtUserExec(CLK:=stMotionEpicsItf.bExecute);
-// if a Move/Home Goal is comfirmed and there is no persistant
-// error conditions, then we have a valid move request.
-bNewMoveReq S= rtUserExec.Q AND NOT iMotionAxisCommon.MoveBusy;
-// this Move request is valid till an error occurs or the currently move is done
+bNewMoveReq S= rtUserExec.Q AND NOT iMotionAxisCommon.MoveBusy AND iMotionInterlocks.MoveOk;
+// An axis or interlocks error will immediately invalidate this this request.
 bNewMoveReq R= NOT stMotionEpicsItf.bExecute OR stMotionEpicsItf.bError;
 bPrepareDisable R= bNewMoveReq;
-// We need the interlock ready flag before we can enable power
-// this will will be set if no error and a new move request was issued
-// ToDo: add a warning message after a time out if this not set
-rtNewMoveReq(CLK:=bNewMoveReq AND THIS^.iMotionInterlocks.InterlockOk);
 
+rtNewMoveReq(CLK:=bNewMoveReq);
 rtEnableMode(CLK:=(nEnableMode = E_StageEnableMode.DURING_MOTION));
 // Handle auto-enable timing
 CASE nEnableMode OF
@@ -451,11 +423,39 @@ IF rtValidExec.Q THEN
   nCmdDataLocal:=INT_TO_UINT(stMotionEpicsItf.nCmdData);
   nCommandLocal:=INT_TO_UINT(stMotionEpicsItf.nCommand);
 END_IF
+
+//  Abort while moving if:
+// 1- Reset, 2-Halt/UserStop, 3-Limit hit
+rtLimitAbort(CLK:=iMotionInterlocks.LimHit);
+rtReset(CLK:=stMotionEpicsItf.bReset);
+IF rtReset.Q OR rtLimitAbort.Q THEN
+    stMotionEpicsItf.bExecute := FALSE;
+END_IF
+
+ftError(CLK:=stMotionEpicsItf.bError);
+rtTarget(CLK:=(iMotionAxisCommon.MoveDone AND bExecMove));
+rtHomed(CLK:=iMotionAxisCommon.MoveDone AND bExecHome);
+ftStopExec(CLK:=stMotionEpicsItf.bExecute);
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="UpdateEpicsStatus" Id="{4de2eb27-ad9f-4648-b7f6-c1750633f344}">
-      <Declaration><![CDATA[METHOD INTERNAL UpdateEpicsStatus
+    <Method Name="RestoreSettings" Id="{5464eb40-8a4b-450e-b29b-a523b84c5727}">
+      <Declaration><![CDATA[METHOD INTERNAL RestoreSettings
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// no needed in production since the actualposition is already set on the axis
+// and epics status will get that last position
+// use this to restore anything thats not an axisref paramter.
+rtRestoreDone(CLK:= THIS^.iMotionAxisCommon.RestoreDone);
+IF rtRestoreDone.Q THEN
+    THIS^.stMotionEpicsItf.fPosition := iMotionAxisCommon.SavedPosition;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="UpdateParamAndStatus" Id="{4de2eb27-ad9f-4648-b7f6-c1750633f344}">
+      <Declaration><![CDATA[METHOD INTERNAL UpdateParamAndStatus
 VAR_INPUT
 END_VAR
 ]]></Declaration>
@@ -490,5 +490,53 @@ stMotionEpicsItf.stAxisStatus.nCommand:=INT_TO_UINT(stMotionEpicsItf.nCommand); 
 stMotionEpicsItf.stAxisStatus.nErrorId:=stMotionEpicsItf.nErrorId;]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_MotionDrive">
+      <LineId Id="613" Count="103" />
+      <LineId Id="719" Count="26" />
+      <LineId Id="759" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.ClearVars">
+      <LineId Id="3" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.EnableMode.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.EnableMode.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.FB_init">
+      <LineId Id="3" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.Name.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.Name.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.PostMoveHandling">
+      <LineId Id="12" Count="1" />
+      <LineId Id="15" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.PreMoveHandling">
+      <LineId Id="3" Count="26" />
+      <LineId Id="32" Count="3" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="41" Count="37" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="83" Count="10" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.RestoreSettings">
+      <LineId Id="1" Count="6" />
+    </LineIds>
+    <LineIds Name="FB_MotionDrive.UpdateParamAndStatus">
+      <LineId Id="2" Count="27" />
+    </LineIds>
   </POU>
 </TcPlcObject>

@@ -35,6 +35,12 @@ END_VAR]]></Declaration>
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
+    <Property Name="CommandedAborted" Id="{26bebeae-d39a-4deb-88c7-a7ef29b7ebbd}">
+      <Declaration><![CDATA[PROPERTY CommandedAborted : BOOL]]></Declaration>
+      <Get Name="Get" Id="{497237c8-a311-4cdc-8e85-4f16416d550e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
     <Property Name="CommandedHalt" Id="{28caa621-b1b5-45c3-948b-355529ae63c2}">
       <Declaration><![CDATA[PROPERTY CommandedHalt : BOOL]]></Declaration>
       <Get Name="Get" Id="{9fc451d3-9985-4a65-a079-615be98f9e47}">
@@ -512,6 +518,15 @@ END_VAR
       <Get Name="Get" Id="{0adcb703-0fab-4a7a-94a7-18c9597f870e}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
+    </Property>
+    <Property Name="RestoreDone" Id="{53c90500-c40d-40e5-beb4-b2449207eb6e}">
+      <Declaration><![CDATA[PROPERTY INTERNAL RestoreDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{6cf914a4-0133-4924-9ca7-5663cc12814e}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{8d51005e-3ea6-4823-8315-827a60e827c8}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
     </Property>
     <Property Name="RestoreError" Id="{80815cd7-c76d-4675-bb97-e801d3dcea69}">
       <Declaration><![CDATA[PROPERTY RestoreError : BOOL]]></Declaration>

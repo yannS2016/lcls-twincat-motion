@@ -23,6 +23,8 @@ SUPER^.bMoveBusy :=  THIS^.MotionSyncPrivateRef.SyncPrvMoveBusy;
 SUPER^.bMoveDone :=  THIS^.MotionSyncPrivateRef.SyncPrvMoveDone;
 SUPER^.bNewMoveReq :=  THIS^.MotionSyncPrivateRef.SyncPrvNewMoveReq;
 SUPER^.bEnable :=  THIS^.MotionSyncPrivateRef.bSyncPrvEnable;
+SUPER^.bPositiveDirection :=THIS^.MotionSyncPrivateRef.SyncPrvPositiveDirection;
+SUPER^.bNegativeDirection :=THIS^.MotionSyncPrivateRef.SyncPrvNegativeDirection;
 // Call based class body
 SUPER^();
 
@@ -56,5 +58,15 @@ END_VAR
         <ST><![CDATA[THIS^.MotionSyncPrivateRef REF=MotionSyncPrivateRef ;]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_MotionInterlocksSync">
+      <LineId Id="3" Count="11" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="15" Count="11" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksSync.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

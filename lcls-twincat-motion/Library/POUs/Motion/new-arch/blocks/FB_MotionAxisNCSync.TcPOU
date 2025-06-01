@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_MotionAxisNCSync" Id="{477f6798-7fc8-4596-8c36-16b6c43130e8}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionAxisNCSync EXTENDS FB_MotionAxisNC
+    <Declaration><![CDATA[{attribute 'call_after_init'}
+FUNCTION_BLOCK FB_MotionAxisNCSync EXTENDS FB_MotionAxisNC
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
@@ -32,11 +33,14 @@ SUPER^();
 // PTP with FB_MotionDrive: sync and encapsulate private data exchange
 // This is needed in the interlock and brake blocks (no ref to this block there)
 // This is needed in the interlock and brake blocks (no ref to this block there)
-THIS^.MotionSyncPrivateRef.SyncPrvAxisState := THIS^.eAxisState;
-THIS^.MotionSyncPrivateRef.SyncPrvMoveBusy := THIS^.bMoveBusy;
-THIS^.MotionSyncPrivateRef.SyncPrvHomeBusy := THIS^.bHomeBusy;
-THIS^.MotionSyncPrivateRef.SyncPrvMoveDone := THIS^.bMoveDone;
-THIS^.MotionSyncPrivateRef.SyncPrvAbortDone := THIS^.bCommandedReset;
+THIS^.MotionSyncPrivateRef.SyncPrvAxisState :=SUPER^.eAxisState;
+THIS^.MotionSyncPrivateRef.SyncPrvMoveBusy := SUPER^.bMoveBusy;
+THIS^.MotionSyncPrivateRef.SyncPrvHomeBusy := SUPER^.bHomeBusy;
+THIS^.MotionSyncPrivateRef.SyncPrvMoveDone := SUPER^.bMoveDone;
+THIS^.MotionSyncPrivateRef.SyncPrvAbortDone := SUPER^.bAbortDone;
+//THIS^.MotionSyncPrivateRef.SyncPrvRestoreDone := SUPER^.bRestoreDone;
+THIS^.MotionSyncPrivateRef.SyncPrvPositiveDirection := SUPER^.bPositiveMotionIsEnabled;
+THIS^.MotionSyncPrivateRef.SyncPrvNegativeDirection := SUPER^.bNegativeMotionIsEnabled;
 ]]></ST>
     </Implementation>
     <Method Name="FB_Init" Id="{a75d0e18-791c-4a12-ac24-96cd017f8cf2}">
@@ -60,5 +64,14 @@ END_VAR
         <ST><![CDATA[THIS^.MotionSyncPrivateRef REF=  MotionSyncPrivateRef ;]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_MotionAxisNCSync">
+      <LineId Id="57" Count="25" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="83" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionAxisNCSync.FB_Init">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

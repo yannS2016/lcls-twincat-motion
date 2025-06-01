@@ -100,7 +100,7 @@ VAR
     {attribute 'hide'}
     bEPSOk : BOOL;
     {attribute 'hide'}
-    sWarningMsg : STRING;
+    sMessage : STRING;
     {attribute 'hide'}
     bWarning : BOOL;
     {attribute 'hide'}
@@ -121,7 +121,7 @@ VAR
     ftBackwardEnabled : F_TRIG;
     rtUserExec : R_TRIG;
      nErrorID: UDINT;
-     bInterlockOk : BOOL;
+     bMoveOk : BOOL;
      rtDone : R_TRIG;
     rtError : R_TRIG;
     ftError : F_TRIG;
@@ -129,6 +129,8 @@ VAR
     bLimHitMoving : BOOL;
     bStandStill	  : BOOL;
     rtStandStill : R_TRIG;
+	bPositiveDirection : BOOL;
+	bNegativeDirection : BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -144,87 +146,65 @@ bSafetyReady S= bPowerSelf;
 // This tell the other block in seq processing to wait on interlock to do an intial check
 // before they can proceed. checking error only is not enough.
 rtUserExec (CLK:=bNewMoveReq);
-
-bLocalEnable := bUserEnable AND bHardwareEnable;
-
-IF rtUserExec.Q AND NOT bError THEN
-    IF NOT bLocalEnable THEN
-        bError := TRUE;
-        nErrorID:= 1;
-        bInterlockOk := FALSE;
-        IF NOT bUserEnable THEN
-            sWarningMsg := 'Warning: Move requested, but user enable is disabled!';
-        ELSIF NOT bHardwareEnable THEN
-            sWarningMsg := 'Warning: Move requested, but hardware enable is disabled!';
-        END_IF
-    // If a new Move request is issue, test the state of limit switches.
-    ELSIF NOT bAllForwardEnabled OR NOT bAllBackwardEnabled THEN
-        bWarning := TRUE;
-        bLimHit := TRUE;
-        bLimHitIdling := TRUE;
-        sWarningMsg:='Warning: Positive or Negative limit engaged!';
-    ELSE
-        bLimHit := FALSE;
-        bLimHitMoving := bLimHit;
-        bLimHitIdling := bLimHit;
-        sWarningMsg := '';
-    END_IF
-END_IF
-
-
-
-
-
 ftForwardEnabled(CLK:=bAllForwardEnabled);
-ftBackwardEnabled(CLK:=bAllBackwardEnabled);
+ftBackwardEnabled (CLK:=bAllBackwardEnabled);
+// compound all interlocks elements to identify the cyclic error condition
+bMoveOk := bUserEnable AND bHardwareEnable AND bAllBackwardEnabled AND bAllForwardEnabled;
 
-IF NOT bHomeBusy AND  (ftForwardEnabled.Q OR ftBackwardEnabled.Q) THEN
-    // Not an error, just a warning
-    IF NOT bAllForwardEnabled THEN
-        sWarningMsg:='Cannot move past positive limit.';
-    ELSIF NOT bAllBackwardEnabled THEN
-        sWarningMsg:='Cannot move past Negative limit.';
-    END_IF
-    bWarning := TRUE;
-    bLimHit := TRUE;
-    bLimHitMoving := TRUE;
-    // will serve later
-    bLimOverride := TRUE;
+IF NOT bMoveOk THEN
+	IF NOT bUserEnable THEN
+		bError := TRUE;
+		nErrorID:= 1;
+		sMessage := 'User enable interlock is Triggered!';
+	ELSIF NOT bHardwareEnable THEN
+		bError := TRUE;
+		nErrorID:= 1;
+		sMessage := 'Hardware enbale Interlocks is Triggered!';
+	// Axis Moving:
+	// Pos Direction Move interruption: ftForwardEnabled.Q AND bPositiveDirection
+	// Neg Direction Move interruption: ftBackwardEnabled.Q AND bNegativeDirection
+	ELSIF (ftForwardEnabled.Q AND bPositiveDirection) OR (ftBackwardEnabled.Q AND bNegativeDirection) AND NOT bHomeBusy  THEN
+		// Not an error, just a warning
+		IF NOT bAllForwardEnabled THEN
+			sMessage:='Cannot move past positive limit.';
+		ELSIF NOT bAllBackwardEnabled THEN
+			sMessage:='Cannot move past Negative limit.';
+		END_IF
+		bError:=FALSE;
+		nErrorID:=0;
+		bWarning:=TRUE;
+		bLimHit := TRUE;
+		bLimHitMoving:=TRUE;
+		bLimOverride:=TRUE;
+	// axis idling : critical limit enabled faillure
+ 	ELSIF NOT bMoveBusy AND NOT bWarning AND NOT (bAllForwardEnabled AND bAllBackwardEnabled) THEN
+		bError := TRUE;
+		nErrorID:= 1;
+ 		bLimHit := TRUE;
+ 		bLimHitIdling := TRUE;
+ 		sMessage:='Forward or Bakward limit enable faillure!'; 
+	END_IF
+ELSE
+	bLimHit := FALSE;
+	bLimHitMoving := bLimHit;
+	bLimHitIdling := bLimHit;
+	sMessage := '';
+    bError := FALSE;
+	bWarning := FALSE;
+    nErrorID:= 0;
 END_IF
-
-
-// other synced block wait on this signal to validate a new move request.
-bInterlockOk S=  rtUserExec.Q AND NOT bWarning AND NOT bError AND bAllBackwardEnabled AND bAllForwardEnabled;
-bInterlockOk R=  bWarning OR bError OR rtDone.Q OR NOT bAllBackwardEnabled OR NOT bAllForwardEnabled;
-
-// react to external reset
-// rtDone(CLK:=bMoveDone);
-// IF bReset OR rtDone.Q THEN
-//     bLimOverride := FALSE;
-//     bInterlockOk := FALSE;
-//     bLimHit := FALSE;
-//     bLimHitMoving := bLimHit;
-//     bLimHitIdling := bLimHit;
-// END_IF
-//
-// // Latch the warning message till reset.
-// IF  bReset THEN
-//     bReset := FALSE;
-//     bError := FALSE;
-//     bWarning := FALSE;
-//     sWarningMsg:='';
-// END_IF
 
 IF bReset THEN
     bReset := FALSE;
     bError := FALSE;
-    bWarning := FALSE;
+    //bWarning := FALSE;
+	nErrorID:= 0;
     bLimOverride := FALSE;
-    bInterlockOk := FALSE;
+    bMoveOk := FALSE;
     bLimHit := FALSE;
     bLimHitMoving := bLimHit;
     bLimHitIdling := bLimHit;
-    sWarningMsg:='';
+    sMessage:='';
 END_IF
 
 rtError(CLK:=bError OR bWarning);
@@ -293,18 +273,6 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <Property Name="ErrorMessage" Id="{c58a222e-888c-449d-acb8-7036a45dc5e8}">
-      <Declaration><![CDATA[PROPERTY ErrorMessage : STRING
-]]></Declaration>
-      <Get Name="Get" Id="{c813683b-22cc-422c-89ed-ba893df5d926}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[ErrorMessage := sWarningMsg;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Method Name="FB_Init" Id="{84019423-7ce0-4649-83b3-d87beaa3ba25}">
       <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
 //The return value is not evaluated. For a specific influence, you can also declare the
@@ -321,19 +289,6 @@ END_VAR]]></Declaration>
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="InterlockOk" Id="{087dfb34-9366-42ef-aed0-104efe23e3e8}">
-      <Declaration><![CDATA[{warning 'Add property implementation'}
-PROPERTY InterlockOk : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{67a6e044-516c-40e2-9981-fc01183c6b39}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[InterlockOk  := bInterlockOk ;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <Property Name="LimBwdEnable" Id="{ab74ce54-8975-47c7-8b0e-4ed78f861a4e}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
 PROPERTY LimBwdEnable : BOOL
@@ -415,5 +370,97 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
+    <Property Name="Message" Id="{c58a222e-888c-449d-acb8-7036a45dc5e8}">
+      <Declaration><![CDATA[PROPERTY Message : STRING
+]]></Declaration>
+      <Get Name="Get" Id="{c813683b-22cc-422c-89ed-ba893df5d926}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Message := sMessage;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="MoveOk" Id="{087dfb34-9366-42ef-aed0-104efe23e3e8}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY MoveOk : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{67a6e044-516c-40e2-9981-fc01183c6b39}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MoveOk  := bMoveOk ;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Property Name="Warning" Id="{6a841ef8-53fe-4838-a383-fbfdf538f9c4}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Warning : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{2eb877bc-0021-40c8-acf9-1d363cd024ae}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Warning := bWarning;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <LineIds Name="FB_MotionInterlocksCommon">
+      <LineId Id="689" Count="15" />
+      <LineId Id="711" Count="58" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.AllBackwardEnabled.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.AllEnabled.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.AllForwardEnabled.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.Error.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.ErrorID.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.FB_Init">
+      <LineId Id="3" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.LimBwdEnable.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.LimFwdEnable.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.LimHit.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.LimHitIdling.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.LimHitMoving.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.LimHome.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.LimHome.Set">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.Message.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.MoveOk.Get">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MotionInterlocksCommon.Warning.Get">
+      <LineId Id="1" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>
