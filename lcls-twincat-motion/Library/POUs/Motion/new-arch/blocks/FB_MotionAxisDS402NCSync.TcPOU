@@ -49,6 +49,7 @@ VAR_INPUT
     AxisRef	: REFERENCE TO AXIS_REF;
     iPersistentDataStorage	: I_PersistentDataStorage;
     iMotionLogger	: I_MotionLogger;
+    ModeOfOperation 	: E_DS402OpMode;
     MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
 END_VAR
 ]]></Declaration>
@@ -56,12 +57,5 @@ END_VAR
         <ST><![CDATA[THIS^.MotionSyncPrivateRef REF=  MotionSyncPrivateRef ;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionAxisDS402NCSync">
-      <LineId Id="3" Count="20" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NCSync.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

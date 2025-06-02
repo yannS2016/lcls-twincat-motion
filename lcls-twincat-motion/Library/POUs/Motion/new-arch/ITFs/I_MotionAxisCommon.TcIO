@@ -524,9 +524,6 @@ END_VAR
       <Get Name="Get" Id="{6cf914a4-0133-4924-9ca7-5663cc12814e}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
-      <Set Name="Set" Id="{8d51005e-3ea6-4823-8315-827a60e827c8}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
     </Property>
     <Property Name="RestoreError" Id="{80815cd7-c76d-4675-bb97-e801d3dcea69}">
       <Declaration><![CDATA[PROPERTY RestoreError : BOOL]]></Declaration>

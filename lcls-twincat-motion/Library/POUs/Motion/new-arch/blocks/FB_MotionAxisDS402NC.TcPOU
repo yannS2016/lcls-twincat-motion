@@ -62,40 +62,35 @@ END_VAR
     DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
     MP NC axis : will immediately write to bCommandedMoveAbsolute
 *)
+(*
+    Check all post condition before updating bCommandedMoveAbsolute
+    The implmentatation will depend on the axis type
+    DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
+    MP NC axis : will immediately write to bCommandedMoveAbsolute
+*)
 METHOD StartMove : BOOL
 VAR_INPUT
-    MoveMode : E_MoveMode;
-    CmdExecute : BOOL;
+    MoveMode	: E_EpicsMotorCmd;
+    CmdExecute	: BOOL;
 END_VAR
 
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF THIS^.fbDs402DriveCommon.SetModeOfOperation(THIS^.eModeOfOperation) THEN
-    CASE MoveMode  OF
-        E_EpicsMotorCmd.MOVE_ABSOLUTE:
-            SUPER^.bCommandedMoveAbsolute := CmdExecute;
-        E_EpicsMotorCmd.HOME:
-            SUPER^.bCommandedMoveHome:= CmdExecute;
-    END_CASE
-    // for typical NC axis no further test is needed
-    StartMove := CmdExecute;
-ELSE
-    StartMove := FALSE;
-END_IF
-
-StartMove := THIS^.bStartReady;]]></ST>
+        <ST><![CDATA[// IF THIS^.fbDs402DriveCommon.SetModeOfOperation(THIS^.eModeOfOperation) THEN
+//     CASE MoveMode  OF
+//         E_EpicsMotorCmd.MOVE_ABSOLUTE:
+//             SUPER^.bCommandedMoveAbsolute := CmdExecute;
+//         E_EpicsMotorCmd.HOME:
+//             SUPER^.bCommandedMoveHome:= CmdExecute;
+//     END_CASE
+//     // for typical NC axis no further test is needed
+//     StartMove := CmdExecute;
+// ELSE
+//     StartMove := FALSE;
+// END_IF
+//
+// StartMove := THIS^.bStartReady;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionAxisDS402NC">
-      <LineId Id="3" Count="17" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.StartMove">
-      <LineId Id="3" Count="12" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

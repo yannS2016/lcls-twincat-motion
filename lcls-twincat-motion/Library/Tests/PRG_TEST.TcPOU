@@ -13,15 +13,17 @@ VAR
     //Brakes : brake fb participate in sync comm with fbMotionDrive, fbMotionAxis and fbMotionInterlocks
     fbBrakeSync : FB_BrakeSync(MotionSyncPrivateRef:=fbMotionSyncPrivate) := (BrakeMode := E_StageBrakeMode.IF_MOVING);
 
+    {attribute 'TcLinkTo' := '.bLimitBackwardEnable    := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 3 (EL7047)^STM Status^Status^Digital input 1'}
     fbMotionInterlocksSync: FB_MotionInterlocksSync ( iMotionLogger:=fbMotionLogger, MotionSyncPrivateRef:=fbMotionSyncPrivate);
 
 
+    {attribute 'TcLinkTo' := '.nRawEncoderUINT     := TIID^Device 1 (EtherCAT)^Term 1 (EK1101)^Term 2 (EL5101)^ENC Status compact^Counter value'}
     fbMotionAxisNCSync : FB_MotionAxisNCSync  ( AxisRef:=NcAxis_GVL.testAxis,
                                                         iPersistentDataStorage :=fbPersistentDataStorage,
                                                         iMotionLogger:=fbMotionLogger,
                                                         MotionSyncPrivateRef:=fbMotionSyncPrivate ) := ( PowerOverride:=100.0,HomePosition := 0.0,HomeMode:=ENUM_EpicsHomeCmd.LOW_LIMIT, Name:= 'Module1');
 
-    M1 : ST_MotionEpicsItf := (sName:='Main Axis', fPosition:=10000.0, fVelocity:=50.0, fAcceleration:=50.0, fDeceleration:=50.0);
+    M1 : ST_MotionEpicsItf := (sName:='Main Axis', fPosition:=10.0, fVelocity:=1.0, fAcceleration:=5.0, fDeceleration:=5.0);
     fbMotionDrive: FB_MotionDrive ( stMotionEpicsItf := M1,
                                     MotionSyncPrivateRef := fbMotionSyncPrivate,
                                     iMotionAxisCommon:=fbMotionAxisNCSync,
@@ -29,19 +31,19 @@ VAR
                                     iMotionInterlocks:=fbMotionInterlocksSync,
                                     iMotionLogger:=fbMotionLogger,
                                     ) := (Name := 'SmarAct MCS2',  EnableMode:=ENUM_StageEnableMode.DURING_MOTION );
-    bLimitFwdEnable AT %Q*: BOOL;
-    // NC Backward Limit Switch: TRUE if ok to move
-    bLimitBwdEnable AT %Q*: BOOL;
-    bHardEnable AT %Q*: BOOL ;
+//     bLimitFwdEnable AT %Q*: BOOL;
+//     // NC Backward Limit Switch: TRUE if ok to move
+//     bLimitBwdEnable AT %Q*: BOOL;
+//     bHardEnable AT %Q*: BOOL ;
 
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[
+      <ST><![CDATA[fbMotionDrive();
 fbMotionInterlocksSync();
 fbMotionSyncPrivate();
 fbMotionAxisNCSync();
-fbMotionDrive();
+
 ]]></ST>
     </Implementation>
   </POU>

@@ -257,7 +257,7 @@ END_IF
 IF SUPER^.bCommandedReset THEN
     SUPER^.bHomeBusy := FALSE;
     SUPER^.bHomeDone := FALSE;
-    SUPER^.bHomeMove := FALSE;
+    //SUPER^.bHomeMove := FALSE;
 END_IF
 ]]></ST>
       </Implementation>
@@ -286,20 +286,5 @@ END_CASE
 StartMove := CmdExecute;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionAxisNC">
-      <LineId Id="3" Count="2" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisNC.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisNC.HomeNC">
-      <LineId Id="3" Count="214" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisNC.StartMove">
-      <LineId Id="3" Count="6" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

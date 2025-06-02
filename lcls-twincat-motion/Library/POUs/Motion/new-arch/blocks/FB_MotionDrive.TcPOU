@@ -102,7 +102,7 @@ VAR
     bHaltAbort : BOOL;
     {attribute 'hide'}
     ftHaltAbort : F_TRIG;
-	rtRestoreDone : R_TRIG;
+    rtRestoreDone : R_TRIG;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -379,12 +379,12 @@ END_IF
 // External (EPICS) Move Requests
 ////////////////////////////////////////////////////////
 rtUserExec(CLK:=stMotionEpicsItf.bExecute);
-bNewMoveReq S= rtUserExec.Q AND NOT iMotionAxisCommon.MoveBusy AND iMotionInterlocks.MoveOk;
+bNewMoveReq S= rtUserExec.Q AND NOT iMotionAxisCommon.MoveBusy;
 // An axis or interlocks error will immediately invalidate this this request.
 bNewMoveReq R= NOT stMotionEpicsItf.bExecute OR stMotionEpicsItf.bError;
 bPrepareDisable R= bNewMoveReq;
 
-rtNewMoveReq(CLK:=bNewMoveReq);
+rtNewMoveReq(CLK:=bNewMoveReq AND iMotionInterlocks.MoveOk);
 rtEnableMode(CLK:=(nEnableMode = E_StageEnableMode.DURING_MOTION));
 // Handle auto-enable timing
 CASE nEnableMode OF
@@ -490,53 +490,5 @@ stMotionEpicsItf.stAxisStatus.nCommand:=INT_TO_UINT(stMotionEpicsItf.nCommand); 
 stMotionEpicsItf.stAxisStatus.nErrorId:=stMotionEpicsItf.nErrorId;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionDrive">
-      <LineId Id="613" Count="103" />
-      <LineId Id="719" Count="26" />
-      <LineId Id="759" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.ClearVars">
-      <LineId Id="3" Count="7" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.EnableMode.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.EnableMode.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.FB_init">
-      <LineId Id="3" Count="7" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Name.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.Name.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.PostMoveHandling">
-      <LineId Id="12" Count="1" />
-      <LineId Id="15" Count="7" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.PreMoveHandling">
-      <LineId Id="3" Count="26" />
-      <LineId Id="32" Count="3" />
-      <LineId Id="79" Count="0" />
-      <LineId Id="39" Count="0" />
-      <LineId Id="41" Count="37" />
-      <LineId Id="81" Count="0" />
-      <LineId Id="83" Count="10" />
-      <LineId Id="80" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.RestoreSettings">
-      <LineId Id="1" Count="6" />
-    </LineIds>
-    <LineIds Name="FB_MotionDrive.UpdateParamAndStatus">
-      <LineId Id="2" Count="27" />
-    </LineIds>
   </POU>
 </TcPlcObject>

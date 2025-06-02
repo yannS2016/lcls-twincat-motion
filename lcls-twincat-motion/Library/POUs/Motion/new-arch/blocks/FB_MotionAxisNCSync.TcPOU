@@ -64,14 +64,22 @@ END_VAR
         <ST><![CDATA[THIS^.MotionSyncPrivateRef REF=  MotionSyncPrivateRef ;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionAxisNCSync">
-      <LineId Id="57" Count="25" />
-      <LineId Id="85" Count="0" />
-      <LineId Id="83" Count="1" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisNCSync.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
+    <Method Name="StartMove" Id="{b17f546a-1978-48f5-8c58-2e814a679037}">
+      <Declaration><![CDATA[(*
+    Check all post condition before updating bCommandedMoveAbsolute
+    The implmentatation will depend on the axis type
+    DS402 NC/Direct axis : Implementation need to check that the drive is in the correct mode before initaiting the move then set bCommandedMoveAbsolute
+    MP NC axis : will immediately write to bCommandedMoveAbsolute
+*)
+METHOD StartMove : BOOL
+VAR_INPUT
+    MoveMode	: E_EpicsMotorCmd;
+    CmdExecute	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[StartMove:=SUPER^.StartMove(MoveMode, CmdExecute);]]></ST>
+      </Implementation>
+    </Method>
   </POU>
 </TcPlcObject>
