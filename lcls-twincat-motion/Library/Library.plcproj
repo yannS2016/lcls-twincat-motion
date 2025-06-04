@@ -316,22 +316,16 @@
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisDS402.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisDS402NCSync.TcPOU">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisDS402NC.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisNC.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisNCSync.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisDS402NC.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionDrive.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocksCommon.TcPOU">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocks.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocksSync.TcPOU">
@@ -346,7 +340,7 @@
     <Compile Include="POUs\Motion\new-arch\blocks\FB_PersistentDataStorage.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_DS402DriveCommon.TcPOU">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisCommonDS402.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_PneumaticAxis.TcPOU">
@@ -355,7 +349,7 @@
     <Compile Include="POUs\Motion\new-arch\blocks\FB_BrakeSync.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\ITFs\I_BrakeCommon.TcIO">
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_Brake.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionAxis.TcIO">
@@ -370,7 +364,7 @@
     <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionDrive.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionInterlocksCommon.TcIO">
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionInterlocks.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionLogger.TcIO">
@@ -379,7 +373,7 @@
     <Compile Include="POUs\Motion\new-arch\ITFs\I_PersistentDataStorage.TcIO">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\ITFs\I_DS402DriveCommon.TcIO">
+    <Compile Include="POUs\Motion\new-arch\ITFs\I_MotionAxisCommonDS402.TcIO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\PMPS\FB_EncErrorFFO.TcPOU">

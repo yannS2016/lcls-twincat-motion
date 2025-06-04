@@ -174,6 +174,12 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>
+    <Method Name="Home" Id="{81f41c85-0f01-46bf-a70c-c634b453d120}">
+      <Declaration><![CDATA[METHOD Home
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
     <Property Name="HomeBusy" Id="{d6d79540-89df-4e37-8d40-761027f4650a}">
       <Declaration><![CDATA[PROPERTY HomeBusy : BOOL]]></Declaration>
       <Get Name="Get" Id="{2085b480-133e-431e-af2b-2e28067f5fcf}">

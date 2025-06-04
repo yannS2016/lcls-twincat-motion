@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_MotionInterlocksSync" Id="{31d02803-cb6f-4169-a724-4439f2f860a1}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionInterlocksSync EXTENDS FB_MotionInterlocksCommon
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionInterlocksSync EXTENDS FB_MotionInterlocks
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
@@ -58,15 +58,5 @@ END_VAR
         <ST><![CDATA[THIS^.MotionSyncPrivateRef REF=MotionSyncPrivateRef ;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionInterlocksSync">
-      <LineId Id="3" Count="11" />
-      <LineId Id="28" Count="0" />
-      <LineId Id="27" Count="0" />
-      <LineId Id="15" Count="11" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksSync.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

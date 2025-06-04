@@ -16,7 +16,7 @@ VAR
     fbMotionInterlocksSync: FB_MotionInterlocksSync ( iMotionLogger:=fbMotionLogger, MotionSyncPrivateRef:=fbMotionSyncPrivate);
 
 
-    fbMotionAxisNCSync : FB_MotionAxisNCSync  ( AxisRef:=NcAxis_GVL.testAxis,
+    fbMotionAxisNCSync : FB_MotionAxisNC  ( AxisRef:=NcAxis_GVL.testAxis,
                                                         iPersistentDataStorage :=fbPersistentDataStorage,
                                                         iMotionLogger:=fbMotionLogger,
                                                         MotionSyncPrivateRef:=fbMotionSyncPrivate ) := ( PowerOverride:=100.0,HomePosition := 0.0,HomeMode:=ENUM_EpicsHomeCmd.LOW_LIMIT, Name:= 'Module1');

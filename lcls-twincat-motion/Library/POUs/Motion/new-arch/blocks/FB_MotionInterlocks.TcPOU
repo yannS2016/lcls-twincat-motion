@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <POU Name="FB_MotionInterlocksCommon" Id="{875748a6-e3b4-4780-a711-0e1eb4182bc0}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionInterlocksCommon IMPLEMENTS I_MotionInterlocksCommon
+  <POU Name="FB_MotionInterlocks" Id="{875748a6-e3b4-4780-a711-0e1eb4182bc0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MotionInterlocks IMPLEMENTS I_MotionInterlocks
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
@@ -129,8 +129,8 @@ VAR
     bLimHitMoving : BOOL;
     bStandStill	  : BOOL;
     rtStandStill : R_TRIG;
-	bPositiveDirection : BOOL;
-	bNegativeDirection : BOOL;
+    bPositiveDirection : BOOL;
+    bNegativeDirection : BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -152,45 +152,45 @@ ftBackwardEnabled (CLK:=bAllBackwardEnabled);
 bMoveOk := bUserEnable AND bHardwareEnable AND bAllBackwardEnabled AND bAllForwardEnabled;
 
 IF NOT bMoveOk THEN
-	IF NOT bUserEnable THEN
-		bError := TRUE;
-		nErrorID:= 1;
-		sMessage := 'User enable interlock is Triggered!';
-	ELSIF NOT bHardwareEnable THEN
-		bError := TRUE;
-		nErrorID:= 1;
-		sMessage := 'Hardware enbale Interlocks is Triggered!';
-	// Axis Moving:
-	// Pos Direction Move interruption: ftForwardEnabled.Q AND bPositiveDirection
-	// Neg Direction Move interruption: ftBackwardEnabled.Q AND bNegativeDirection
-	ELSIF (ftForwardEnabled.Q AND bPositiveDirection) OR (ftBackwardEnabled.Q AND bNegativeDirection) AND NOT bHomeBusy  THEN
-		// Not an error, just a warning
-		IF NOT bAllForwardEnabled THEN
-			sMessage:='Cannot move past positive limit.';
-		ELSIF NOT bAllBackwardEnabled THEN
-			sMessage:='Cannot move past Negative limit.';
-		END_IF
-		bError:=FALSE;
-		nErrorID:=0;
-		bWarning:=TRUE;
-		bLimHit := TRUE;
-		bLimHitMoving:=TRUE;
-		bLimOverride:=TRUE;
-	// axis idling : critical limit enabled faillure
- 	ELSIF NOT bMoveBusy AND NOT bWarning AND NOT (bAllForwardEnabled AND bAllBackwardEnabled) THEN
-		bError := TRUE;
-		nErrorID:= 1;
- 		bLimHit := TRUE;
- 		bLimHitIdling := TRUE;
- 		sMessage:='Forward or Bakward limit enable faillure!'; 
-	END_IF
+    IF NOT bUserEnable THEN
+        bError := TRUE;
+        nErrorID:= 1;
+        sMessage := 'User enable interlock is Triggered!';
+    ELSIF NOT bHardwareEnable THEN
+        bError := TRUE;
+        nErrorID:= 1;
+        sMessage := 'Hardware enbale Interlocks is Triggered!';
+    // Axis Moving:
+    // Pos Direction Move interruption: ftForwardEnabled.Q AND bPositiveDirection
+    // Neg Direction Move interruption: ftBackwardEnabled.Q AND bNegativeDirection
+    ELSIF (ftForwardEnabled.Q AND bPositiveDirection) OR (ftBackwardEnabled.Q AND bNegativeDirection) AND NOT bHomeBusy  THEN
+        // Not an error, just a warning
+        IF NOT bAllForwardEnabled THEN
+            sMessage:='Cannot move past positive limit.';
+        ELSIF NOT bAllBackwardEnabled THEN
+            sMessage:='Cannot move past Negative limit.';
+        END_IF
+        bError:=FALSE;
+        nErrorID:=0;
+        bWarning:=TRUE;
+        bLimHit := TRUE;
+        bLimHitMoving:=TRUE;
+        bLimOverride:=TRUE;
+    // axis idling : critical limit enabled faillure
+     ELSIF NOT bMoveBusy AND NOT bWarning AND NOT (bAllForwardEnabled AND bAllBackwardEnabled) THEN
+        bError := TRUE;
+        nErrorID:= 1;
+         bLimHit := TRUE;
+         bLimHitIdling := TRUE;
+         sMessage:='Forward or Bakward limit enable faillure!';
+    END_IF
 ELSE
-	bLimHit := FALSE;
-	bLimHitMoving := bLimHit;
-	bLimHitIdling := bLimHit;
-	sMessage := '';
+    bLimHit := FALSE;
+    bLimHitMoving := bLimHit;
+    bLimHitIdling := bLimHit;
+    sMessage := '';
     bError := FALSE;
-	bWarning := FALSE;
+    bWarning := FALSE;
     nErrorID:= 0;
 END_IF
 
@@ -198,7 +198,7 @@ IF bReset THEN
     bReset := FALSE;
     bError := FALSE;
     //bWarning := FALSE;
-	nErrorID:= 0;
+    nErrorID:= 0;
     bLimOverride := FALSE;
     bMoveOk := FALSE;
     bLimHit := FALSE;
@@ -408,59 +408,5 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
-    <LineIds Name="FB_MotionInterlocksCommon">
-      <LineId Id="689" Count="15" />
-      <LineId Id="711" Count="58" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.AllBackwardEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.AllEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.AllForwardEnabled.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.Error.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.ErrorID.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.FB_Init">
-      <LineId Id="3" Count="0" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.LimBwdEnable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.LimFwdEnable.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.LimHit.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.LimHitIdling.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.LimHitMoving.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.LimHome.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.LimHome.Set">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.Message.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.MoveOk.Get">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionInterlocksCommon.Warning.Get">
-      <LineId Id="1" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>

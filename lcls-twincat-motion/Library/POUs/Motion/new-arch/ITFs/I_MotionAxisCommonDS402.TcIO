@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <Itf Name="I_MotionAxisCommonDS402" Id="{5cfa6b6b-bfba-4af4-97dd-dc8ae67741ad}">
+    <Declaration><![CDATA[INTERFACE I_MotionAxisCommonDS402
+]]></Declaration>
+    <Method Name="DS402StateMachine" Id="{f34b87af-faea-4705-b0f9-691a780e3e37}">
+      <Declaration><![CDATA[METHOD DS402StateMachine
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Property Name="Operational" Id="{58691f2a-6d0a-4bad-9226-70b803c51399}">
+      <Declaration><![CDATA[PROPERTY Operational : BOOL]]></Declaration>
+      <Get Name="Get" Id="{2bdb4f42-1332-42f1-9883-3120996c5c68}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{8db2765c-b1af-4a6b-8530-ac9bd2cb12d3}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
+  </Itf>
+</TcPlcObject>

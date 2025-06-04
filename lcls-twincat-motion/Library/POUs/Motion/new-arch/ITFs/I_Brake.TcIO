@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <Itf Name="I_BrakeCommon" Id="{2fdedca0-5e5a-409f-9adf-ce2c06cc3a8d}">
-    <Declaration><![CDATA[INTERFACE I_BrakeCommon
+  <Itf Name="I_Brake" Id="{2fdedca0-5e5a-409f-9adf-ce2c06cc3a8d}">
+    <Declaration><![CDATA[INTERFACE I_Brake
 ]]></Declaration>
     <Property Name="BrakeMode" Id="{bc3ee5d0-39c0-4532-b6ec-0f218e94da1d}">
       <Declaration><![CDATA[PROPERTY BrakeMode : E_StageBrakeMode]]></Declaration>

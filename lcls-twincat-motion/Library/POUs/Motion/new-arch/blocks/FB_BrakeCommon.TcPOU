@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <POU Name="FB_BrakeCommon" Id="{35002c1d-e5f8-4ba8-b8af-8bec869e389f}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_BrakeCommon IMPLEMENTS I_BrakeCommon
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_BrakeCommon IMPLEMENTS I_Brake
 VAR_INPUT
 END_VAR
 VAR_OUTPUT

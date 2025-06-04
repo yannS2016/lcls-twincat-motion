@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <POU Name="FB_DS402DriveCommon" Id="{da599580-4fae-4a91-a98c-8fb0225e058f}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK INTERNAL FB_DS402DriveCommon IMPLEMENTS I_DS402DriveCommon
+  <POU Name="FB_MotionAxisCommonDS402" Id="{da599580-4fae-4a91-a98c-8fb0225e058f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK INTERNAL FB_MotionAxisCommonDS402 IMPLEMENTS I_MotionAxisCommonDS402
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
@@ -47,6 +47,14 @@ END_VAR
     <Implementation>
       <ST><![CDATA[]]></ST>
     </Implementation>
+    <Method Name="DS402StateMachine" Id="{456054c4-135a-4c6b-bfdc-3cf49d86877f}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD DS402StateMachine
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="HomeDS402" Id="{326bfaed-11e8-475f-9e97-245b187b56ff}">
       <Declaration><![CDATA[METHOD INTERNAL HomeDS402
 VAR_INPUT
@@ -146,6 +154,27 @@ IF bHomeDone THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
+    <Property Name="Operational" Id="{309b730b-2fc9-4c71-9994-c86a6edd3f47}">
+      <Declaration><![CDATA[{warning 'Add property implementation'}
+PROPERTY Operational : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{b14d148a-84bb-4a8d-9d71-9c79f2a7bd52}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{a386ef15-adbb-469e-bedd-c7b4b8763da3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="SetModeOfOperation" Id="{c44db6b6-67d7-4d5e-89c8-bd1917384e4e}">
       <Declaration><![CDATA[METHOD INTERNAL SetModeOfOperation : BOOL;
 VAR_INPUT

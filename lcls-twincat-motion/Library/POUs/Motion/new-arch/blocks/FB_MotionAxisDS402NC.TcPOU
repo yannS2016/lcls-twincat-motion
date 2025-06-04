@@ -1,40 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <POU Name="FB_MotionAxisDS402NC" Id="{89fef5ac-f21f-4b51-b225-9ff16c28749c}" SpecialFunc="None">
+  <POU Name="FB_MotionAxisDS402NC" Id="{0e4f30c7-9701-46fd-b9a3-891c9877e9a0}" SpecialFunc="None">
     <Declaration><![CDATA[{attribute 'call_after_init'}
-FUNCTION_BLOCK FB_MotionAxisDS402NC EXTENDS FB_MotionAxisCommon
+FUNCTION_BLOCK FB_MotionAxisDS402NC EXTENDS FB_MotionAxisNC
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
-    fbDs402DriveCommon 	: FB_DS402DriveCommon;
+    //MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
+    fbMotionAxisCommonDS402 	: FB_MotionAxisCommonDS402;
     eModeOfOperation 	: E_DS402OpMode;
     bStartReady : BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[THIS^.fbDs402DriveCommon.HomeDS402(	Start := SUPER^.bCommandedMoveHome,
-                                    HomingMethod := SUPER^.eHomingMethod,
-                                    HomingSpeedsFast := SUPER^.fHomingSpeedsFast,
-                                    HomingSpeedsSlow := SUPER^.fHomingSpeedsFast,
-                                    HomingAcceleration := SUPER^.fHomingAcceleration,
-                                    HomeOffset := SUPER^.fHomingAcceleration,
-                                    fHomePosition := SUPER^.fHomingAcceleration,
-                                    UserAbort := SUPER^.bInterrupted,
-                                    MostRecentModeofOperation:=eModeOfOperation );
-
-SUPER^.bHomeBusy :=	THIS^.fbDs402DriveCommon.bHomeBusy;
-SUPER^.bHomeDone:=	THIS^.fbDs402DriveCommon.bHomeDone;
-SUPER^.bHomeInterrupted:= THIS^.fbDs402DriveCommon.bHomeInterrupted;
-SUPER^.bHomeError:=	THIS^.fbDs402DriveCommon.bHomeError;
-SUPER^.nHomeErrorID:=	THIS^.fbDs402DriveCommon.nHomeErrorID;
-
-// Call base class body
-SUPER^();
-]]></ST>
+      <ST><![CDATA[SUPER^();]]></ST>
     </Implementation>
-    <Method Name="FB_Init" Id="{bf2ee28c-14f4-427d-8356-8d4c95249368}">
+    <Method Name="FB_Init" Id="{1dac3e04-3581-442d-91f0-9c2dc1b453ee}">
       <Declaration><![CDATA[(*FB_Init is always available implicitly and it is used primarily for initialization.
 The return value is not evaluated. For a specific influence, you can also declare the
 methods explicitly and provide additional code there with the standard initialization
@@ -48,11 +31,36 @@ VAR_INPUT
     AxisRef	: REFERENCE TO AXIS_REF;
     iPersistentDataStorage	: I_PersistentDataStorage;
     iMotionLogger	: I_MotionLogger;
+    MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
     ModeOfOperation 	: E_DS402OpMode;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.ModeOfOperation := ModeOfOperation;]]></ST>
+        <ST><![CDATA[THIS^.ModeOfOperation := ModeOfOperation;
+//THIS^.MotionSyncPrivateRef REF=  MotionSyncPrivateRef ;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Home" Id="{eb6ca2c3-dadc-488d-aa64-29befcb2a8c6}">
+      <Declaration><![CDATA[METHOD Home
+VAR_INPUT
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+THIS^.fbMotionAxisCommonDS402.HomeDS402(	Start := SUPER^.bCommandedMoveHome,
+                                    HomingMethod := SUPER^.eHomingMethod,
+                                    HomingSpeedsFast := SUPER^.fHomingSpeedsFast,
+                                    HomingSpeedsSlow := SUPER^.fHomingSpeedsFast,
+                                    HomingAcceleration := SUPER^.fHomingAcceleration,
+                                    HomeOffset := SUPER^.fHomingAcceleration,
+                                    fHomePosition := SUPER^.fHomingAcceleration,
+                                    UserAbort := SUPER^.bInterrupted,
+                                    MostRecentModeofOperation:=eModeOfOperation );
+
+SUPER^.bHomeBusy :=	THIS^.fbMotionAxisCommonDS402.bHomeBusy;
+SUPER^.bHomeDone:=	THIS^.fbMotionAxisCommonDS402.bHomeDone;
+SUPER^.bHomeInterrupted:= THIS^.fbMotionAxisCommonDS402.bHomeInterrupted;
+SUPER^.bHomeError:=	THIS^.fbMotionAxisCommonDS402.bHomeError;
+SUPER^.nHomeErrorID:=	THIS^.fbMotionAxisCommonDS402.nHomeErrorID;]]></ST>
       </Implementation>
     </Method>
     <Method Name="StartMove" Id="{04beed87-ecbf-46f2-ac0b-87255641b197}">
@@ -64,38 +72,19 @@ END_VAR
 *)
 METHOD StartMove : BOOL
 VAR_INPUT
-    MoveMode : E_MoveMode;
-    CmdExecute : BOOL;
+    MoveMode	: E_EpicsMotorCmd;
+    CmdExecute	: BOOL;
 END_VAR
-
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF THIS^.fbDs402DriveCommon.SetModeOfOperation(THIS^.eModeOfOperation) THEN
-    CASE MoveMode  OF
-        E_EpicsMotorCmd.MOVE_ABSOLUTE:
-            SUPER^.bCommandedMoveAbsolute := CmdExecute;
-        E_EpicsMotorCmd.HOME:
-            SUPER^.bCommandedMoveHome:= CmdExecute;
-    END_CASE
-    // for typical NC axis no further test is needed
-    StartMove := CmdExecute;
+        <ST><![CDATA[IF THIS^.fbMotionAxisCommonDS402.SetModeOfOperation(THIS^.eModeOfOperation) THEN
+    THIS^.bStartReady := SUPER^.StartMove(MoveMode, CmdExecute);
 ELSE
-    StartMove := FALSE;
+    THIS^.bStartReady := FALSE;
 END_IF
 
 StartMove := THIS^.bStartReady;]]></ST>
       </Implementation>
     </Method>
-    <LineIds Name="FB_MotionAxisDS402NC">
-      <LineId Id="3" Count="17" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.FB_Init">
-      <LineId Id="2" Count="0" />
-    </LineIds>
-    <LineIds Name="FB_MotionAxisDS402NC.StartMove">
-      <LineId Id="3" Count="12" />
-      <LineId Id="2" Count="0" />
-    </LineIds>
   </POU>
 </TcPlcObject>
