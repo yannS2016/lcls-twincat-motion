@@ -307,7 +307,7 @@
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_BrakeCommon.TcPOU">
+    <Compile Include="POUs\Motion\new-arch\blocks\FB_Brake.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionAxisCommon.TcPOU">
@@ -328,9 +328,6 @@
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocks.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionInterlocksSync.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_MotionLogger.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -344,9 +341,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\blocks\FB_PneumaticAxis.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Motion\new-arch\blocks\FB_BrakeSync.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\new-arch\ITFs\I_Brake.TcIO">

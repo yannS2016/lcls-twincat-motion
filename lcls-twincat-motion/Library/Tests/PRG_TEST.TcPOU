@@ -11,12 +11,12 @@ VAR
     fbMotionSyncPrivate : FB_MotionSyncPrivate;
 
     //Brakes : brake fb participate in sync comm with fbMotionDrive, fbMotionAxis and fbMotionInterlocks
-    fbBrakeSync : FB_BrakeSync(MotionSyncPrivateRef:=fbMotionSyncPrivate) := (BrakeMode := E_StageBrakeMode.IF_MOVING);
+    fbBrake : FB_Brake(MotionSyncPrivateRef:=fbMotionSyncPrivate) := (BrakeMode := E_StageBrakeMode.IF_MOVING);
 
-    fbMotionInterlocksSync: FB_MotionInterlocksSync ( iMotionLogger:=fbMotionLogger, MotionSyncPrivateRef:=fbMotionSyncPrivate);
+    fbMotionInterlocks : FB_MotionInterlocks ( iMotionLogger:=fbMotionLogger, MotionSyncPrivateRef:=fbMotionSyncPrivate);
 
 
-    fbMotionAxisNCSync : FB_MotionAxisNC  ( AxisRef:=NcAxis_GVL.testAxis,
+    fbMotionAxis : FB_MotionAxisNC  ( AxisRef:=NcAxis_GVL.testAxis,
                                                         iPersistentDataStorage :=fbPersistentDataStorage,
                                                         iMotionLogger:=fbMotionLogger,
                                                         MotionSyncPrivateRef:=fbMotionSyncPrivate ) := ( PowerOverride:=100.0,HomePosition := 0.0,HomeMode:=ENUM_EpicsHomeCmd.LOW_LIMIT, Name:= 'Module1');
@@ -24,9 +24,9 @@ VAR
     M1 : ST_MotionEpicsItf := (sName:='Main Axis', fPosition:=10000.0, fVelocity:=50.0, fAcceleration:=50.0, fDeceleration:=50.0);
     fbMotionDrive: FB_MotionDrive ( stMotionEpicsItf := M1,
                                     MotionSyncPrivateRef := fbMotionSyncPrivate,
-                                    iMotionAxisCommon:=fbMotionAxisNCSync,
-                                    iBrake:=fbBrakeSync,
-                                    iMotionInterlocks:=fbMotionInterlocksSync,
+                                    iMotionAxisCommon:=fbMotionAxis,
+                                    iBrake:=fbBrake,
+                                    iMotionInterlocks:=fbMotionInterlocks,
                                     iMotionLogger:=fbMotionLogger,
                                     ) := (Name := 'SmarAct MCS2',  EnableMode:=ENUM_StageEnableMode.DURING_MOTION );
     bLimitFwdEnable AT %Q*: BOOL;
@@ -38,9 +38,9 @@ END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[
-fbMotionInterlocksSync();
+fbMotionInterlocks();
 fbMotionSyncPrivate();
-fbMotionAxisNCSync();
+fbMotionAxis();
 fbMotionDrive();
 ]]></ST>
     </Implementation>

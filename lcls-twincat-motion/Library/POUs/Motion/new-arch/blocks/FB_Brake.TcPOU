@@ -1,12 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <POU Name="FB_BrakeCommon" Id="{35002c1d-e5f8-4ba8-b8af-8bec869e389f}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK FB_BrakeCommon IMPLEMENTS I_Brake
+  <POU Name="FB_Brake" Id="{35002c1d-e5f8-4ba8-b8af-8bec869e389f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Brake IMPLEMENTS I_Brake
 VAR_INPUT
 END_VAR
 VAR_OUTPUT
 END_VAR
 VAR
+    {attribute 'hide'}
+    MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
     // Determines when we automatically disengage the brake
     nBrakeMode: E_StageBrakeMode:=E_StageBrakeMode.IF_ENABLED;
     // NC Brake Output: TRUE to release brake
@@ -16,7 +18,13 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// Handle the brake. TRUE means brake disabled/released
+      <ST><![CDATA[// Optional: Read external private data
+IF NOT __ISVALIDREF(MotionSyncPrivateRef) THEN
+    RETURN;
+END_IF
+eMotionState := MotionSyncPrivateRef.SyncPrvAxisState;
+// call super body.
+// Handle the brake. TRUE means brake disabled/released
 IF nBrakeMode <> E_StageBrakeMode.NO_BRAKE THEN
     CASE eMotionState OF
         MC_AXISSTATE_UNDEFINED,
@@ -32,7 +40,8 @@ IF nBrakeMode <> E_StageBrakeMode.NO_BRAKE THEN
         ELSE
             bBrakeRelease := TRUE;
     END_CASE
-END_IF]]></ST>
+END_IF
+]]></ST>
     </Implementation>
     <Property Name="BrakeMode" Id="{120a74b0-456f-4c96-8249-5d148ac1a0a2}">
       <Declaration><![CDATA[{warning 'Add property implementation'}
@@ -85,9 +94,10 @@ METHOD FB_Init: BOOL
 VAR_INPUT
     bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
     bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
+    MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[]]></ST>
+        <ST><![CDATA[THIS^.MotionSyncPrivateRef REF=  MotionSyncPrivateRef ;]]></ST>
       </Implementation>
     </Method>
     <Property Name="MotionState" Id="{8536b6f3-0115-4fd1-af52-a18435a7da80}">

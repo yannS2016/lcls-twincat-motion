@@ -9,6 +9,8 @@ END_VAR
 VAR
     {attribute 'hide'}
     iMotionLogger 		: I_MotionLogger;
+    {attribute 'hide'}
+    MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
     (* Hardware *)
    // NC Forward Limit Switch: TRUE if ok to move
     bLimitForwardEnable AT %I*: BOOL;
@@ -134,7 +136,22 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND stEPSForwardEnable.bEPS_OK;
+      <ST><![CDATA[// Read external private data
+IF NOT __ISVALIDREF(MotionSyncPrivateRef) THEN
+    RETURN;
+END_IF
+// some of these vars can be used for addtional interlocks checks in
+// in this class or in derived implementation
+THIS^.bReset := THIS^.MotionSyncPrivateRef.SyncPrvAbortDone;
+THIS^.bHomeBusy :=  THIS^.MotionSyncPrivateRef.SyncPrvHomeBusy;
+THIS^.bMoveBusy :=  THIS^.MotionSyncPrivateRef.SyncPrvMoveBusy;
+THIS^.bMoveDone :=  THIS^.MotionSyncPrivateRef.SyncPrvMoveDone;
+THIS^.bNewMoveReq :=  THIS^.MotionSyncPrivateRef.SyncPrvNewMoveReq;
+THIS^.bEnable :=  THIS^.MotionSyncPrivateRef.bSyncPrvEnable;
+THIS^.bPositiveDirection :=THIS^.MotionSyncPrivateRef.SyncPrvPositiveDirection;
+THIS^.bNegativeDirection :=THIS^.MotionSyncPrivateRef.SyncPrvNegativeDirection;
+
+bAllBackwardEnabled := bLimitBackwardEnable AND (bGantryBackwardEnable OR NOT bGantryAxis) AND stEPSForwardEnable.bEPS_OK;
 bAllForwardEnabled := bLimitForwardEnable AND (bGantryForwardEnable OR NOT bGantryAxis) AND stEPSBackwardEnable.bEPS_OK;
 /////////////////////////////////////////////////////////////////////////////
 // SoftInterlock is a user defined interloc logic active high
@@ -209,6 +226,16 @@ END_IF
 
 rtError(CLK:=bError OR bWarning);
 ftError(CLK:=bError);
+
+// write external private data
+// control MC_Power based on interlocks
+THIS^.MotionSyncPrivateRef.SyncPrvAllEn := THIS^.bAllEnabled;
+THIS^.MotionSyncPrivateRef.SyncPrvAllBwdEn := THIS^.bAllBackwardEnabled;
+THIS^.MotionSyncPrivateRef.SyncPrvAllFwdEn := THIS^.bAllForwardEnabled;
+// Needed by NC homing Methods
+THIS^.MotionSyncPrivateRef.SyncPrvLimBwd := THIS^.bLimitBackwardEnable;
+THIS^.MotionSyncPrivateRef.SyncPrvLimFwd := THIS^.bLimitForwardEnable;
+THIS^.MotionSyncPrivateRef.SyncPrvHome := THIS^.bHome;
 ]]></ST>
     </Implementation>
     <Property Name="AllBackwardEnabled" Id="{418fcf62-072d-4be6-9a52-23305e127201}">
@@ -283,9 +310,11 @@ VAR_INPUT
     bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
     bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)
     iMotionLogger 		: I_MotionLogger;
+    MotionSyncPrivateRef : REFERENCE TO FB_MotionSyncPrivate;
 END_VAR]]></Declaration>
       <Implementation>
         <ST><![CDATA[THIS^.iMotionLogger := iMotionLogger;
+THIS^.MotionSyncPrivateRef REF=MotionSyncPrivateRef ;
 ]]></ST>
       </Implementation>
     </Method>
