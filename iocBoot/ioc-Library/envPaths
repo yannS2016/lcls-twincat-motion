@@ -1,0 +1,2 @@
+epicsEnvSet("IOC_TOP", "/c/Users/ysmandza/Documents/lcls/Libs/lcls-twincat-motion/iocBoot/ioc-Library")
+epicsEnvSet("IOC_DATA", "/cds/data/iocData")

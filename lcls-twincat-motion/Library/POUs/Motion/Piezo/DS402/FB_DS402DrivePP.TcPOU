@@ -203,9 +203,6 @@ END_VAR
 		SUPER^.MoveBusy:=FALSE;
 		SUPER^.tonHoldTime.IN:=TRUE;
 		SUPER^.bDiscreteInit := FALSE;
-		// the axis will reset bit 12 after a neg edge on this bit to signal readiness for new set point
-// 		SUPER^.stPiezoStage.nPiezoDriveControl.4:=FALSE;
-//         SUPER^.eAxisState:= MC_AxisStates.MC_AXISSTATE_STANDSTILL;
 		
     E_DS402MotionState.ERROR:
 		SUPER^.Error:= TRUE;
@@ -495,5 +492,68 @@ END_VAR
         <ST><![CDATA[SUPER^.StateMachine();]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_DS402DrivePP">
+      <LineId Id="3" Count="10" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Abort">
+      <LineId Id="3" Count="14" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Brake">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.ContinousMove">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.DiscreteMove">
+      <LineId Id="3" Count="134" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Halt">
+      <LineId Id="3" Count="6" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.HandleMoveRequest">
+      <LineId Id="3" Count="108" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Home">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Interlock">
+      <LineId Id="3" Count="24" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Logger">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.MoveAbsolute">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.MoveRelative">
+      <LineId Id="3" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.MoveVelocity">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.PostInit">
+      <LineId Id="3" Count="28" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.PostInterlocks">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.PostMoveInterlocks">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.Power">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DrivePP.StateMachine">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>
