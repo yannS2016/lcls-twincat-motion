@@ -328,5 +328,9 @@ fbSaveRestore(
     stMotionStage:=stMotionStage,
     bEnable:=stMotionStage.nHomingMode <> E_EpicsHomeCmd.NONE);]]></ST>
     </Implementation>
+    <LineIds Name="FB_MotionStage">
+      <LineId Id="3" Count="285" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>

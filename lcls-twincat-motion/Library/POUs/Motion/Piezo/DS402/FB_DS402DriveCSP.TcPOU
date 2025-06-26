@@ -129,5 +129,56 @@ METHOD MoveRelative
         <ST><![CDATA[SUPER^.StateMachine();]]></ST>
       </Implementation>
     </Method>
+    <LineIds Name="FB_DS402DriveCSP">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Abort">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Brake">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.EncValue">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Halt">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.HandleMoveRequest">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Home">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Interlock">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Logger">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.MotionParams">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.MoveAbsolute">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.MoveRelative">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.MoveVelocity">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Power">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.Reset">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.SetEnables">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DS402DriveCSP.StateMachine">
+      <LineId Id="2" Count="0" />
+    </LineIds>
   </POU>
 </TcPlcObject>
