@@ -117,9 +117,6 @@
     <Compile Include="DUTs\Deprecated\ENUM_StatePMPSStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\DS402\ENUM_AxisStates.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="DUTs\DS402\E_DS402DriveState.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -338,6 +335,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\New-Arch\FBs\DS402\FB_MotionStageMCS2CSP.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Motion\New-Arch\FBs\DS402\FB_MotionStageE727.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Motion\New-Arch\FBs\NC\FB_AxisStatusNC.TcPOU">
