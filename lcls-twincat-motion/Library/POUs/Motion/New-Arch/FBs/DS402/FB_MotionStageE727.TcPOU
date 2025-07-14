@@ -619,7 +619,14 @@ THIS^.eModule := eModule;
     Deceleration := stMotionStage.fDeceleration,
     BufferMode := eBufferMode,
 );
-]]></ST>
+
+IF fbMcHalt.Done (*OR fbMcReset.Done*) THEN
+    (*Hold the position in close loop before dropping power, a positional drift will occur then*)
+    IF (stMotionStage.nEnableMode = E_StageEnableMode.DURING_MOTION ) THEN
+        bPositionHold := TRUE;
+        tonHoldTime.IN:=TRUE;
+    END_IF
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="Home" Id="{33a0ebff-5827-46e7-8879-a94910cac0f9}">
@@ -816,7 +823,16 @@ fbMcMoveAbsolute(
     Acceleration := stMotionStage.fAcceleration,
     Deceleration := stMotionStage.fDeceleration,
     BufferMode := eBufferMode,
-);]]></ST>
+);
+
+
+IF fbMcMoveAbsolute.Done (*OR fbMcReset.Done*) THEN
+    (*Hold the position in close loop before dropping power, a positional drift will occur then*)
+    IF (stMotionStage.nEnableMode = E_StageEnableMode.DURING_MOTION ) THEN
+        bPositionHold := TRUE;
+        tonHoldTime.IN:=TRUE;
+    END_IF
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="PersistParameters" Id="{dbd76dd7-3eb8-45e8-8529-04cd577902f3}">
@@ -883,10 +899,7 @@ bInit := TRUE;
     Enable_Positive := stMotionStage.bAllForwardEnable,
     Enable_Negative := stMotionStage.bAllBackwardEnable,
     Override := 100.0,
-    BufferMode := eBufferMode,
-    (*Enabled*)
-
-);]]></ST>
+    BufferMode := eBufferMode );]]></ST>
       </Implementation>
     </Method>
     <Method Name="ReadDriveCodes" Id="{f3477d1e-0680-4118-8181-508576dceadf}">
@@ -929,8 +942,17 @@ END_IF
       <Implementation>
         <ST><![CDATA[fbMcReset(
     Axis := stMotionStage.Axis,
-    Execute := stMotionStage.bReset AND bCSPModeEnabled (* AND Axis.Status.Error*),
-);]]></ST>
+    Execute := bLocalReset AND bCSPModeEnabled
+);
+
+IF fbMcReset.Done OR fbMcReset.Error THEN
+    bLocalReset := FALSE;
+    IF (stMotionStage.nEnableMode = E_StageEnableMode.DURING_MOTION ) THEN
+        stMotionStage.bEnable:=FALSE;
+    END_IF
+
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="RestoreMotionParams" Id="{dbf842b0-031b-488e-84e3-ad2f1865a2cb}">
