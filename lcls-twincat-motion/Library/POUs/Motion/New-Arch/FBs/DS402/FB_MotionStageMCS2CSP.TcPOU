@@ -112,8 +112,7 @@ VAR
     bLocalExec			: BOOL;
     // Save abd restore encoder value
     {attribute 'hide'}
-    bInit				: BOOL;
-    {attribute 'hide'}
+    bSystemInit				: BOOL;
     bHomeDone 			: BOOL;
     {attribute 'hide'}
     bStepModeEnabled	: BOOL;
@@ -255,6 +254,8 @@ VAR
     nCmdDataLocal: INT;
    {attribute 'hide'}
     bManualTransition: BOOL;
+   {attribute 'hide'}
+    tonInitTimer : TON;
 END_VAR
 
 VAR CONSTANT
@@ -296,16 +297,21 @@ END_VAR
     RETURN;
 END_IF
 
+// when the plc autoboot it appears reading from i/o is not yet after 'call_after_init'
+IF bSystemInit THEN
+    tonInitTimer.IN:=bSystemInit;
+    bExecParamsRead := TRUE;
+    bSystemInit := FALSE;
+END_IF
+tonInitTimer(PT:=T#1S);
 (* Done once after init*)
-IF bInit THEN
-    stMotionStage.nMotionAxisID := stMotionStage.Axis.NcToPlc.AxisId;
+IF tonInitTimer.Q THEN
     (* Clear drive error/wraning condition, in open loop mode
        this will trigger a correct startup for procedure *)
     stDS402Drive.nDS402DriveControl := 128;
-    // fist cycle reading of NC paramters
-    bExecParamsRead := TRUE;
-    bInit := FALSE;
+    tonInitTimer.IN:=FALSE;
 END_IF
+
 (* Check for the plc shortcut commands
    Used for testing or to circumvent motor record issues*)
 rtMoveCmdShortcut(CLK:=stMotionStage.bMoveCmd);
@@ -382,7 +388,7 @@ rtEnableMode(CLK:=(stMotionStage.nEnableMode = E_StageEnableMode.DURING_MOTION))
 CASE stMotionStage.nEnableMode OF
     (* Not recommended, not tested *)
     E_StageEnableMode.ALWAYS:
-        stMotionStage.bEnable:=FALSE;
+        stMotionStage.bEnable:=TRUE;
     E_StageEnableMode.DURING_MOTION:
         IF rtEnableMode.Q THEN
             stMotionStage.bEnable := FALSE;
@@ -1005,7 +1011,7 @@ nChanhomeAccIdx 	:= nhomingAccBase 		+ ((eModule-1) * nChanOfsBase);
 nChanStepIdx    	:= nOlStepBase 			+ ((eModule-1) * nChanOfsBase);
 nChanStepFreqIdx  := nOlStepFreqBase 		+ ((eModule-1) * nChanOfsBase);
 nChanStepAmpIdx 	:= nOlStepAmpBase 		+ ((eModule-1) * nChanOfsBase);
-bInit := TRUE;
+bSystemInit := TRUE;
 ]]></ST>
       </Implementation>
     </Method>
@@ -1588,6 +1594,7 @@ END_VAR
         <ST><![CDATA[//////////////////////////////////////////////////////////////////
 // Transfer NC parameter status to EPICS
 //////////////////////////////////////////////////////////////////
+stMotionStage.nMotionAxisID := stMotionStage.Axis.NcToPlc.AxisId;
 stMotionStage.stAxisStatus.bEnable:=stMotionStage.bAllEnable;
 stMotionStage.stAxisStatus.bEnabled:=stMotionStage.bEnableDone; // account for PowerEnable from power block
 stMotionStage.stAxisStatus.bError:=stMotionStage.bError;
@@ -1600,7 +1607,7 @@ stMotionStage.stAxisStatus.fActDiff:=stMotionStage.fPosDiff;
 stMotionStage.stAxisStatus.fActPosition:=fMeasuredPos;
 stMotionStage.stAxisStatus.fActVelocity:=fMeasuredVelo;
 stMotionStage.stAxisStatus.fDeceleration:=fMeasuredAcc;
-stMotionStage.stAxisStatus.fOverride:=THIS^.fbMcPower.Override;
+stMotionStage.stAxisStatus.fOverride:=fbMcPower.Override;
 stMotionStage.stAxisStatus.fPosition:=stMotionStage.fPosition;
 stMotionStage.stAxisStatus.fVelocity:=stMotionStage.fVelocity;
 stMotionStage.stAxisStatus.nCmdData:=INT_TO_UINT(stMotionStage.nCmdData);  //Or nCmdDataLocal
