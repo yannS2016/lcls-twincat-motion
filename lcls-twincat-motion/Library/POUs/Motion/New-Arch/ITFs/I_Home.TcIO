@@ -1,20 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <Itf Name="I_Home" Id="{b2162ae7-b954-447f-934b-6cfe92c3e8fb}">
-    <Declaration><![CDATA[INTERFACE I_Home EXTENDS I_Output
+    <Declaration><![CDATA[INTERFACE I_Home EXTENDS I_StatusEx
 ]]></Declaration>
-    <Property Name="CommandMoveHome" Id="{49a8eab0-258b-4524-a924-e286d9b01355}">
-      <Declaration><![CDATA[PROPERTY CommandMoveHome : BOOL]]></Declaration>
-      <Set Name="Set" Id="{8f6921a3-ee92-4d0e-8c0e-ec7e59fcc014}">
+    <Property Name="HLDone" Id="{411e6acf-1878-49a1-86b7-8c07ab8e1278}">
+      <Declaration><![CDATA[PROPERTY HLDone : BOOL]]></Declaration>
+      <Get Name="Get" Id="{15b5e428-904c-4355-93d3-e9738fb6a2a2}">
         <Declaration><![CDATA[]]></Declaration>
-      </Set>
+      </Get>
     </Property>
     <Method Name="Home" Id="{33465a37-8a78-445e-9579-3e71296ed69d}">
       <Declaration><![CDATA[METHOD  Home
 VAR_INPUT
-	Execute	: BOOL;
-	HomeSpeedFast	: LREAL;
-	HomeSpeedSlow	: LREAL;
+    Position        : LREAL         := DEFAULT_HOME_POSITION;
+    BufferMode      : MC_BufferMode;
 END_VAR
 ]]></Declaration>
     </Method>
@@ -39,12 +38,6 @@ END_VAR
       <Declaration><![CDATA[PROPERTY Position : LREAL
 ]]></Declaration>
       <Set Name="Set" Id="{b2b56703-4a4f-4c52-8065-cc2219dfd256}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Set>
-    </Property>
-    <Property Name="Reset" Id="{2fc4be59-e2e3-44b7-82c6-acbddc10561a}">
-      <Declaration><![CDATA[PROPERTY Reset : BOOL]]></Declaration>
-      <Set Name="Set" Id="{1eacc0db-ddc4-481c-bb80-e6308e8a0fa7}">
         <Declaration><![CDATA[]]></Declaration>
       </Set>
     </Property>

@@ -7,7 +7,6 @@ VAR
     AxisRef : REFERENCE TO AXIS_REF;
     fbMcMoveAbsolute : MC_MoveAbsolute;
     sMessage : T_MAXSTRING;
-    eMoveAbsoluteState : (WaitingMoveAbsolute, MovingAbsolute);
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -15,21 +14,7 @@ END_VAR
     RETURN;
 END_IF
 
-AxisRef.ReadStatus();
-
-CASE eMoveAbsoluteState OF
-    WaitingMoveAbsolute :
-        fbMcMoveAbsolute(
-        Axis := AxisRef,
-        Execute := FALSE);
-
-    MovingAbsolute :
-        fbMcMoveAbsolute(
-        Axis := AxisRef,
-        Execute := TRUE
-        );
-END_CASE
-
+fbMcMoveAbsolute(Axis := AxisRef);
 ]]></ST>
     </Implementation>
     <Property Name="Aborted" Id="{e282a52e-140a-4032-b49e-bebd36434e55}">
@@ -165,15 +150,17 @@ END_VAR
         <ST><![CDATA[fbMcMoveAbsolute(Execute := FALSE,
                  Axis := THIS^.AxisRef);
 
-fbMcMoveAbsolute(Execute := TRUE,
+fbMcMoveAbsolute(
+        Execute := TRUE,
         Axis := THIS^.AxisRef,
-    Position := Position,
-    Velocity := Velocity,
-    Acceleration := Acceleration,
-    Deceleration := Deceleration,
-    Jerk := Jerk,
-    BufferMode := BufferMode);
-eMoveAbsoluteState := MovingAbsolute;]]></ST>
+        Position := Position,
+        Velocity := Velocity,
+        Acceleration := Acceleration,
+        Deceleration := Deceleration,
+        Jerk := Jerk,
+        BufferMode := BufferMode
+);
+]]></ST>
       </Implementation>
     </Method>
   </POU>

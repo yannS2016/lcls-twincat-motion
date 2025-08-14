@@ -5,59 +5,168 @@
 VAR
     {attribute 'no_copy'}
     AxisRef : REFERENCE TO AXIS_REF;
+    {attribute 'hide'}
     iMotionLogger : I_MotionLogger;
+    {attribute 'hide'}
     iLimSwStatus : I_LimSwStatus;
-    //iHomeShareData : I_HomeShareData ;
-    bCommandMoveHome  : BOOL;
-    bBusy			: BOOL;
-    bDone			: BOOL;
-    bError 			: BOOL;
-    bAbort       : BOOL;
-    bAborted       : BOOL;
-    nErrorID 		: UDINT;
-    fRefVeloSearch	: LREAL;
-    fRefVeloSync	: LREAL;
-    fOffset  : LREAL;
-    fPosition	: LREAL;
-    bFirstDirection: BOOL;
-    rtDone				: R_TRIG;
-    rtAborted : R_TRIG;
-    sMessage : T_MAXSTRING;
-    fbMcSetPos: MC_SetPosition;
-    fbMcJog: MC_Jog;
-    rtExec: R_TRIG;
-    ftExec: F_TRIG;
-    nStateMachine: E_MoveState;
-    nStateAfterStop: E_MoveState;
-    nMoves: INT;
-    bFirstDir: BOOL;
-    bAtHome: BOOL;
-    bMove: BOOL;
-    nErrCount: INT;
+    fbMcHome : MC_Home;
+    fbMcSetPosition : MC_SetPosition;
+    fPosition : LREAL;
+    fOffset : LREAL;
+    {attribute 'hide'}
+    nHomeState : UINT;
     eHomeMode: E_EpicsHomeCmd :=E_EpicsHomeCmd.NONE;
-    bLimForward : BOOL;
-    bLimBackward : BOOL;
-    bLimHome : BOOL;
-    rtReset : R_TRIG;
-    bHalted: BOOL;
-    bReset : BOOL;
+    {attribute 'hide'}
+    bFowardLimHitFirst : BOOL;
+    {attribute 'hide'}
+    bBackwardLimHitFirst : BOOL;
+    {attribute 'hide'}
+    ftFowardSwHitFirst : F_TRIG;
+    {attribute 'hide'}
+    ftBackwardLimHitFirst : R_TRIG;
+    {attribute 'hide'}
+    ftBackwardSwHitFirst: F_TRIG;
+    {attribute 'hide'}
+    rtHomeSwHitFirst : R_TRIG;
+    {attribute 'hide'}
+    bHomeSwHitFirst : BOOL;
+    {attribute 'hide'}
+    bHLDone : BOOL;
+    {attribute 'hide'}
+    rtDone : R_TRIG;
+    bHomeDone: BOOL;
 END_VAR
 
-VAR CONSTANT
-    (*
-        This is a simpler way of disabling the soft limits that ends up being really obvious if something has gone wrong.
-        If you turn the limits off/on, not only do you need to keep track of if you had soft limits set,
-        but you need to always restore this properly or risk some issue.
-        Instead, I set position to a ridiculous value that can always move forward or backward.
-        If this gets stuck for any reason it's very clear that something has gone wrong,
-        rather than a silent failure of the soft limit marks.
-    *)
-    FWD_START: LREAL := -99999999;
-    BWD_START: LREAL :=  99999999;
-END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[]]></ST>
+      <ST><![CDATA[IF NOT __ISVALIDREF(AxisRef) THEN
+    RETURN;
+END_IF
+
+CASE eHomeMode OF
+    E_EpicsHomeCmd.LOW_LIMIT:
+        fbMcHome.HomingMode := MC_HomingMode.MC_DefaultHoming;
+        fbMcHome.Options.SearchDirection := MC_Direction.MC_Negative_Direction;
+        fbMcHome.Options.SyncDirection := MC_Direction.MC_Positive_Direction;
+        fbMcHome.Options.ClearPositionLag := TRUE;
+        fbMcHome.bCalibrationCam := NOT iLimSwStatus.LimBackward;
+        fbMcSetPosition.Execute:=fbMcHome.Done;
+        bHomeDone := fbMcHome.Done AND fbMcSetPosition.Done;
+       // bMove := TRUE;
+    E_EpicsHomeCmd.HIGH_LIMIT:
+        fbMcHome.HomingMode := MC_HomingMode.MC_DefaultHoming;
+        fbMcHome.Options.SearchDirection := MC_Direction.MC_Positive_Direction;
+        fbMcHome.Options.SyncDirection := MC_Direction.MC_Negative_Direction;
+        //fbMcHome.Options.ClearPositionLag := TRUE;
+        fbMcHome.bCalibrationCam := NOT iLimSwStatus.LimForward;
+        fbMcSetPosition.Execute:=fbMcHome.Done;
+        bHomeDone := fbMcHome.Done AND fbMcSetPosition.Done;
+    E_EpicsHomeCmd.HOME_VIA_LOW:
+        fbMcHome.bCalibrationCam := iLimSwStatus.LimHome OR NOT iLimSwStatus.LimBackward;
+        CASE nHomeState OF
+            0:// Default Search Home, if found then MC_Home register the index pulse
+                fbMcHome.HomingMode := MC_HomingMode.MC_DefaultHoming;
+                fbMcHome.Options.ClearPositionLag := TRUE;
+                fbMcHome.Options.SearchDirection := MC_Direction.MC_Negative_Direction;
+                fbMcHome.Options.SyncDirection := MC_Direction.MC_Positive_Direction;
+                IF fbMcHome.Busy THEN
+                    nHomeState := 1;
+                END_IF
+            1:
+                // IF HL was hit before the home switch, register that event and allow the homing to complete
+                // on the HL. then we will initiate another Homing move backwad.
+                ftBackwardSwHitFirst(CLK:=iLimSwStatus.LimBackward);
+                rtHomeSwHitFirst(CLK:=iLimSwStatus.LimHome);
+
+                IF fbMcHome.Busy THEN
+                    IF ftBackwardSwHitFirst.Q THEN
+                        bBackwardLimHitFirst := TRUE;
+                        nHomeState := 2;
+                    ELSIF rtHomeSwHitFirst.Q THEN
+                        bHomeSwHitFirst := TRUE;
+                        nHomeState := 3;
+                    END_IF
+                END_IF
+            2:
+                // Second Homing stage, this time around on the homing switch
+                IF bBackwardLimHitFirst AND fbMcHome.Done THEN
+                    bHLDone := TRUE;
+                    fbMcHome.Options.SearchDirection := MC_Direction.MC_Positive_Direction;
+                    fbMcHome.Options.SyncDirection := MC_Direction.MC_Negative_Direction;
+                    fbMcHome.Options.ClearPositionLag := TRUE;
+                    //fbMcHome.bCalibrationCam := iLimSwStatus.LimHome OR NOT iLimSwStatus.LimBackward;
+                    // restart homing toward home switch
+                    THIS^.Home(Position:=fbMcHome.Position, BufferMode:=MC_Aborting);
+                    bBackwardLimHitFirst := FALSE;
+                    nHomeState := 3;
+                END_IF
+            3: // Done
+                fbMcSetPosition.Execute:=fbMcHome.Done;
+                bHomeDone := fbMcHome.Done AND fbMcSetPosition.Done;
+                IF bHomeDone THEN
+                    bHLDone := FALSE;
+                    nHomeState := 0;
+                END_IF
+        END_CASE
+    E_EpicsHomeCmd.HOME_VIA_HIGH:
+        fbMcHome.bCalibrationCam := iLimSwStatus.LimHome OR NOT iLimSwStatus.LimForward;
+        CASE nHomeState OF
+            0:// Default Search Home, if found then MC_Home register the index pulse
+                fbMcHome.HomingMode := MC_HomingMode.MC_DefaultHoming;
+                fbMcHome.Options.ClearPositionLag := TRUE;
+                fbMcHome.Options.SearchDirection := MC_Direction.MC_Positive_Direction;
+                fbMcHome.Options.SyncDirection := MC_Direction.MC_Negative_Direction;
+
+                IF fbMcHome.Busy THEN
+                    nHomeState := 1;
+                END_IF
+            1:
+                // IF HL was hit before the home switch, register that event and allow the homing to complete
+                // on the HL. then we will initiate another Homing move backwad.
+                ftFowardSwHitFirst(CLK:=iLimSwStatus.LimForward);
+                rtHomeSwHitFirst(CLK:=iLimSwStatus.LimHome);
+
+                IF fbMcHome.Busy THEN
+                    IF ftFowardSwHitFirst.Q THEN
+                        bFowardLimHitFirst := TRUE;
+                        nHomeState := 2;
+                    ELSIF rtHomeSwHitFirst.Q THEN
+                        bHomeSwHitFirst := TRUE;
+                        nHomeState := 3;
+                    END_IF
+                END_IF
+            2:
+                // Second Homing stage, this time around on the homing switch
+                IF bFowardLimHitFirst AND fbMcHome.Done THEN
+                    bHLDone := TRUE;
+                    fbMcHome.Options.SearchDirection := MC_Direction.MC_Negative_Direction;
+                    fbMcHome.Options.SyncDirection := MC_Direction.MC_Positive_Direction;
+                    fbMcHome.Options.ClearPositionLag := TRUE;
+                    // restart homing toward home switch
+                    THIS^.Home(Position:=fbMcHome.Position, BufferMode:=MC_Aborting);
+                    bFowardLimHitFirst := FALSE;
+                    nHomeState := 3;
+                END_IF
+            3: // Done
+                fbMcSetPosition.Execute:=fbMcHome.Done;
+                bHomeDone := fbMcHome.Done AND fbMcSetPosition.Done;
+                IF bHomeDone THEN
+                    bHLDone := FALSE;
+                    nHomeState := 0;
+                END_IF
+        END_CASE
+
+    E_EpicsHomeCmd.ABSOLUTE_SET:
+        fbMcHome.HomingMode := MC_HomingMode.MC_Direct;
+        fbMcHome.Options.SearchDirection := MC_Direction.MC_Undefined_Direction;
+        fbMcHome.Options.SyncDirection := MC_Direction.MC_Undefined_Direction;
+        fbMcHome.Options.ClearPositionLag := TRUE;
+        bHomeDone := fbMcHome.Done;
+END_CASE
+
+fbMcHome(Axis := AxisRef);
+fbMcSetPosition(Axis := AxisRef, Mode:=0, Position:=fPosition);
+]]></ST>
     </Implementation>
     <Property Name="Aborted" Id="{b3440598-2192-4aa3-bd94-648810782f1d}">
       <Declaration><![CDATA[PROPERTY Aborted : BOOL
@@ -67,7 +176,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[Aborted := bAborted;]]></ST>
+          <ST><![CDATA[Aborted := fbMcHome.CommandAborted;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -79,7 +188,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[Active := fbMcHome.Active;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -91,7 +200,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[Busy := THIS^.bBusy;]]></ST>
+          <ST><![CDATA[Busy := fbMcHome.Busy;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -109,18 +218,6 @@ THIS^.iMotionLogger := iMotionLogger;
 THIS^.iLimSwStatus:= iLimSwStatus;]]></ST>
       </Implementation>
     </Method>
-    <Property Name="CommandMoveHome" Id="{c1145d52-1896-4af8-b2b7-a223c1c65f11}">
-      <Declaration><![CDATA[PROPERTY CommandMoveHome : BOOL
-]]></Declaration>
-      <Set Name="Set" Id="{443e87d8-297e-4ddd-9393-eaac57dec414}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[ bCommandMoveHome := CommandMoveHome;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
     <Property Name="Done" Id="{a400b97e-6245-4667-8036-7fb53f8ce97f}">
       <Declaration><![CDATA[PROPERTY Done : BOOL
 ]]></Declaration>
@@ -129,7 +226,8 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[Done := THIS^.bDone;]]></ST>
+          <ST><![CDATA[Done := bHomeDone;
+]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -141,7 +239,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[Error := THIS^.bError;]]></ST>
+          <ST><![CDATA[Error := fbMcHome.Error;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -153,7 +251,7 @@ END_VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[ErrorID := THIS^.nErrorID;]]></ST>
+          <ST><![CDATA[ErrorID := fbMcHome.ErrorID;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -176,19 +274,39 @@ THIS^.iMotionLogger := iMotionLogger;
 THIS^.iLimSwStatus:= iLimSwStatus;]]></ST>
       </Implementation>
     </Method>
+    <Property Name="HLDone" Id="{20fb5295-3ffb-4772-9ef6-2e47f50a3f94}">
+      <Declaration><![CDATA[PROPERTY HLDone : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{db41cbe0-bc47-4b18-a6d4-59eff84f4658}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[HLDone := bHLDone;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
     <Method Name="Home" Id="{bc450e32-fe3c-4fef-961a-7ec21133b561}">
       <Declaration><![CDATA[METHOD  Home
 VAR_INPUT
-    Execute	: BOOL;
-    HomeSpeedFast	: LREAL;
-    HomeSpeedSlow	: LREAL;
+    Position        : LREAL         := DEFAULT_HOME_POSITION;
+    BufferMode      : MC_BufferMode;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[THIS^.bCommandMoveHome := Execute;
-THIS^.fRefVeloSearch := HomeSpeedFast;
-THIS^.fRefVeloSync := HomeSpeedSlow;
+        <ST><![CDATA[IF THIS^.eHomeMode = E_EpicsHomeCmd.NONE THEN
+    THIS^.bHomeDone := TRUE;
+    RETURN;
+END_IF
 
+THIS^.fPosition := Position;
+fbMcHome(Execute := FALSE, Axis := THIS^.AxisRef, Done=>bHomeDone);
+// dont start homing unless hardware limits are in correct state.
+fbMcHome(	Execute := iLimSwStatus.LimBackward AND iLimSwStatus.LimForward AND NOT iLimSwStatus.LimHome,
+            Axis := THIS^.AxisRef,
+            Position := Position,
+            BufferMode:=BufferMode
+        );
 ]]></ST>
       </Implementation>
     </Method>
@@ -200,7 +318,7 @@ THIS^.fRefVeloSync := HomeSpeedSlow;
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[Message := sMessage;]]></ST>
+          <ST><![CDATA[]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -245,18 +363,6 @@ END_VAR
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[fPosition := Position;]]></ST>
-        </Implementation>
-      </Set>
-    </Property>
-    <Property Name="Reset" Id="{00f8b067-c919-41e0-b13e-0ee4b8e73fa7}">
-      <Declaration><![CDATA[PROPERTY Reset : BOOL
-]]></Declaration>
-      <Set Name="Set" Id="{c71b201c-0b06-41a3-a0b3-32975c4371c2}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[bReset := Reset;]]></ST>
         </Implementation>
       </Set>
     </Property>

@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
   <Itf Name="I_AxisStatus" Id="{ced1141c-4936-4e2b-89cc-52f3e59358c7}">
-    <Declaration><![CDATA[INTERFACE I_AxisStatus EXTENDS I_Output
+    <Declaration><![CDATA[INTERFACE I_AxisStatus EXTENDS I_StatusEx
 ]]></Declaration>
     <Method Name="AxisEnabled" Id="{630e5032-35fd-49af-8171-ae8c288f92dd}">
       <Declaration><![CDATA[METHOD AxisEnabled : BOOL
@@ -16,12 +16,6 @@
     <Property Name="AxisState" Id="{d006c001-4910-47fa-9592-d882dbdfec33}">
       <Declaration><![CDATA[PROPERTY AxisState : MC_AxisStates]]></Declaration>
       <Get Name="Get" Id="{d4cb8dfa-bc5b-4c9e-b4db-6f401adbeadc}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
-    <Property Name="InTargetPosition" Id="{0d324bbd-5ce1-446d-b766-965d50324bd5}">
-      <Declaration><![CDATA[PROPERTY InTargetPosition : BOOL]]></Declaration>
-      <Get Name="Get" Id="{fe1a8697-1bab-490c-a151-eed566bd8470}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
@@ -64,12 +58,6 @@
     <Property Name="StandStill" Id="{56f881a0-102f-43c3-a476-aa30cefe31e9}">
       <Declaration><![CDATA[PROPERTY StandStill : BOOL]]></Declaration>
       <Get Name="Get" Id="{4d5f8519-3e3d-411b-bc51-16b647124219}">
-        <Declaration><![CDATA[]]></Declaration>
-      </Get>
-    </Property>
-    <Property Name="Stopped" Id="{752ae048-f4b8-4fc3-90c4-81c2b42c4222}">
-      <Declaration><![CDATA[PROPERTY Stopped : BOOL]]></Declaration>
-      <Get Name="Get" Id="{9de74096-402c-41b0-8e8b-490e64645362}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
