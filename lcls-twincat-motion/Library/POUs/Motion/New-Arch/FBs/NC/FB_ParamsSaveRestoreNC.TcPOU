@@ -70,13 +70,13 @@ VAR PERSISTENT
     fSavedPosition: LREAL;
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[IF NOT __ISVALIDREF(THIS^.AxisRef) THEN
+      <ST><![CDATA[IF NOT __ISVALIDREF(AxisRef) THEN
     RETURN;
 END_IF
 
-RestoreAxisParams();
-
 AxisRef.ReadStatus();
+
+RestoreAxisParams();
 
 // Save Encoder position
 // needs some pre-conditions to use persistent storage

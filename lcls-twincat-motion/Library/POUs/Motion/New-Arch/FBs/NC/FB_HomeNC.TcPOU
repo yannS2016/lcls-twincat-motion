@@ -34,6 +34,7 @@ VAR
     bHLDone : BOOL;
     {attribute 'hide'}
     rtDone : R_TRIG;
+    {attribute 'hide'}
     bHomeDone: BOOL;
 END_VAR
 

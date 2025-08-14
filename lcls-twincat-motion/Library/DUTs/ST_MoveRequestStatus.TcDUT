@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1">
-  <DUT Name="ST_MoveRequestStatus" Id="{a07ca9a6-ee49-49b8-ab2e-03bd2d0e53c7}">
+  <DUT Name="ST_MoveRequestStatus" Id="{e8bfaae9-6435-4fce-a902-c814da4ed10a}">
     <Declaration><![CDATA[TYPE ST_MoveRequestStatus :
 STRUCT
     bNewMoveReq: BOOL;

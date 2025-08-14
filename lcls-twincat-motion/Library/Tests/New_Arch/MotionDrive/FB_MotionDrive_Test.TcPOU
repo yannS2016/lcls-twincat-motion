@@ -16,7 +16,7 @@ END_VAR
       <ST><![CDATA[NoCrashTest();]]></ST>
     </Implementation>
     <Method Name="NoCrashTest" Id="{75361fae-01d6-457b-bd6b-fe3e29169e9e}">
-      <Declaration><![CDATA[METHOD NoCrashTest
+      <Declaration><![CDATA[METHOD PRIVATE NoCrashTest
 VAR_INST
     fbMotionDrive : FB_MotionDrive(
                                     iMotionAxis := fbMotionAxis,

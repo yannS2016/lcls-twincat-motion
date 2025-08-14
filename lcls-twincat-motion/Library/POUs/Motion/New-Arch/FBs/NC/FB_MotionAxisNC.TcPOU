@@ -261,8 +261,7 @@ END_VAR
       </Implementation>
     </Method>
     <Method Name="HaltDone" Id="{10092d88-8263-4453-9e57-d2d8fd2128e6}">
-      <Declaration><![CDATA[{warning 'Add method implementation '}
-METHOD HaltDone
+      <Declaration><![CDATA[METHOD HaltDone
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[THIS^.iHalt.HaltDone();]]></ST>

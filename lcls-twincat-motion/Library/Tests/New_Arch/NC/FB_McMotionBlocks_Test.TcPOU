@@ -14,9 +14,10 @@ GivenThatPowerIsEnabledAndMoveAbsoluteStartedFollowByAHaltSignalThenMoveIsAborte
 GivenThatPowerIsEnabledAndMoveAbsoluteStartedFollowByAResetSignalThenMoveIsAbortedAndResetDoneIsRetained_Test3();
 GivenThatDirectionalPositivePowerIsEnabledAndMoveAbsoluteStartedIfPositiveLimitHitThenMoveAbsoluteAbortedStatus_Test4();
 GivenThatDirectionalNegativePowerIsEnabledAndMoveAbsoluteStartedIfNegativeLimitHitThenMoveAbsoluteAbortedStatus_Test5();
+// Enable COE position correction for these 3 axis.
 GivenHomeCmdBacklashCompensationInactiveThenMoveStartandCompletesWithBacklashCompensationDisabled_Test6();
 GivenMoveCmdPositiveBacklashCompensationActiveThenReverseMoveStartedandCompletedWithBacklashCompensationEnabled_Test7();
-]]></ST>
+GivenMoveCmdNegativeBacklashCompensationActiveThenReverseMoveStartedandCompletedWithBacklashCompensationEnabled_Test8();]]></ST>
     </Implementation>
     <Method Name="GivenHomeCmdBacklashCompensationInactiveThenMoveStartandCompletesWithBacklashCompensationDisabled_Test6" Id="{d165f2d2-92b0-417e-9f05-e4578b84306f}">
       <Declaration><![CDATA[METHOD PRIVATE GivenHomeCmdBacklashCompensationInactiveThenMoveStartandCompletesWithBacklashCompensationDisabled_Test6
@@ -52,6 +53,7 @@ CASE nTestStep OF
         fbBacklashCompensation.BacklashCompensationTest(UserEnable:=TRUE, Compensation:=1.0);
         nTestStep := nTestStep + 1;
     1:
+        // Homing? Enable must be FALSE
         fbBacklashCompensation.BacklashCompensation(Enable:=FALSE, RampVelo:=10.0);
         bBacklashResetStatus := fbBacklashCompensation.Status;
         nTestStep := nTestStep + 1;
@@ -148,37 +150,38 @@ CASE nTestStep OF
         fbBacklashCompensation.BacklashCompensationTest(UserEnable:=TRUE, Compensation:=-4.0);
         nTestStep := nTestStep + 1;
     1:
-        bBacklashResetStatus := fbBacklashCompensation.Status;
+        //bBacklashResetStatus := fbBacklashCompensation.Status;
+        AssertFalse(Condition :=  fbBacklashCompensation.Status, Message := 'backlash compensation must be disabled #1');
         fbBacklashCompensation.BacklashCompensation(Enable:=TRUE, RampVelo:=10.0);
         nTestStep := nTestStep + 1;
-
     2:
-
-        bBacklashStatus := fbBacklashCompensation.Status;
+        AssertFalse(Condition :=  fbBacklashCompensation.Status, Message := 'backlash compensation must be enabled #2');
+        nTestStep := nTestStep + 1;
+    3:
         IF  fbPower.PowerIsEnabled THEN
             // Initate Positive backlash compensation
-            fbMoveAbsolute.MoveAbsolute(	Position := -150.0,
+            fbMoveAbsolute.MoveAbsolute(	Position := -10.0,
                                             Velocity := 100,
                                             Acceleration := 200,
                                             Deceleration := 200
                                         );
             nTestStep := nTestStep + 1;
         END_IF
-    3:
-         IF fbMoveAbsolute.Done THEN
-            fNoCompensation := (fbAxisRef[8].NcToPlc.ActPos - fbAxisRef[8].NcToPlc.ActPosWithoutPosCorrection);
+    4:
 
+         IF fbMoveAbsolute.Done THEN
+              fNoCompensation := (fbAxisRef[8].NcToPlc.ActPos - fbAxisRef[8].NcToPlc.ActPosWithoutPosCorrection);
             nTestStep := nTestStep + 1;
         END_IF
-    4:
+    5:
         // reverse movement
-        fbMoveAbsolute.MoveAbsolute(	Position := 100.0,
+        fbMoveAbsolute.MoveAbsolute(	Position := 20.0,
                                            Velocity := 100,
                                           Acceleration := 200,
                                          Deceleration := 200
                                     );
         nTestStep := nTestStep + 1;
-    5:
+    6:
          IF fbMoveAbsolute.Done THEN
             fCompensation :=(fbAxisRef[8].NcToPlc.ActPos - fbAxisRef[8].NcToPlc.ActPosWithoutPosCorrection);
             nTestStep := nTestStep + 1;
@@ -186,16 +189,14 @@ CASE nTestStep OF
 
 END_CASE
 //
-fbAxisRef[8].ReadStatus();
+//fbAxisRef[8].ReadStatus();
 fbBacklashCompensation();
 fbMoveAbsolute();
 fbTestTimer();
 
-IF nTestStep = 6 THEN
-    AssertFalse(Condition :=  bBacklashResetStatus, Message := 'backlash compensation must be disabled after resetting #1');
-    AssertTrue(Condition :=  bBacklashStatus, Message := 'backlash compensation must be enable #2');
+IF nTestStep = 7 THEN
     AssertTrue(Condition :=  (fNoCompensation= 0),Message := 'No Backlash compensation in this direction #3');
-    AssertTrue(Condition :=  (fCompensation= 4),Message := 'Current backlash must be 4 #4');
+    AssertTrue(Condition :=  (fCompensation= 4),Message := 'Current backlash must be 1 #4');
     AssertTrue(Condition :=  fbBacklashCompensation.status, Message := 'backlash compensation must stay enable after absolute move #5');
     TEST_FINISHED();
 ELSIF fbTestTimer.Q THEN
@@ -244,13 +245,14 @@ CASE nTestStep OF
         fbBacklashCompensation.BacklashCompensationTest(UserEnable:=TRUE, Compensation:=1.0);
         nTestStep := nTestStep + 1;
     1:
-        bBacklashResetStatus := fbBacklashCompensation.Status;
+        //bBacklashResetStatus := fbBacklashCompensation.Status;
+        AssertFalse(Condition :=  fbBacklashCompensation.Status, Message := 'backlash compensation must be disabled #1');
         fbBacklashCompensation.BacklashCompensation(Enable:=TRUE, RampVelo:=10.0);
         nTestStep := nTestStep + 1;
-
     2:
-
-        bBacklashStatus := fbBacklashCompensation.Status;
+        AssertFalse(Condition :=  fbBacklashCompensation.Status, Message := 'backlash compensation must be enabled #2');
+        nTestStep := nTestStep + 1;
+    3:
         IF  fbPower.PowerIsEnabled THEN
             // Initate Positive backlash compensation
             fbMoveAbsolute.MoveAbsolute(	Position := 150.0,
@@ -260,13 +262,13 @@ CASE nTestStep OF
                                         );
             nTestStep := nTestStep + 1;
         END_IF
-    3:
-         IF fbMoveAbsolute.Done THEN
-            fNoCompensation := (fbAxisRef[7].NcToPlc.ActPos - fbAxisRef[7].NcToPlc.ActPosWithoutPosCorrection);
+    4:
 
+         IF fbMoveAbsolute.Done THEN
+              fNoCompensation := (fbAxisRef[7].NcToPlc.ActPos - fbAxisRef[7].NcToPlc.ActPosWithoutPosCorrection);
             nTestStep := nTestStep + 1;
         END_IF
-    4:
+    5:
         // reverse movement
         fbMoveAbsolute.MoveAbsolute(	Position := 100.0,
                                            Velocity := 100,
@@ -274,7 +276,7 @@ CASE nTestStep OF
                                          Deceleration := 200
                                     );
         nTestStep := nTestStep + 1;
-    5:
+    6:
          IF fbMoveAbsolute.Done THEN
             fCompensation :=(fbAxisRef[7].NcToPlc.ActPos - fbAxisRef[7].NcToPlc.ActPosWithoutPosCorrection);
             nTestStep := nTestStep + 1;
@@ -282,14 +284,12 @@ CASE nTestStep OF
 
 END_CASE
 //
-fbAxisRef[7].ReadStatus();
+//fbAxisRef[7].ReadStatus();
 fbBacklashCompensation();
 fbMoveAbsolute();
 fbTestTimer();
 
-IF nTestStep = 6 THEN
-    AssertFalse(Condition :=  bBacklashResetStatus, Message := 'backlash compensation must be disabled after resetting #1');
-    AssertTrue(Condition :=  bBacklashStatus, Message := 'backlash compensation must be enable #2');
+IF nTestStep = 7 THEN
     AssertTrue(Condition :=  (fNoCompensation= 0),Message := 'No Backlash compensation in this direction #3');
     AssertTrue(Condition :=  (fCompensation= 1),Message := 'Current backlash must be 1 #4');
     AssertTrue(Condition :=  fbBacklashCompensation.status, Message := 'backlash compensation must stay enable after absolute move #5');

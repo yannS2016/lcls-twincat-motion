@@ -17,15 +17,14 @@ VAR
     {attribute 'hide'}
     iMotionLogger 		: I_MotionLogger;
     iMotionDriveStateMachine : I_MotionDriveStateMachine;
-
+    {attribute 'hide'}
     sName : STRING;
-
     bError: BOOL;
     nErrorId: UDINT;
     sErrorMessage: T_MAXSTRING;
-
+    {attribute 'hide'}
     rtReset: R_TRIG;
-    rtResetDone: R_TRIG;
+    {attribute 'hide'}
     rtStop: R_TRIG;
 END_VAR
 ]]></Declaration>
@@ -93,15 +92,15 @@ IF rtReset.Q THEN
 END_IF
 
 iMotionInterlocks.AxisStatus(
-          HomeBusy:=iMotionAxis.Status.bHomeBusy,
-          PositiveDirection:=iMotionAxis.Status.bPositiveMotionIsEnabled,
-           NegativeDirection:=iMotionAxis.Status.bNegativeMotionIsEnabled
+    HomeBusy:=iMotionAxis.Status.bHomeBusy,
+    PositiveDirection:=iMotionAxis.Status.bPositiveMotionIsEnabled,
+    NegativeDirection:=iMotionAxis.Status.bNegativeMotionIsEnabled
 );
 
 // Drive state machine
 iMotionDriveStateMachine.StateMachine(
-        InterlockEvent:= iMotionInterlocks.InterlockEvent,
-        Error	:=bError
+    InterlockEvent:= iMotionInterlocks.InterlockEvent,
+    Error	:=bError
 );
 
 // Forward axis state to brake FB

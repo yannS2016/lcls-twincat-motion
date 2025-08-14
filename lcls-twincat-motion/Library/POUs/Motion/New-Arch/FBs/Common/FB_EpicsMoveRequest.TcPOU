@@ -42,9 +42,9 @@ VAR
     stMotionRequestStatus : ST_MoveRequestStatus;
     {attribute 'hide'}
     ftStopExec: F_TRIG;
-    //rtRestoreDone: R_TRIG;
-     {attribute 'hide'}
+    {attribute 'hide'}
     eRestoreSettingsState : ( RestoreSettingWaiting:=0, RestoreSettingDone:=1);
+    {attribute 'hide'}
     ftstop: F_TRIG;
 END_VAR
 
@@ -339,8 +339,7 @@ THIS^.bMoveCmd	:= MoveCmd;
       </Implementation>
     </Method>
     <Method Name="MoveResetDone" Id="{f2401880-c9b3-4971-9d2e-b338ef5fea0a}">
-      <Declaration><![CDATA[{warning 'Add method implementation '}
-METHOD MoveResetDone
+      <Declaration><![CDATA[METHOD MoveResetDone
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[THIS^.stMotionRequestStatus.bReset := FALSE;]]></ST>
@@ -359,8 +358,7 @@ END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="ResetMoveRequest" Id="{90fe06b0-aa4b-458a-9f0e-28628dab07b6}">
-      <Declaration><![CDATA[{warning 'Add method implementation '}
-METHOD ResetMoveRequest
+      <Declaration><![CDATA[METHOD ResetMoveRequest
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>

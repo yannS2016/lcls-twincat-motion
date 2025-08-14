@@ -86,8 +86,8 @@ STRUCT
     '}
     sErrorMessage: STRING;
 
-    // Misc axis status information for the IOC
-    stAxisStatus: ST_AxisStatus;
+  // Misc axis status information for the IOC
+    stAxisStatus: DUT_AxisStatus_v0_01;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

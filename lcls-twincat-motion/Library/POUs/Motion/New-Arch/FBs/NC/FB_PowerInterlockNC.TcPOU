@@ -15,10 +15,10 @@ END_VAR
 END_IF
 
 THIS^.fbMcPower(
-    Axis := THIS^.AxisRef,
+    Axis := AxisRef,
     Enable := iMotionInterlocks.PowerEnabled,
-    Enable_Positive := THIS^.AxisRef.Status.Homing OR iMotionInterlocks.MoveForwardEnabled,
-    Enable_Negative := THIS^.AxisRef.Status.Homing OR iMotionInterlocks.MoveBackwardEnabled,
+    Enable_Positive := AxisRef.Status.Homing OR iMotionInterlocks.MoveForwardEnabled,
+    Enable_Negative := AxisRef.Status.Homing OR iMotionInterlocks.MoveBackwardEnabled,
     BufferMode := MC_Aborting,
     Override :=100.0
 );

@@ -38,10 +38,7 @@ VAR
     {attribute 'hide'}
     nErrorID : UDINT;
     {attribute 'hide'}
-    // Set by default, an error condition will reset this
-    bMoveOk : BOOL := TRUE;
-    {attribute 'hide'}
-    rtGlobalReset : R_TRIG;
+    bMoveOk : BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
