@@ -142,7 +142,7 @@ END_VAR
     <Method Name="Home" Id="{bc29fe62-0c4c-48ff-8558-6e754cb5aa62}">
       <Declaration><![CDATA[METHOD Home
 VAR_INPUT
-    Position	: LREAL := .DEFAULT_HOME_POSITION;
+    Position	: LREAL := DEFAULT_HOME_POSITION;
     BufferMode	: MC_BufferMode;
 END_VAR
 ]]></Declaration>
