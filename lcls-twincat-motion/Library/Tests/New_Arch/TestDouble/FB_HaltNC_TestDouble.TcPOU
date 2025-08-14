@@ -143,7 +143,7 @@ END_VAR
 VAR_INPUT
     Deceleration	: LREAL := 0;
     Jerk	: LREAL := 0;
-    BufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
+    BufferMode	: MC_BufferMode := MC_BufferMode.MC_Aborting;
 END_VAR
 ]]></Declaration>
       <Implementation>

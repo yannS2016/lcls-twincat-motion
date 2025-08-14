@@ -170,7 +170,7 @@ VAR_INPUT
     Enable_Positive	: BOOL;
     Enable_Negative	: BOOL;
     Override	: LREAL := 100;
-    BufferMode	: MC_BufferMode := .MC_BufferMode.MC_Aborting;
+    BufferMode	: MC_BufferMode := MC_BufferMode.MC_Aborting;
 END_VAR
 ]]></Declaration>
       <Implementation>
