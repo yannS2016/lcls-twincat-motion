@@ -1,3 +1,6 @@
 [submodule "lcls-twincat-motion/Library/tc_mca_std_lib"]
 	path = lcls-twincat-motion/Library/tc_mca_std_lib
 	url = git@github.com:pcdshub/tc_mca_std_lib.git
+[submodule "lcls-twincat-motion/Library/motion_abstraction"]
+	path = lcls-twincat-motion/Library/motion_abstraction
+	url = git@github.com:yannS2016/lcls-twincat-motion-abstraction.git
