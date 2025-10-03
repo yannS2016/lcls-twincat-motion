@@ -299,19 +299,12 @@ END_IF
 
 // when the plc autoboot it appears reading from i/o is not yet after 'call_after_init'
 IF bSystemInit THEN
-    tonInitTimer.IN:=bSystemInit;
-    bExecParamsRead := TRUE;
-    bSystemInit := FALSE;
+    IF stMotionStage.Axis.NcToPlc.AxisId <> 0 THEN
+        stDS402Drive.nDS402DriveControl := 128; // clear errors, prepare for startup
+        bExecParamsRead := TRUE; // trigger NC param read on first scan
+        bSystemInit := FALSE;
+    END_IF
 END_IF
-tonInitTimer(PT:=T#1S);
-(* Done once after init*)
-IF tonInitTimer.Q THEN
-    (* Clear drive error/wraning condition, in open loop mode
-       this will trigger a correct startup for procedure *)
-    stDS402Drive.nDS402DriveControl := 128;
-    tonInitTimer.IN:=FALSE;
-END_IF
-
 (* Check for the plc shortcut commands
    Used for testing or to circumvent motor record issues*)
 rtMoveCmdShortcut(CLK:=stMotionStage.bMoveCmd);
