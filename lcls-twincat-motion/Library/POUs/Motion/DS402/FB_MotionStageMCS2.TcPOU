@@ -1147,8 +1147,15 @@ END_IF]]></ST>
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[nScaledFErrWin:=LREAL_TO_DINT((stMotionStage.stAxisParameters.fCtrlPosDiffMax / MAX(stMotionStage.stAxisParameters.fEncScaleFactorInternal, fScalingFactor)));
-nSoftLimMax := LREAL_TO_DINT((stMotionStage.stAxisParameters.fEncSoftEndMax / MAX(stMotionStage.stAxisParameters.fEncScaleFactorInternal, fScalingFactor)));
-nSoftLimMin := LREAL_TO_DINT((stMotionStage.stAxisParameters.fEncSoftEndMin / MAX(stMotionStage.stAxisParameters.fEncScaleFactorInternal, fScalingFactor)));]]></ST>
+
+IF stMotionStage.stAxisParameters.bEncEnableSoftEndMinControl.0 AND stMotionStage.stAxisParameters.bEncEnableSoftEndMaxControl.0 THEN
+    nSoftLimMax := LREAL_TO_DINT((stMotionStage.stAxisParameters.fEncSoftEndMax / MAX(stMotionStage.stAxisParameters.fEncScaleFactorInternal, fScalingFactor)));
+    nSoftLimMin := LREAL_TO_DINT((stMotionStage.stAxisParameters.fEncSoftEndMin / MAX(stMotionStage.stAxisParameters.fEncScaleFactorInternal, fScalingFactor)));
+ELSE
+    // Soft limit disabled
+    nSoftLimMax := 0;
+    nSoftLimMin := 0;
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="ScaleEncRawValue" Id="{769f98a6-388a-461f-854a-93b1758d578f}">
