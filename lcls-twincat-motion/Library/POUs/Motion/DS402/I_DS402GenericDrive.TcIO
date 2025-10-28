@@ -71,15 +71,22 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
-    <Method Name="ScaleHomeMotionParams" Id="{2ab106ea-b09a-4819-bf0b-0e6b84eb1cf8}">
-      <Declaration><![CDATA[METHOD ScaleHomeMotionParams
+    <Method Name="ScaleHomingParams" Id="{2ab106ea-b09a-4819-bf0b-0e6b84eb1cf8}">
+      <Declaration><![CDATA[METHOD ScaleHomingParams
 VAR_INPUT
 END_VAR
 ]]></Declaration>
     </Method>
-    <Method Name="ScaleServoOffMotionParams" Id="{b7054ca4-bda3-486f-9d59-a8ac6ece7055}">
-      <Declaration><![CDATA[METHOD ScaleServoOffMotionParams
+    <Method Name="ScaleJogParams" Id="{b7054ca4-bda3-486f-9d59-a8ac6ece7055}">
+      <Declaration><![CDATA[METHOD ScaleJogParams
 VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="SetChanParams" Id="{8610e279-04bc-4548-942d-f600acfb3079}">
+      <Declaration><![CDATA[METHOD SetChanParams
+VAR_INPUT
+    Enable : BOOL;
 END_VAR
 ]]></Declaration>
     </Method>
@@ -87,6 +94,20 @@ END_VAR
       <Declaration><![CDATA[METHOD SetEnables
 VAR_INPUT
 END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="SetEpicsStatus" Id="{e22f0ab3-658b-45b7-b368-204fbd2d95fa}">
+      <Declaration><![CDATA[METHOD SetEpicsStatus
+VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="SetJogParams" Id="{1a1f77f3-ee6f-4689-a9b6-8149ebbedfec}">
+      <Declaration><![CDATA[METHOD SetJogParams
+VAR_INPUT
+	Enable : BOOL;
+END_VAR
+
 ]]></Declaration>
     </Method>
     <Method Name="StateMachine" Id="{35531d1d-083e-4e0e-a309-4f04090b40cb}">
@@ -101,27 +122,6 @@ END_VAR
 VAR_INPUT
 	Enable : BOOL;
 END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="UpdateDriveMonitoringParams" Id="{8610e279-04bc-4548-942d-f600acfb3079}">
-      <Declaration><![CDATA[METHOD UpdateDriveMonitoringParams
-VAR_INPUT
-    Enable : BOOL;
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="UpdateEpicsStatus" Id="{e22f0ab3-658b-45b7-b368-204fbd2d95fa}">
-      <Declaration><![CDATA[METHOD UpdateEpicsStatus
-VAR_INPUT
-END_VAR
-]]></Declaration>
-    </Method>
-    <Method Name="UpdateServoOffMotionParams" Id="{1a1f77f3-ee6f-4689-a9b6-8149ebbedfec}">
-      <Declaration><![CDATA[METHOD UpdateServoOffMotionParams
-VAR_INPUT
-	Enable : BOOL;
-END_VAR
-
 ]]></Declaration>
     </Method>
     <Method Name="WriteParameterNC" Id="{3d85a3f6-b752-4960-b363-60741423f54d}">

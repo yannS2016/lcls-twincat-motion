@@ -942,17 +942,17 @@ stMotionStage.fPosDiff:=stMotionStage.Axis.NcToPlc.PosDiff;
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ScaleHomeMotionParams" Id="{ca311234-dfe1-4f79-8d46-d85b94fbe633}">
+    <Method Name="ScaleHomingParams" Id="{ca311234-dfe1-4f79-8d46-d85b94fbe633}">
       <Declaration><![CDATA[(*Scale Home Move parameters*)
-METHOD ScaleHomeMotionParams
+METHOD ScaleHomingParams
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
-    <Method Name="ScaleServoOffMotionParams" Id="{c3995288-2bc6-4e2b-80eb-94f29f532c0d}">
+    <Method Name="ScaleJogParams" Id="{c3995288-2bc6-4e2b-80eb-94f29f532c0d}">
       <Declaration><![CDATA[(*Scaled Open Loop Step mode motion parameters*)
-METHOD ScaleServoOffMotionParams
+METHOD ScaleJogParams
 VAR_INPUT
 END_VAR
 ]]></Declaration>

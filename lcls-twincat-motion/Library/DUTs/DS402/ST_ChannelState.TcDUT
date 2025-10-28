@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_ChannelState" Id="{57a8c6a5-d804-4041-a922-2988413bdf86}">
+    <Declaration><![CDATA[TYPE ST_ChannelState :
+STRUCT
+    dwRaw                   : DWORD;
+    {attribute 'pytmc' := '
+        pv: PLC:bActivelyMoving
+        io: i
+        field: DESC Actively moving 
+    '}
+    bActivelyMoving         : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bClosedLoopActive
+        io: i
+        field: DESC Closed loop active
+    '}
+    bClosedLoopActive       : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bCalibrating
+        io: i
+        field: DESC Calibrating
+    '}
+    bCalibrating            : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bReferencing
+        io: i
+        field: DESC Referencing
+    '}
+    bReferencing            : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bMoveDelayed
+        io: i
+        field: DESC Move delayed
+    '}
+    bMoveDelayed            : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bSensorPresent
+        io: i
+        field: DESC Sensor present
+    '}
+    bSensorPresent          : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bIsCalibrated
+        io: i
+        field: DESC Is calibrated
+    '}
+    bIsCalibrated           : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bIsReferenced
+        io: i
+        field: DESC Is referenced
+    '}
+    bIsReferenced           : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bEndStopReached
+        io: i
+        field: DESC End stop reached
+    '}
+    bEndStopReached         : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bRangeLimitReached
+        io: i
+        field: DESC Range limit reached
+    '}
+    bRangeLimitReached      : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bFollowingLimitReached
+        io: i
+        field: DESC Following limit reached
+    '}
+    bFollowingLimitReached  : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bMovementFailed
+        io: i
+        field: DESC Movement failed
+    '}
+    bMovementFailed         : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bIsStreaming
+        io: i
+        field: DESC Is streaming
+    '}
+    bIsStreaming            : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bPositionerOverload
+        io: i
+        field: DESC Positioner overload
+    '}
+    bPositionerOverload     : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bOverTemperature
+        io: i
+        field: DESC Over temperature
+    '}
+    bOverTemperature        : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bReferenceMark
+        io: i
+        field: DESC Reference mark
+    '}
+    bReferenceMark          : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bIsPhased
+        io: i
+        field: DESC Is phased
+    '}
+    bIsPhased               : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bPositionerFault
+        io: i
+        field: DESC Positioner fault
+    '}
+    bPositionerFault        : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bAmplifierEnabled
+        io: i
+        field: DESC Amplifier enabled
+    '}
+    bAmplifierEnabled       : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bInPosition
+        io: i
+        field: DESC In position
+    '}
+    bInPosition             : BOOL;
+    {attribute 'pytmc' := '
+        pv: PLC:bBrakeEnabled
+        io: i
+        field: DESC Brake enabled
+    '}
+    bBrakeEnabled           : BOOL;
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -255,6 +255,10 @@ STRUCT
         field: DESC Currently applied compensation
     '}
     fCurrentBacklash: LREAL;
+	// Temporary woarkaround: Avoid declaring mc_power externally from FB_MotionStage
+	// override directional power enables in client code.
+	// DO NOT CHANGE: Not needed for legacy implementation
+	bOverrideDirEnable : BOOL := TRUE;
 END_STRUCT
 END_TYPE
 ]]></Declaration>
