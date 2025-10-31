@@ -7,7 +7,7 @@ STRUCT
     {attribute 'pytmc' := '
         pv: PLC:bActivelyMoving
         io: i
-        field: DESC Actively moving 
+        field: DESC Actively moving
     '}
     bActivelyMoving         : BOOL;
     {attribute 'pytmc' := '

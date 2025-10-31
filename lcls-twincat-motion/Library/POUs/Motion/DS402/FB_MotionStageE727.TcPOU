@@ -339,7 +339,7 @@ CASE nCommandLocal OF
          stDS402Drive.nDS402DriveControl := stDS402Drive.nDS402DriveControlNC;
     E_EpicsMotorCmd.HOME:
         (*DS402 Manual Homing*)
-       Home();
+       Home(Enable:=TRUE);
 END_CASE
 
 stMotionStage.bBusy := bHomeBusy OR fbMcMoveAbsolute.Busy;
@@ -514,7 +514,9 @@ THIS^.eModule := eModule;
     </Method>
     <Method Name="Home" Id="{33a0ebff-5827-46e7-8879-a94910cac0f9}">
       <Declaration><![CDATA[METHOD PUBLIC Home
-
+VAR_INPUT
+    Enable 				: BOOL;
+END_VAR
 VAR_INST
     {attribute 'hide'}
     bMove 				: BOOL;
@@ -960,6 +962,17 @@ END_VAR
         <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
+    <Method Name="SetChanParams" Id="{4eed8909-cd36-4d07-a323-31008f410302}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD SetChanParams
+VAR_INPUT
+    Enable	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="SetEnables" Id="{40234a90-944e-46f2-a31c-ab09920999d8}">
       <Declaration><![CDATA[METHOD SetEnables
 VAR_INPUT
@@ -971,6 +984,25 @@ stMotionStage.bAllBackwardEnable:=stMotionStage.bLimitBackwardEnable AND (stMoti
 
 stMotionStage.bAllEnable:=stMotionStage.bEnable AND stMotionStage.bHardwareEnable AND stMotionStage.stEPSPowerEnable.bEPS_OK;
 stMotionStage.bAllEnable R= NOT stMotionStage.bUserEnable;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetEpicsStatus" Id="{f96a8799-9069-4842-b163-95586a2bf953}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD SetEpicsStatus
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetJogParams" Id="{94454044-5299-4029-aa30-08ea45a5de77}">
+      <Declaration><![CDATA[{warning 'Add method implementation '}
+METHOD SetJogParams
+VAR_INPUT
+    Enable	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
       </Implementation>
     </Method>
     <Method Name="StateMachine" Id="{089cdc2e-0725-4746-b9cf-f1dc229cc01c}">

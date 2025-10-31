@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_MCS2Stage" Id="{b0e6fb41-18fd-4bfb-ade2-3e436828ce30}">
+    <Declaration><![CDATA[TYPE ST_MCS2Stage EXTENDS ST_MotionStage :
+STRUCT
+    {attribute 'pytmc' := '
+        pv: PLC:stMCS2Chan
+        io: i
+        field: DESC MCS2 Channel
+    '}
+    stMCS2ChanParams         : ST_MCS2ChanParams;
+    // Temporary workaround: Avoid declaring mc_power externally from FB_MotionStage
+    bOverrideDirEnable : BOOL := TRUE;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

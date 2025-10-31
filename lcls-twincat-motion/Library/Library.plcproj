@@ -20,7 +20,6 @@
     <Title>lcls-twincat-motion</Title>
     <ProjectVersion>0.0.0</ProjectVersion>
     <WriteProductVersion>false</WriteProductVersion>
-    <AllowChecksForLibrary>false</AllowChecksForLibrary>
     <POUsForPropertyAccessIncluded>false</POUsForPropertyAccessIncluded>
     <GlobalVersionStructureIncluded>false</GlobalVersionStructureIncluded>
     <!--    <OutputType>Exe</OutputType>
@@ -131,6 +130,9 @@
     <Compile Include="DUTs\DS402\E_Module.TcDUT">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DUTs\DS402\E_MoveDoneCause.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DUTs\DS402\E_MoveMode.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -146,7 +148,10 @@
     <Compile Include="DUTs\DS402\ST_DS402DriveStatus.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DUTs\DS402\ST_MCS2ModParams.TcDUT">
+    <Compile Include="DUTs\DS402\ST_MCS2ChanParams.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\DS402\ST_MCS2Stage.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\E_EpicsHomeCmd.TcDUT">
