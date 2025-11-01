@@ -22,6 +22,7 @@
     <WriteProductVersion>false</WriteProductVersion>
     <POUsForPropertyAccessIncluded>false</POUsForPropertyAccessIncluded>
     <GlobalVersionStructureIncluded>false</GlobalVersionStructureIncluded>
+    <AllowChecksForLibrary>false</AllowChecksForLibrary>
     <!--    <OutputType>Exe</OutputType>
     <RootNamespace>MyApplication</RootNamespace>
     <AssemblyName>MyApplication</AssemblyName>-->
@@ -107,9 +108,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\Deprecated\ENUM_StatePMPSStatus.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DUTs\DS402\ENUM_AxisStates.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DUTs\DS402\E_DS402DriveState.TcDUT">
