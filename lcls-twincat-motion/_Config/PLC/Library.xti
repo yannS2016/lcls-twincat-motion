@@ -983,7 +983,7 @@ External Setpoint Generation:
 		</DataType>
 	</DataTypes>
 	<Project GUID="{E61EF94A-CFE8-4DDF-B7C9-5F7AD2CF9D83}" Name="Library" PrjFilePath="..\..\Library\Library.plcproj" TmcFilePath="..\..\Library\Library.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e">
-		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{7264CD1E-5A74-5588-41DF-5FA212433972}" TmcPath="Library\Library.tmc">
+		<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{118C03E6-4AD7-6279-39B6-9F3F734CB1D1}" TmcPath="Library\Library.tmc">
 			<Name>Library Instance</Name>
 			<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 			<Vars VarGrpType="8" AreaNo="4">
@@ -1009,26 +1009,6 @@ External Setpoint Generation:
 			<Vars VarGrpType="2" AreaNo="1">
 				<Name>PlcTask Outputs</Name>
 				<Var>
-					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTBEAMPARAMSNOTOK__FBFFHWO.q_xFastFaultOut</Name>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTDEBOUNCE__FBFFHWO.q_xFastFaultOut</Name>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTTRANSITIONSTATE__FBFFHWO.q_xFastFaultOut</Name>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTUNKNOWNSTATE__FBFFHWO.q_xFastFaultOut</Name>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
-					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTZERORATE__FBFFHWO.q_xFastFaultOut</Name>
-					<Type>BOOL</Type>
-				</Var>
-				<Var>
 					<Name>PRG_TEST.fb_AtPositionState_Test.stMotionStage.Axis.PlcToNc</Name>
 					<Type GUID="{96B75FEB-2D84-43BE-A3EC-D9A681F27D52}" Namespace="MC">PLCTONC_AXIS_REF</Type>
 				</Var>
@@ -1053,6 +1033,26 @@ External Setpoint Generation:
 				<Var>
 					<Name>PRG_TEST.fb_AxisParameterSetExposed_Test.fbMotionStage.fbDriveVirtual.MasterAxis.PlcToNc</Name>
 					<Type GUID="{96B75FEB-2D84-43BE-A3EC-D9A681F27D52}" Namespace="MC">PLCTONC_AXIS_REF</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTBEAMPARAMSNOTOK__FBFFHWO.q_xFastFaultOut</Name>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTDEBOUNCE__FBFFHWO.q_xFastFaultOut</Name>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTTRANSITIONSTATE__FBFFHWO.q_xFastFaultOut</Name>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTUNKNOWNSTATE__FBFFHWO.q_xFastFaultOut</Name>
+					<Type>BOOL</Type>
+				</Var>
+				<Var>
+					<Name>PRG_TEST.fb_MiscStatesErrorFFO_Test.__FB_MISCSTATESERRORFFO_TEST__TESTZERORATE__FBFFHWO.q_xFastFaultOut</Name>
+					<Type>BOOL</Type>
 				</Var>
 				<Var>
 					<Name>PRG_TEST.fb_MotionBPTM_Test.astMotionStage[1].Axis.PlcToNc</Name>

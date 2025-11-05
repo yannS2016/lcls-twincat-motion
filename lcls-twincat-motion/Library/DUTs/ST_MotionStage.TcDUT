@@ -117,7 +117,7 @@ STRUCT
         field: ZNAM DISABLE
         field: ONAM ENABLE
         field: DESC Used to disable power entirely for an axis
-		autosave_pass1: VAL
+        autosave_pass1: VAL
     '}
     bUserEnable: BOOL := 1;
 
@@ -150,7 +150,7 @@ STRUCT
         pv: PLC:fHomePosition
         io: io
         field: DESC Used internally and by the IOC to pick home position
-		autosave_pass1: VAL
+        autosave_pass1: VAL
     '}
     fHomePosition: LREAL;
 
@@ -229,7 +229,7 @@ STRUCT
         field: ZNAM FALSE
         field: ONAM TRUE
         field: DESC Enable Backlash compensation
-		autosave_pass1: VAL
+        autosave_pass1: VAL
     '}
     bUserBacklashEn: BOOL;
 
@@ -248,7 +248,7 @@ STRUCT
         pv: PLC:fBacklash
         io: io
         field: DESC Backlash compensation
-		autosave_pass1: VAL
+        autosave_pass1: VAL
     '}
     fBacklash: LREAL;
 

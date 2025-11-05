@@ -8,12 +8,12 @@
     <SubObjectsSortedByName>True</SubObjectsSortedByName>
     <Name>Library</Name>
     <ProgramVersion>3.1.4026.17</ProgramVersion>
-    <Application>{ded1545c-5fcd-48e2-b686-7d2c250a3641}</Application>
-    <TypeSystem>{01b9929f-5eae-4d08-887f-bdca016b362e}</TypeSystem>
-    <Implicit_Task_Info>{c8ac8a6e-d812-4a3d-8fa1-472a994335a5}</Implicit_Task_Info>
-    <Implicit_KindOfTask>{aa63cd8c-d9b4-415b-b5a4-8d98c298bc18}</Implicit_KindOfTask>
-    <Implicit_Jitter_Distribution>{f378a28b-1b25-4855-9a41-a2fa558233f6}</Implicit_Jitter_Distribution>
-    <LibraryReferences>{9dd7de72-3863-4684-ae1f-9a4b8617466d}</LibraryReferences>
+    <Application>{d1fa58cd-aee5-40c0-beb1-f583e26598ed}</Application>
+    <TypeSystem>{26dfd45c-562b-4ca3-8121-2759e6c8239f}</TypeSystem>
+    <Implicit_Task_Info>{d7c5357d-2d4e-4678-b399-9396f0aa3889}</Implicit_Task_Info>
+    <Implicit_KindOfTask>{f03b7c1c-6a72-4407-82d9-fbf766551945}</Implicit_KindOfTask>
+    <Implicit_Jitter_Distribution>{6d22089f-442c-433a-86c0-a0ff074d0468}</Implicit_Jitter_Distribution>
+    <LibraryReferences>{267a1a0a-101b-42eb-a25b-883e4b1e0514}</LibraryReferences>
     <CombineIds>false</CombineIds>
     <Company>SLAC</Company>
     <Released>false</Released>
