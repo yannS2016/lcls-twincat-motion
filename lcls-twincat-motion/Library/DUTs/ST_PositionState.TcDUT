@@ -17,6 +17,7 @@ STRUCT
         pv: SETPOINT
         io: io
         field: DESC Axis position associated with this state
+        autosave_pass1: VAL
     '}
     fPosition: LREAL;
 
@@ -35,6 +36,7 @@ STRUCT
         pv: VELO
         io: io
         field: DESC Speed at which to move to this state
+        autosave_pass1: VAL
     '}
     fVelocity: LREAL;
 
